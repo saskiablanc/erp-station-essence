@@ -1,7 +1,7 @@
 # Makefile pour le projet Station-Service
 # Usage: make <target>
 
-.PHONY: help start stop reset install test clean migrations
+.PHONY: help start stop reset install test clean migrations gui
 
 # Cible par défaut
 .DEFAULT_GOAL := help
@@ -29,7 +29,7 @@ start: ## Démarre tous les services
 	@echo "phpMyAdmin: http://localhost:8080"
 
 start-quick: ## Démarre sans migrations
-	@echo "⚡ Démarrage rapide..."
+	@echo "Démarrage rapide..."
 	@docker-compose up -d
 	@echo "Docker démarré"
 
@@ -93,5 +93,18 @@ db-shell-archive: ## Ouvre MySQL (base archive)
 phpmyadmin: ## Ouvre phpMyAdmin
 	@open http://localhost:8080 || xdg-open http://localhost:8080 || echo "Ouvrez: http://localhost:8080"
 
+gui-clients: ## Lance l'interface de gestion des clients
+	@. venv/bin/activate && python3 gui/gui_clients_pyqt6.py
+
+gui-transactions: ## Lance l'interface de gestion des transactions
+	@. venv/bin/activate && python3 gui/transactions_gui.py
+
+gui-stock: ## Lance l'interface de gestion des stocks
+	@. venv/bin/activate && python3 gui/stock_gui.py
+
+gui: gui-clients ## Lance l'interface principale (alias pour gui-clients)
+
 dev: install docker-up migrations-apply ## Setup complet pour nouveau dev
 	@echo "Environnement prêt !"
+
+run: start gui-clients ## Démarre tout et lance l'interface clients
