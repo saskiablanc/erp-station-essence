@@ -1,0 +1,32 @@
+# NE JAMAIS COMMIT CES FICHIERS
+
+# Variables d'environnement (mots de passe BD)
+.env
+
+# Environnement Python
+venv/
+env/
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+.pytest_cache/
+
+# Données locales Docker (volumes)
+*.sql.backup
+database/dump/
+database/data/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Alembic
+*.pyc
+__pycache__/

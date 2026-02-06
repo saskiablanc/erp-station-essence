@@ -1,0 +1,77 @@
+version: '3.8'
+
+services:
+  # Base de données courante (StationCourante)
+  db_courante:
+    image: mysql:8.0
+    container_name: station_db_courante
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: root_password_secure
+      MYSQL_DATABASE: StationCourante
+      MYSQL_USER: station_user
+      MYSQL_PASSWORD: station_pass_secure
+    ports:
+      - "3306:3306"
+    volumes:
+      - db_courante_data:/var/lib/mysql
+      - ./database/init_empty.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - station_network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "station_user", "-pstation_pass_secure"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Base de données archive (Archive)
+  db_archive:
+    image: mysql:8.0
+    container_name: station_db_archive
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: root_password_secure
+      MYSQL_DATABASE: Archive
+      MYSQL_USER: station_user
+      MYSQL_PASSWORD: station_pass_secure
+    ports:
+      - "3307:3306"  # Port différent pour éviter les conflits
+    volumes:
+      - db_archive_data:/var/lib/mysql
+      - ./database/init_empty.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - station_network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "station_user", "-pstation_pass_secure"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # PhpMyAdmin pour gérer les deux bases de données
+  phpmyadmin:
+    image: phpmyadmin:latest
+    container_name: station_phpmyadmin
+    restart: unless-stopped
+    environment:
+      PMA_HOSTS: db_courante,db_archive
+      PMA_USER: station_user
+      PMA_PASSWORD: station_pass_secure
+    ports:
+      - "8080:80"
+    depends_on:
+      db_courante:
+        condition: service_healthy
+      db_archive:
+        condition: service_healthy
+    networks:
+      - station_network
+
+volumes:
+  db_courante_data:
+    driver: local
+  db_archive_data:
+    driver: local
+
+networks:
+  station_network:
+    driver: bridge
