@@ -33,11 +33,9 @@
         <button onclick="ajouterChiffre(7)">7</button>
         <button onclick="ajouterChiffre(8)">8</button>
         <button onclick="ajouterChiffre(9)">9</button>
-        <button class="zero" onclick="ajouterChiffre(0)">0</button>
-    </div>
 
-    <div class="actions">
         <button class="annuler" onclick="annuler()">✖</button>
+        <button class="zero" onclick="ajouterChiffre(0)">0</button>
         <button class="valider" onclick="valider()">✔</button>
     </div>
 

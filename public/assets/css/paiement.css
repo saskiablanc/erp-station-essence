@@ -154,3 +154,56 @@ body {
 .actions .valider:hover {
   background: #15803d;
 }
+
+/* Clavier : grille 3 colonnes */
+.clavier {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+/* Tous les boutons du clavier */
+.clavier button {
+  padding: 16px;
+  font-size: 18px;
+  font-weight: 600;
+  border-radius: 14px;
+  border: 1px solid #e5e7eb;
+  background: #f3f4f6;
+  cursor: pointer;
+  transition: 0.15s ease;
+}
+
+/* Effet au survol */
+.clavier button:hover {
+  background: #e5e7eb;
+}
+
+.clavier button:active {
+  transform: scale(0.96);
+}
+
+/* Couleurs spécifiques */
+.clavier .zero {
+  background: #ffffff;
+}
+
+.clavier .annuler {
+  background: #ef4444;
+  color: white;
+}
+
+.clavier .valider {
+  background: #16a34a;
+  color: white;
+}
+
+/* Hover colors */
+.clavier .annuler:hover {
+  background: #b91c1c;
+}
+
+.clavier .valider:hover {
+  background: #15803d;
+}
