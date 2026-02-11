@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 use App\Core\Router;
 use App\Controllers\HomeController;
+use App\Controllers\PaiementController;
 
 if (session_status() === PHP_SESSION_NONE) {
     session_name('sae_r409_4e');
@@ -41,26 +42,7 @@ if (is_file($envPath)) {
     }
 }
 
-$config = require CONFIG_PATH . '/config.php';
-if (!is_array($config)) {
-    throw new RuntimeException('Invalid config file.');
-}
-
-define('APP_ENV', $config['env'] ?? 'development');
-define('APP_NAME', $config['app_name'] ?? 'Projet 4E');
-
-$timezone = $config['timezone'] ?? 'Europe/Paris';
-if (is_string($timezone) && $timezone !== '') {
-    date_default_timezone_set($timezone);
-}
-
-if (!empty($config['display_errors'])) {
-    error_reporting(E_ALL);
-    ini_set('display_errors', '1');
-} else {
-    error_reporting(0);
-    ini_set('display_errors', '0');
-}
+require CONFIG_PATH . '/config.php';
 
 spl_autoload_register(static function (string $class): void {
     $prefix = 'App\\';
@@ -80,6 +62,17 @@ $router = new Router();
 
 $router->get('/', [new HomeController(), 'index']);
 $router->get('home', [new HomeController(), 'index']);
+$router->get('paiement', [new PaiementController(), 'index']);
+$router->post('paiement/traiter', [new PaiementController(), 'traiter']);
+$router->get('test-db', function () {
+    try {
+        \App\Core\Database::getInstance('courante')->query('SELECT 1');
+        echo 'OK : connexion base courante';
+    } catch (Throwable $e) {
+        echo 'KO : ' . $e->getMessage();
+    }
+});
+
 
 $page = (string) ($_GET['page'] ?? '');
 if ($page === '') {
@@ -92,16 +85,6 @@ if ($page === '') {
 
     $page = $uri;
 }
-
-use App\Controllers\PaiementController;
-
-$router = new Router();
-
-$router->get('/', [new HomeController(), 'index']);
-$router->get('home', [new HomeController(), 'index']);
-$router->get('paiement', [new PaiementController(), 'index']);
-$router->post('paiement/traiter', [new PaiementController(), 'traiter']);
-
 
 $router->dispatch($_SERVER['REQUEST_METHOD'] ?? 'GET', $page);
 

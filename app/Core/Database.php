@@ -12,6 +12,7 @@ final class Database
     private static array $instances = [];
 
     private PDO $connection;
+    private int $queryCount = 0;
 
     private function __construct(private array $config)
     {
@@ -45,9 +46,29 @@ final class Database
         return $this->connection->prepare($statement);
     }
 
-    public function query(string $statement): \PDOStatement
+    public function query(string $statement, array $params = []): \PDOStatement
     {
-        return $this->connection->query($statement);
+        try {
+            $this->queryCount++;
+
+            if (!empty($this->config['log_queries'])) {
+                $this->logQuery($statement, $params);
+            }
+
+            $stmt = $this->connection->prepare($statement);
+            $stmt->execute($params);
+
+            return $stmt;
+        } catch (PDOException $e) {
+            $this->logError('SQL error: ' . $e->getMessage() . ' | Query: ' . $statement);
+            throw new RuntimeException('Database query failed.');
+        }
+    }
+
+    public function execute(string $statement, array $params = []): int
+    {
+        $stmt = $this->query($statement, $params);
+        return $stmt->rowCount();
     }
 
     public function beginTransaction(): bool
@@ -88,9 +109,9 @@ final class Database
 
         $profileConfig = $configs[$profile];
         $options = $configs['options'] ?? [];
-        if (!isset($profileConfig['options'])) {
-            $profileConfig['options'] = $options;
-        }
+        $profileConfig['options'] = array_replace($options, $profileConfig['options'] ?? []);
+        $profileConfig['log_queries'] = $profileConfig['log_queries'] ?? ($configs['log_queries'] ?? false);
+        $profileConfig['log_file'] = $profileConfig['log_file'] ?? ($configs['log_file'] ?? null);
 
         return $profileConfig;
     }
@@ -111,8 +132,55 @@ final class Database
         try {
             $this->connection = new PDO($dsn, $username, $password, $options);
         } catch (PDOException $e) {
-            error_log('Database connection error: ' . $e->getMessage());
+            $this->logError('Database connection error: ' . $e->getMessage());
             throw new RuntimeException('Database connection failed.');
         }
+    }
+
+    private function logQuery(string $statement, array $params = []): void
+    {
+        $timestamp = date('Y-m-d H:i:s');
+        $paramsStr = json_encode($params, JSON_UNESCAPED_UNICODE);
+        $message = "[{$timestamp}] SQL: {$statement} | Params: {$paramsStr}\n";
+
+        $logFile = $this->config['log_file'] ?? $this->defaultLogFile();
+        $this->appendLog($logFile, $message);
+    }
+
+    private function logError(string $message): void
+    {
+        $timestamp = date('Y-m-d H:i:s');
+        $logMessage = "[{$timestamp}] ERROR: {$message}\n";
+
+        $logFile = $this->defaultErrorLogFile();
+        $this->appendLog($logFile, $logMessage);
+    }
+
+    private function appendLog(string $logFile, string $message): void
+    {
+        $logDir = dirname($logFile);
+        if (!is_dir($logDir)) {
+            mkdir($logDir, 0777, true);
+        }
+
+        error_log($message, 3, $logFile);
+    }
+
+    private function defaultLogFile(): string
+    {
+        if (defined('STORAGE_PATH')) {
+            return rtrim((string) STORAGE_PATH, '/\\') . '/logs/database.log';
+        }
+
+        return __DIR__ . '/../../storage/logs/database.log';
+    }
+
+    private function defaultErrorLogFile(): string
+    {
+        if (defined('STORAGE_PATH')) {
+            return rtrim((string) STORAGE_PATH, '/\\') . '/logs/database_errors.log';
+        }
+
+        return __DIR__ . '/../../storage/logs/database_errors.log';
     }
 }
