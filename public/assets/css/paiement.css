@@ -1,0 +1,156 @@
+body {
+  background: #f4f6f9;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  font-family: "Inter", "Helvetica Neue", Arial, sans-serif;
+}
+
+.page-title {
+  font-size: 32px;
+  font-weight: 700;
+  margin-bottom: 20px;
+  color: #111827;
+}
+
+/* Boîtier TPE */
+.tpe {
+  background: #ffffff;
+  width: 340px;
+  padding: 30px;
+  border-radius: 24px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.08);
+  border: 1px solid #e5e7eb;
+  text-align: center;
+}
+
+/* Écran */
+.ecran {
+  background: #f9fafb;
+  color: #111827;
+  padding: 20px;
+  border-radius: 16px;
+  margin-bottom: 20px;
+  border: 1px solid #e5e7eb;
+}
+
+#message {
+  font-size: 15px;
+  font-weight: 500;
+}
+
+#montant {
+  font-weight: 700;
+  font-size: 18px;
+  color: #2563eb;
+}
+
+#code {
+  margin-top: 15px;
+  font-size: 22px;
+  text-align: center;
+  width: 160px;
+  padding: 10px;
+  border-radius: 12px;
+  border: 1px solid #d1d5db;
+  background: #ffffff;
+  letter-spacing: 10px;
+  box-sizing: border-box;
+  margin-left: auto;
+  margin-right: auto;
+  display: block;
+}
+
+/* Bouton Insérer Carte */
+.insert {
+  margin-bottom: 20px;
+}
+
+.insert-btn {
+  width: 100%;
+  padding: 12px 0;
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: 600;
+  background: #2563eb;
+  color: white;
+  border: none;
+  cursor: pointer;
+  transition: 0.2s ease;
+}
+
+.insert-btn:hover {
+  background: #1e40af;
+}
+
+/* Clavier */
+.clavier {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.clavier button {
+  padding: 16px;
+  font-size: 18px;
+  font-weight: 600;
+  border-radius: 14px;
+  border: 1px solid #e5e7eb;
+  background: #f3f4f6;
+  cursor: pointer;
+  transition: 0.15s ease;
+}
+
+.clavier button:hover {
+  background: #e5e7eb;
+}
+
+.clavier button:active {
+  transform: scale(0.96);
+}
+
+/* Centrer le 0 */
+.clavier .zero {
+  grid-column: 2 / 3;
+}
+
+/* Actions bas */
+.actions {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 10px;
+}
+
+.actions button {
+  width: 48%;
+  padding: 12px 0;
+  border-radius: 14px;
+  font-size: 18px;
+  font-weight: 700;
+  border: none;
+  cursor: pointer;
+  transition: 0.2s ease;
+}
+
+/* Croix / Annuler */
+.actions .annuler {
+  background: #ef4444;
+  color: white;
+}
+
+.actions .annuler:hover {
+  background: #b91c1c;
+}
+
+/* Valider */
+.actions .valider {
+  background: #16a34a;
+  color: white;
+}
+
+.actions .valider:hover {
+  background: #15803d;
+}

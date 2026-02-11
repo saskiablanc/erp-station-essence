@@ -93,4 +93,15 @@ if ($page === '') {
     $page = $uri;
 }
 
+use App\Controllers\PaiementController;
+
+$router = new Router();
+
+$router->get('/', [new HomeController(), 'index']);
+$router->get('home', [new HomeController(), 'index']);
+$router->get('paiement', [new PaiementController(), 'index']);
+$router->post('paiement/traiter', [new PaiementController(), 'traiter']);
+
+
 $router->dispatch($_SERVER['REQUEST_METHOD'] ?? 'GET', $page);
+
