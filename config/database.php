@@ -12,16 +12,6 @@ return [
         'charset' => 'utf8mb4',
         'collation' => 'utf8mb4_unicode_ci',
     ],
-    'archive' => [
-        'driver' => 'mysql',
-        'host' => 'localhost',
-        'port' => '3306',
-        'dbname' => 'unica_station_Archives',
-        'username' => 'local',
-        'password' => 'local',
-        'charset' => 'utf8mb4',
-        'collation' => 'utf8mb4_unicode_ci',
-    ],
     'options' => [
         \PDO::ATTR_ERRMODE => \PDO::ERRMODE_EXCEPTION,
         \PDO::ATTR_DEFAULT_FETCH_MODE => \PDO::FETCH_ASSOC,

@@ -44,6 +44,27 @@ if (is_file($envPath)) {
 
 require CONFIG_PATH . '/config.php';
 
+function render_base_page(string $title, string $bodyHtml): void
+{
+    $appName = defined('APP_NAME') ? APP_NAME : 'Projet 4E';
+    $assetsUrl = defined('ASSETS_URL') ? ASSETS_URL : '/assets';
+    $fullTitle = $title !== '' ? $title . ' - ' . $appName : $appName;
+
+    echo "<!doctype html>";
+    echo "<html lang='fr'>";
+    echo "<head>";
+    echo "<meta charset='utf-8'>";
+    echo "<meta name='viewport' content='width=device-width, initial-scale=1'>";
+    echo "<meta name='description' content='SAE R409 - Projet 4E'>";
+    echo "<title>" . htmlspecialchars($fullTitle, ENT_QUOTES, 'UTF-8') . "</title>";
+    echo "<link rel='stylesheet' href='" . htmlspecialchars($assetsUrl, ENT_QUOTES, 'UTF-8') . "/css/main.css'>";
+    echo "</head>";
+    echo "<body>";
+    echo $bodyHtml;
+    echo "</body>";
+    echo "</html>";
+}
+
 spl_autoload_register(static function (string $class): void {
     $prefix = 'App\\';
     $prefixLength = strlen($prefix);
@@ -67,9 +88,10 @@ $router->post('paiement/traiter', [new PaiementController(), 'traiter']);
 $router->get('test-db', function () {
     try {
         \App\Core\Database::getInstance('courante')->query('SELECT 1');
-        echo 'OK : connexion base courante';
+        render_base_page('Test DB', "<div class='shell'><div class='card'>OK : connexion base courante</div></div>");
     } catch (Throwable $e) {
-        echo 'KO : ' . $e->getMessage();
+        $message = htmlspecialchars($e->getMessage(), ENT_QUOTES, 'UTF-8');
+        render_base_page('Test DB', "<div class='shell'><div class='card'>KO : {$message}</div></div>");
     }
 });
 
@@ -86,5 +108,9 @@ if ($page === '') {
     $page = $uri;
 }
 
-$router->dispatch($_SERVER['REQUEST_METHOD'] ?? 'GET', $page);
+if ($page === '/index.php' || $page === 'index.php') {
+    $page = '/';
+}
 
+$router->dispatch($_SERVER['REQUEST_METHOD'] ?? 'GET', $page);
+?>
