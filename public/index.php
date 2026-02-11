@@ -1,0 +1,96 @@
+<?php
+declare(strict_types=1);
+
+use App\Core\Router;
+use App\Controllers\HomeController;
+
+if (session_status() === PHP_SESSION_NONE) {
+    session_name('sae_r409_4e');
+    session_start();
+}
+
+define('ROOT_PATH', dirname(__DIR__));
+define('APP_PATH', ROOT_PATH . '/app');
+define('CONFIG_PATH', ROOT_PATH . '/config');
+define('VIEW_PATH', APP_PATH . '/Views');
+define('STORAGE_PATH', ROOT_PATH . '/storage');
+
+$envPath = ROOT_PATH . '/.env';
+if (is_file($envPath)) {
+    $lines = file($envPath, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+    foreach ($lines as $line) {
+        $line = trim($line);
+        if ($line === '' || str_starts_with($line, '#')) {
+            continue;
+        }
+        $parts = explode('=', $line, 2);
+        if (count($parts) !== 2) {
+            continue;
+        }
+        $key = trim($parts[0]);
+        $value = trim($parts[1]);
+        if ($key === '') {
+            continue;
+        }
+        $value = trim($value, " \t\n\r\0\x0B\"'");
+        if (getenv($key) === false) {
+            putenv($key . '=' . $value);
+            $_ENV[$key] = $value;
+            $_SERVER[$key] = $value;
+        }
+    }
+}
+
+$config = require CONFIG_PATH . '/config.php';
+if (!is_array($config)) {
+    throw new RuntimeException('Invalid config file.');
+}
+
+define('APP_ENV', $config['env'] ?? 'development');
+define('APP_NAME', $config['app_name'] ?? 'Projet 4E');
+
+$timezone = $config['timezone'] ?? 'Europe/Paris';
+if (is_string($timezone) && $timezone !== '') {
+    date_default_timezone_set($timezone);
+}
+
+if (!empty($config['display_errors'])) {
+    error_reporting(E_ALL);
+    ini_set('display_errors', '1');
+} else {
+    error_reporting(0);
+    ini_set('display_errors', '0');
+}
+
+spl_autoload_register(static function (string $class): void {
+    $prefix = 'App\\';
+    $prefixLength = strlen($prefix);
+    if (strncmp($class, $prefix, $prefixLength) !== 0) {
+        return;
+    }
+
+    $relativeClass = substr($class, $prefixLength);
+    $file = APP_PATH . '/' . str_replace('\\', '/', $relativeClass) . '.php';
+    if (is_file($file)) {
+        require $file;
+    }
+});
+
+$router = new Router();
+
+$router->get('/', [new HomeController(), 'index']);
+$router->get('home', [new HomeController(), 'index']);
+
+$page = (string) ($_GET['page'] ?? '');
+if ($page === '') {
+    $uri = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH);
+    $base = rtrim(dirname($_SERVER['SCRIPT_NAME'] ?? ''), '/');
+
+    if ($base !== '' && $base !== '/' && strpos($uri, $base) === 0) {
+        $uri = substr($uri, strlen($base));
+    }
+
+    $page = $uri;
+}
+
+$router->dispatch($_SERVER['REQUEST_METHOD'] ?? 'GET', $page);
