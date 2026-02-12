@@ -4,7 +4,8 @@ body {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  height: 100vh;
+  min-height: 100vh;
+  padding: 24px 280px 24px 24px;
   font-family: "Inter", "Helvetica Neue", Arial, sans-serif;
 }
 
@@ -13,6 +14,14 @@ body {
   font-weight: 700;
   margin-bottom: 20px;
   color: #111827;
+}
+
+.tpe-layout {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  gap: 24px;
 }
 
 /* Boîtier TPE */
@@ -63,16 +72,67 @@ body {
   display: block;
 }
 
-/* Bouton Insérer Carte */
-.insert {
-  margin-bottom: 20px;
+/* Menu actions physiques */
+.actions-panel {
+  position: fixed;
+  right: 24px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 240px;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 18px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+  transition: width 0.2s ease;
+  display: flex;
+  flex-direction: column;
+  max-height: 80vh;
 }
 
-.insert-btn {
+.actions-panel.collapsed {
+  width: 60px;
+}
+
+.actions-toggle {
+  width: 100%;
+  padding: 12px 16px;
+  background: #111827;
+  color: #ffffff;
+  border: none;
+  font-size: 14px;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+}
+
+.actions-panel.collapsed .actions-toggle {
+  text-align: center;
+  padding: 16px 0;
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+}
+
+.actions-content {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.actions-content h2 {
+  margin: 0;
+  font-size: 14px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #6b7280;
+}
+
+.action-btn {
   width: 100%;
   padding: 12px 0;
   border-radius: 12px;
-  font-size: 16px;
+  font-size: 15px;
   font-weight: 600;
   background: #2563eb;
   color: white;
@@ -81,8 +141,20 @@ body {
   transition: 0.2s ease;
 }
 
-.insert-btn:hover {
+.action-btn:hover {
   background: #1e40af;
+}
+
+.action-btn.danger {
+  background: #ef4444;
+}
+
+.action-btn.danger:hover {
+  background: #b91c1c;
+}
+
+.actions-panel.collapsed .actions-content {
+  display: none;
 }
 
 /* Clavier */
@@ -206,4 +278,52 @@ body {
 
 .clavier .valider:hover {
   background: #15803d;
+}
+
+@media (max-width: 900px) {
+  body {
+    padding: 24px;
+  }
+
+  .actions-panel {
+    position: static;
+    transform: none;
+    width: min(100%, 360px);
+    margin-top: 20px;
+  }
+
+  .actions-panel.collapsed {
+    width: min(100%, 360px);
+  }
+}
+
+@media (max-width: 1200px) {
+  body {
+    padding: 24px;
+  }
+
+  .actions-panel {
+    position: static;
+    transform: none;
+    width: min(100%, 360px);
+    max-height: none;
+  }
+
+  .actions-panel.collapsed {
+    width: min(100%, 360px);
+  }
+
+  .actions-panel.collapsed .actions-toggle {
+    writing-mode: horizontal-tb;
+    transform: none;
+    padding: 12px 16px;
+    text-align: left;
+  }
+}
+
+@media (max-width: 700px) {
+  .tpe-layout {
+    flex-direction: column;
+    align-items: center;
+  }
 }

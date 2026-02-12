@@ -1,5 +1,7 @@
 let tentatives = 3;
 let montant = 80;
+let paymentTimer = null;
+let removeTimer = null;
 
 function insererCarte() {
   document.getElementById("code").disabled = false;
@@ -17,7 +19,8 @@ function ajouterChiffre(chiffre) {
 function valider() {
   let code = document.getElementById("code").value;
 
-  fetch("/paiement/traiter", {
+  const endpoint = getPaiementEndpoint();
+  fetch(endpoint, {
     method: "POST",
     headers: {
       "Content-Type": "application/x-www-form-urlencoded",
@@ -43,7 +46,20 @@ function valider() {
       }
 
       if (data.status === "ok") {
-        document.getElementById("message").innerText = "Paiement accepté";
+        const message = document.getElementById("message");
+        message.innerText = "Code bon";
+        if (paymentTimer) {
+          clearTimeout(paymentTimer);
+        }
+        if (removeTimer) {
+          clearTimeout(removeTimer);
+        }
+        paymentTimer = setTimeout(() => {
+          message.innerText = "Paiement accepté";
+          removeTimer = setTimeout(() => {
+            message.innerText = "Retirez la carte";
+          }, 900);
+        }, 800);
         document.getElementById("code").disabled = true;
       }
 
@@ -56,3 +72,37 @@ function annuler() {
   document.getElementById("code").value = "";
   document.getElementById("code").disabled = true;
 }
+
+function getPaiementEndpoint() {
+  const path = window.location.pathname || "";
+  if (path.includes("index.php")) {
+    return "index.php?page=paiement/traiter";
+  }
+  return "paiement/traiter";
+}
+
+function retirerCarte() {
+  if (paymentTimer) {
+    clearTimeout(paymentTimer);
+  }
+  if (removeTimer) {
+    clearTimeout(removeTimer);
+  }
+  const message = document.getElementById("message");
+  message.innerText = "";
+  document.getElementById("code").value = "";
+  document.getElementById("code").disabled = true;
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  const panel = document.getElementById("actions-panel");
+  const toggle = document.getElementById("actions-toggle");
+  if (!panel || !toggle) {
+    return;
+  }
+
+  toggle.addEventListener("click", () => {
+    const collapsed = panel.classList.toggle("collapsed");
+    toggle.setAttribute("aria-expanded", collapsed ? "false" : "true");
+  });
+});

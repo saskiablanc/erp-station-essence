@@ -1,0 +1,10 @@
+RewriteEngine On
+Options -MultiViews
+DirectoryIndex index.php
+
+# Accès via http://localhost/public/
+RewriteBase /public/
+
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^ index.php [L]
