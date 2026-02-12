@@ -69,10 +69,10 @@ CREATE TABLE `CarteCE` (
 
 CREATE TABLE `Client` (
   `id_client` bigint(20) UNSIGNED NOT NULL,
-  `nom` int(50) NOT NULL,
-  `prenom` int(50) NOT NULL,
-  `email` int(100) NOT NULL,
-  `num_tel` int(20) NOT NULL
+  `nom` varchar(50) NOT NULL,
+  `prenom` varchar(50) NOT NULL,
+  `email` varchar(100) NOT NULL,
+  `num_tel` varchar(20) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
 
 -- --------------------------------------------------------
@@ -159,7 +159,7 @@ CREATE TABLE `Transaction` (
 --
 
 CREATE TABLE `TransactionEnergie` (
-  ` id_transaction_energie` bigint(20) UNSIGNED NOT NULL,
+  `id_transaction_energie` bigint(20) UNSIGNED NOT NULL,
   `id_transaction` bigint(20) UNSIGNED NOT NULL,
   `id_energie` bigint(20) UNSIGNED NOT NULL,
   `quantite_delivree` decimal(10,3) NOT NULL,
@@ -174,7 +174,7 @@ CREATE TABLE `TransactionEnergie` (
 
 CREATE TABLE `TransactionProduit` (
   `id_transaction_produit` bigint(20) UNSIGNED NOT NULL,
-  ` id_transaction` bigint(20) UNSIGNED NOT NULL,
+  `id_transaction` bigint(20) UNSIGNED NOT NULL,
   `code_barres` bigint(20) UNSIGNED NOT NULL,
   `quantite_produit_totale` int(10) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
@@ -264,8 +264,8 @@ ALTER TABLE `Transaction`
 -- Index pour la table `TransactionEnergie`
 --
 ALTER TABLE `TransactionEnergie`
-  ADD PRIMARY KEY (` id_transaction_energie`),
-  ADD UNIQUE KEY ` id_transaction_energie` (` id_transaction_energie`),
+  ADD PRIMARY KEY (`id_transaction_energie`),
+  ADD UNIQUE KEY `id_transaction_energie` (`id_transaction_energie`),
   ADD KEY `id_transaction` (`id_transaction`),
   ADD KEY `id_energie` (`id_energie`);
 
@@ -275,7 +275,7 @@ ALTER TABLE `TransactionEnergie`
 ALTER TABLE `TransactionProduit`
   ADD PRIMARY KEY (`id_transaction_produit`),
   ADD UNIQUE KEY `id_transaction_produit` (`id_transaction_produit`),
-  ADD KEY ` id_transaction` (` id_transaction`),
+  ADD KEY `id_transaction` (`id_transaction`),
   ADD KEY `code_barres` (`code_barres`);
 
 --
@@ -346,7 +346,7 @@ ALTER TABLE `Transaction`
 -- AUTO_INCREMENT pour la table `TransactionEnergie`
 --
 ALTER TABLE `TransactionEnergie`
-  MODIFY ` id_transaction_energie` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
+  MODIFY `id_transaction_energie` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT pour la table `TransactionProduit`
@@ -412,7 +412,8 @@ ALTER TABLE `TransactionEnergie`
 --
 ALTER TABLE `TransactionProduit`
   ADD CONSTRAINT `fk_tp_produit` FOREIGN KEY (`code_barres`) REFERENCES `Produit` (`code_barres`),
-  ADD CONSTRAINT `fk_tp_transaction` FOREIGN KEY (` id_transaction`) REFERENCES `Transaction` (`id_transaction`);
+  ADD CONSTRAINT `fk_tp_transaction` FOREIGN KEY (`id_transaction`) REFERENCES `Transaction` (`id_transaction`);
+
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
