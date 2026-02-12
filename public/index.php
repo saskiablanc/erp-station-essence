@@ -4,6 +4,7 @@ declare(strict_types=1);
 use App\Core\Router;
 use App\Controllers\HomeController;
 use App\Controllers\PaiementController;
+use App\Controllers\ChoixPaiementController;  // ← AJOUT US24
 
 if (session_status() === PHP_SESSION_NONE) {
     session_name('sae_r409_4e');
@@ -81,10 +82,28 @@ spl_autoload_register(static function (string $class): void {
 
 $router = new Router();
 
+// ============================================================
+// Routes générales
+// ============================================================
 $router->get('/', [new HomeController(), 'index']);
 $router->get('home', [new HomeController(), 'index']);
+
+// ============================================================
+// US24 : Choix Mode Paiement Borne
+// ============================================================
+$router->get('choix-paiement', [new ChoixPaiementController(), 'index']);
+$router->post('choix-paiement/selectionner', [new ChoixPaiementController(), 'selectionner']);
+$router->get('choix-paiement/retour', [new ChoixPaiementController(), 'retour']);
+
+// ============================================================
+// US25 : Paiement Carte et CCE (TPE)
+// ============================================================
 $router->get('paiement', [new PaiementController(), 'index']);
 $router->post('paiement/traiter', [new PaiementController(), 'traiter']);
+
+// ============================================================
+// Route de test de connexion BD
+// ============================================================
 $router->get('test-db', function () {
     try {
         \App\Core\Database::getInstance('courante')->query('SELECT 1');
@@ -95,7 +114,9 @@ $router->get('test-db', function () {
     }
 });
 
-
+// ============================================================
+// Dispatch du routeur
+// ============================================================
 $page = (string) ($_GET['page'] ?? '');
 if ($page === '') {
     $uri = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH);
@@ -113,4 +134,3 @@ if ($page === '/index.php' || $page === 'index.php') {
 }
 
 $router->dispatch($_SERVER['REQUEST_METHOD'] ?? 'GET', $page);
-?>
