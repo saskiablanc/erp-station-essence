@@ -16,6 +16,11 @@ function ajouterChiffre(chiffre) {
   }
 }
 
+function retour() {
+  let champ = document.getElementById("code");
+  champ.value = champ.value.slice(0, -1);
+}
+
 function valider() {
   let code = document.getElementById("code").value;
 

@@ -280,6 +280,55 @@ body {
   background: #15803d;
 }
 
+.clavier .special {
+  background: #ffffff;
+  color: #111827;
+}
+
+.tpe-actions {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.tpe-actions .action-btn {
+  padding: 14px;
+  font-size: 18px;
+  font-weight: 700;
+  border-radius: 14px;
+  border: none;
+  cursor: pointer;
+  transition: 0.2s ease;
+}
+
+.tpe-actions .cancel {
+  background: #ef4444;
+  color: #ffffff;
+}
+
+.tpe-actions .cancel:hover {
+  background: #b91c1c;
+}
+
+.tpe-actions .back {
+  background: #facc15;
+  color: #111827;
+}
+
+.tpe-actions .back:hover {
+  background: #eab308;
+}
+
+.tpe-actions .validate {
+  background: #16a34a;
+  color: #ffffff;
+}
+
+.tpe-actions .validate:hover {
+  background: #15803d;
+}
+
 @media (max-width: 900px) {
   body {
     padding: 24px;

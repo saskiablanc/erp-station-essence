@@ -19,22 +19,28 @@
             <input type="password" id="code" maxlength="4" placeholder="****" disabled>
         </div>
 
-        <div class="clavier">
-            <button onclick="ajouterChiffre(1)">1</button>
-            <button onclick="ajouterChiffre(2)">2</button>
-            <button onclick="ajouterChiffre(3)">3</button>
-            <button onclick="ajouterChiffre(4)">4</button>
-            <button onclick="ajouterChiffre(5)">5</button>
-            <button onclick="ajouterChiffre(6)">6</button>
-            <button onclick="ajouterChiffre(7)">7</button>
-            <button onclick="ajouterChiffre(8)">8</button>
-            <button onclick="ajouterChiffre(9)">9</button>
+    <div class="clavier">
+        <button onclick="ajouterChiffre(1)">1</button>
+        <button onclick="ajouterChiffre(2)">2</button>
+        <button onclick="ajouterChiffre(3)">3</button>
+        <button onclick="ajouterChiffre(4)">4</button>
+        <button onclick="ajouterChiffre(5)">5</button>
+        <button onclick="ajouterChiffre(6)">6</button>
+        <button onclick="ajouterChiffre(7)">7</button>
+        <button onclick="ajouterChiffre(8)">8</button>
+        <button onclick="ajouterChiffre(9)">9</button>
 
-            <button class="annuler" onclick="annuler()">✖</button>
-            <button class="zero" onclick="ajouterChiffre(0)">0</button>
-            <button class="valider" onclick="valider()">✔</button>
-        </div>
+        <button class="special" onclick="annuler()">*</button>
+        <button class="zero" onclick="ajouterChiffre(0)">0</button>
+        <button class="special" onclick="valider()">#</button>
     </div>
+
+    <div class="tpe-actions">
+        <button class="action-btn cancel" onclick="annuler()">✖</button>
+        <button class="action-btn back" onclick="retour()">&lt;</button>
+        <button class="action-btn validate" onclick="valider()">✔</button>
+    </div>
+</div>
 
     <aside id="actions-panel" class="actions-panel">
         <button id="actions-toggle" class="actions-toggle" type="button" aria-expanded="true" aria-controls="actions-content">
