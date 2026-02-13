@@ -2,8 +2,15 @@ let tentatives = 3;
 let montant = 80;
 let paymentTimer = null;
 let removeTimer = null;
+let paymentActive = true;
+let cardInserted = false;
 
 function insererCarte() {
+  cardInserted = true;
+  updateCardIndicator();
+  if (!paymentActive) {
+    return;
+  }
   document.getElementById("code").disabled = false;
   document.getElementById("message").innerText =
     "Veuillez saisir votre code secret";
@@ -22,6 +29,9 @@ function retour() {
 }
 
 function valider() {
+  if (!paymentActive) {
+    return;
+  }
   let code = document.getElementById("code").value;
 
   const endpoint = getPaiementEndpoint();
@@ -73,9 +83,21 @@ function valider() {
 }
 
 function annuler() {
-  document.getElementById("message").innerText = "Paiement annulé";
-  document.getElementById("code").value = "";
-  document.getElementById("code").disabled = true;
+  if (!paymentActive) {
+    return;
+  }
+  if (cardInserted) {
+    clearTimers();
+    document.getElementById("code").value = "";
+    document.getElementById("code").disabled = true;
+    document.getElementById("message").innerText =
+      "Paiement annulé. Retirez la carte";
+    paymentActive = false;
+    tentatives = 3;
+    return;
+  }
+
+  cancelPayment();
 }
 
 function getPaiementEndpoint() {
@@ -87,19 +109,48 @@ function getPaiementEndpoint() {
 }
 
 function retirerCarte() {
+  clearTimers();
+  cardInserted = false;
+  updateCardIndicator();
+  document.getElementById("message").innerText = "";
+  document.getElementById("code").value = "";
+  document.getElementById("code").disabled = true;
+  paymentActive = false;
+  tentatives = 3;
+}
+
+function cancelPayment() {
+  if (!paymentActive) {
+    return;
+  }
+  clearTimers();
+  const message = document.getElementById("message");
+  message.innerText = "";
+  document.getElementById("code").value = "";
+  document.getElementById("code").disabled = true;
+  paymentActive = false;
+  tentatives = 3;
+}
+
+function clearTimers() {
   if (paymentTimer) {
     clearTimeout(paymentTimer);
   }
   if (removeTimer) {
     clearTimeout(removeTimer);
   }
-  const message = document.getElementById("message");
-  message.innerText = "";
-  document.getElementById("code").value = "";
-  document.getElementById("code").disabled = true;
+}
+
+function updateCardIndicator() {
+  const indicator = document.getElementById("card-indicator");
+  if (!indicator) {
+    return;
+  }
+  indicator.classList.toggle("is-on", cardInserted);
 }
 
 document.addEventListener("DOMContentLoaded", () => {
+  updateCardIndicator();
   const panel = document.getElementById("actions-panel");
   const toggle = document.getElementById("actions-toggle");
   if (!panel || !toggle) {

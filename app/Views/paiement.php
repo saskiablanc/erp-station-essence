@@ -9,6 +9,10 @@
 <body>
 
 <h1 class="page-title">TPE</h1>
+<div class="status-bar">
+    <span id="card-indicator" class="card-indicator"></span>
+    <span class="status-text">Carte insérée</span>
+</div>
 
 <div class="tpe-layout">
     <div class="tpe">
