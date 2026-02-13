@@ -44,10 +44,10 @@ class ChoixPaiementController extends Controller
         $montant = (float) ($_POST['montant'] ?? $_SESSION['montant_a_payer'] ?? 80.00);
 
         // Validation
-        if (!in_array($typeCarte, ['bancaire', 'cce'])) {
+        if (!in_array($typeCarte, ['bancaire', 'cce'], true)) {
             // Si type invalide, retour au choix
             $_SESSION['erreur'] = 'Veuillez choisir un mode de paiement valide';
-            $this->redirect('/choix-paiement?montant=' . $montant);
+            $this->redirect($this->buildUrl('choix-paiement', ['montant' => $montant]));
             return;
         }
 
@@ -56,7 +56,7 @@ class ChoixPaiementController extends Controller
         $_SESSION['montant_a_payer'] = $montant;
 
         // Rediriger vers le TPE (US25)
-        $this->redirect('/paiement');
+        $this->redirect($this->buildUrl('paiement'));
     }
 
     /**
@@ -70,6 +70,16 @@ class ChoixPaiementController extends Controller
         unset($_SESSION['type_carte']);
 
         // Retour vers le choix
-        $this->redirect('/choix-paiement?montant=' . $montant);
+        $this->redirect($this->buildUrl('choix-paiement', ['montant' => $montant]));
+    }
+
+    private function buildUrl(string $page, array $params = []): string
+    {
+        $base = rtrim(dirname($_SERVER['SCRIPT_NAME'] ?? ''), '/');
+        $url = ($base !== '' ? $base : '') . '/index.php?page=' . $page;
+        if ($params) {
+            $url .= '&' . http_build_query($params);
+        }
+        return $url;
     }
 }
