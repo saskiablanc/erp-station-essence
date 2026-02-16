@@ -24,10 +24,7 @@ class Controller
             return;
         }
 
-        if (!empty($data)) {
-            extract($data, EXTR_SKIP);
-        }
-
+        extract($data, EXTR_OVERWRITE);  
         require $viewPath;
     }
 

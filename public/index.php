@@ -102,6 +102,21 @@ $router->get('paiement', [new PaiementController(), 'index']);
 $router->post('paiement/traiter', [new PaiementController(), 'traiter']);
 
 // ============================================================
+// US28 : Sélection Pompe/Carburant (étape préalable)
+// ============================================================
+$router->get('selection-pompe', [new \App\Controllers\SelectionPompeController(), 'index']);
+$router->post('selection-pompe/selectionner', [new \App\Controllers\SelectionPompeController(), 'selectionner']);
+
+// ============================================================
+// US28 : Consultation Informations Énergie et Transaction
+// ============================================================
+$router->get('transaction', [new \App\Controllers\TransactionController(), 'afficher']);
+$router->get('transaction/infos-carburant', [new \App\Controllers\TransactionController(), 'getInfosCarburant']);
+$router->post('transaction/demarrer', [new \App\Controllers\TransactionController(), 'demarrerDelivrance']);
+$router->post('transaction/maj-delivrance', [new \App\Controllers\TransactionController(), 'mettreAJourDelivrance']);
+$router->post('transaction/terminer', [new \App\Controllers\TransactionController(), 'terminerDelivrance']);
+
+// ============================================================
 // Route de test de connexion BD
 // ============================================================
 $router->get('test-db', function () {
