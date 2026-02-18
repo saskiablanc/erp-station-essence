@@ -388,6 +388,23 @@ body {
   color: #111827;
 }
 
+.borne-start {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 12px;
+}
+
+.borne-start-btn {
+  border: none;
+  border-radius: 14px;
+  padding: 12px 18px;
+  font-weight: 700;
+  cursor: pointer;
+  background: #111827;
+  color: #ffffff;
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.12);
+}
+
 .borne-actions {
   display: grid;
   grid-template-columns: 1fr 1fr;

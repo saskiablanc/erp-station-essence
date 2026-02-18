@@ -24,12 +24,9 @@ $montantData    = number_format($montantValue, 2, '.', '');
 <div class="tpe-layout">
     <div class="tpe">
         <div class="ecran">
-            <p id="message">
-                Montant à payer :
-                <span id="montant" data-montant="<?= htmlspecialchars($montantData, ENT_QUOTES, 'UTF-8') ?>">
-                    <?= htmlspecialchars($montantAffiche, ENT_QUOTES, 'UTF-8') ?>
-                </span> €
-            </p>
+            <p id="message">Insérez votre carte</p>
+            <input type="hidden" id="montant"
+                   data-montant="<?= htmlspecialchars($montantData, ENT_QUOTES, 'UTF-8') ?>">
             <input type="password" id="code" maxlength="4" placeholder="****" disabled>
         </div>
 

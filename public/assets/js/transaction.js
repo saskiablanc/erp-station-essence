@@ -23,6 +23,7 @@ let transactionTerminee = false;
 let transactionEnregistree = false;
 let transactionFinale = null;
 let modePaiement = null;
+let choixStarted = false;
 let tentatives = 3;
 let paymentTimer = null;
 let removeTimer = null;
@@ -58,9 +59,10 @@ let montantElem = document.getElementById("montant");
 const messageElem = document.getElementById("message");
 const codeInput = document.getElementById("code");
 const choixPaiement = document.getElementById("choix-paiement");
-const choixMontant = document.getElementById("choix-montant");
 const choixStatus = document.getElementById("choix-status");
 const choixActions = document.getElementById("choix-actions");
+const choixStart = document.getElementById("choix-start");
+const btnCommencer = document.getElementById("btn-commencer");
 const choixButtons = document.querySelectorAll("[data-paiement]");
 const defaultChoixActionsHtml = choixActions ? choixActions.innerHTML : "";
 const cardIndicator = document.getElementById("card-indicator");
@@ -177,15 +179,14 @@ document.addEventListener("DOMContentLoaded", function () {
       if (!button) {
         return;
       }
+      choixStarted = true;
       modePaiement = button.dataset.paiement || "bancaire";
       paymentActive = true;
       paymentAuthorized = false;
       receiptWanted = null;
       receiptRecorded = false;
       persistPaymentState();
-      if (transactionFinale) {
-        renderMontantMessage();
-      }
+      renderMontantMessage();
       updateChoixScreen();
       updateActionPanels();
       updateFinTransactionDisplay();
@@ -200,6 +201,13 @@ document.addEventListener("DOMContentLoaded", function () {
     btnRetirerCarte.addEventListener("click", retirerCarte);
   }
 
+  if (btnCommencer) {
+    btnCommencer.addEventListener("click", () => {
+      choixStarted = true;
+      updateChoixScreen();
+    });
+  }
+
   updateCardIndicator();
 
   // Actions physiques
@@ -209,6 +217,7 @@ document.addEventListener("DOMContentLoaded", function () {
 function resetTransactionDisplay() {
   transactionTerminee = false;
   transactionEnregistree = false;
+  choixStarted = false;
   transactionFinale = null;
   quantiteActuelle = 0.0;
   tempsChargeSecondes = 0;
@@ -563,7 +572,7 @@ async function simulerRaccrochage() {
   updatePistoletIndicator();
   updateDelivranceAvailability();
   updateFinTransactionDisplay();
-  if (transactionTerminee && !transactionEnregistree) {
+  if (transactionTerminee && !transactionEnregistree && isAutomate24()) {
     await enregistrerTransactionFinale();
   }
 }
@@ -634,12 +643,6 @@ function updateFinTransactionDisplay() {
     if (tpeEmbed) {
       tpeEmbed.style.display = "flex";
     }
-    if (montantElem && transactionFinale) {
-      montantElem.textContent = formatMontant(transactionFinale.total);
-    }
-    if (choixMontant && transactionFinale) {
-      choixMontant.textContent = formatMontant(transactionFinale.total);
-    }
     if (btnPaiement) {
       btnPaiement.style.display = "none";
     }
@@ -667,11 +670,35 @@ function updateChoixScreen() {
   if (!isAutomate24()) {
     choixStatus.textContent = "Bonjour";
     choixActions.style.display = "none";
+    if (choixStart) {
+      choixStart.style.display = "none";
+    }
     return;
   }
 
   if (receiptPromptActive) {
+    if (choixStart) {
+      choixStart.style.display = "none";
+    }
     return;
+  }
+
+  const inProgress = delivranceEnCours || pistoletDecroche;
+  const noActiveFlow =
+    !inProgress && !paymentAuthorized && !paymentActive && !modePaiement;
+
+  if (!choixStarted && noActiveFlow) {
+    choixStatus.textContent = "Bonjour";
+    choixActions.style.display = "none";
+    if (choixStart) {
+      choixStart.style.display = "flex";
+    }
+    updateTpeMessage("Bonjour");
+    return;
+  }
+
+  if (choixStart) {
+    choixStart.style.display = "none";
   }
 
   if (!paymentAuthorized) {
@@ -681,7 +708,7 @@ function updateChoixScreen() {
       return;
     }
 
-    choixStatus.textContent = "Insérez votre carte";
+    choixStatus.textContent = "Suivez les instructions sur le TPE";
     choixActions.style.display = "none";
     return;
   }
@@ -720,7 +747,8 @@ function updateCardIndicator() {
 
 function updateTpeMessage(message) {
   if (messageElem) {
-    messageElem.textContent = message;
+    const next = String(message ?? "").trim();
+    messageElem.textContent = next === "" ? "Bonjour" : message;
   }
 }
 
@@ -728,12 +756,7 @@ function renderMontantMessage() {
   if (!messageElem) {
     return;
   }
-  const montantText = formatMontant(
-    transactionFinale ? transactionFinale.total : 0,
-  );
-  messageElem.innerHTML =
-    'Montant à payer : <span id="montant">' + montantText + "</span> €";
-  montantElem = messageElem.querySelector("#montant");
+  messageElem.textContent = "Insérez votre carte";
 }
 
 function insererCarte() {
@@ -891,6 +914,7 @@ function resetPaymentState() {
   paymentActive = false;
   paymentAuthorized = false;
   modePaiement = null;
+  choixStarted = false;
   receiptWanted = null;
   receiptRecorded = false;
   receiptPromptActive = false;
@@ -908,7 +932,7 @@ function resetPaymentState() {
 }
 
 function redirectToCaisse() {
-  const target = getTransactionEndpoint("paiement", true);
+  const target = getTransactionEndpoint("recu/caisse", true);
   if (!transactionFinale) {
     window.location.href = target;
     return;
@@ -969,6 +993,9 @@ function restorePaymentState() {
     paymentAuthorized = localStorage.getItem(PAYMENT_AUTH_KEY + suffix) === "true";
     const storedReceipt = localStorage.getItem(RECEIPT_WANTED_KEY + suffix);
     receiptWanted = storedReceipt === null ? null : storedReceipt === "true";
+    if (paymentAuthorized) {
+      choixStarted = true;
+    }
   } catch (error) {
     paymentAuthorized = false;
     receiptWanted = null;
@@ -1119,6 +1146,9 @@ function afficherPropositionRecu() {
 
   receiptPromptActive = true;
   choixStatus.textContent = "Souhaitez-vous un reçu ?";
+  if (choixStart) {
+    choixStart.style.display = "none";
+  }
   choixActions.innerHTML = `
         <button type="button" class="borne-btn bancaire" id="btn-recu-oui">
             <span class="btn-label">Oui, imprimer</span>
@@ -1233,6 +1263,7 @@ function finaliserTransaction() {
   paymentAuthorized = false;
   paymentActive = false;
   modePaiement = null;
+  choixStarted = false;
   receiptWanted = null;
   receiptRecorded = false;
   receiptPromptActive = false;

@@ -1,0 +1,194 @@
+body {
+  align-items: stretch;
+  justify-content: flex-start;
+  padding: 24px;
+  min-height: 100vh;
+}
+
+.page-title {
+  text-align: left;
+  margin-bottom: 24px;
+}
+
+.caisse-layout {
+  display: grid;
+  grid-template-columns: minmax(320px, 380px) minmax(540px, 1fr);
+  gap: 32px;
+  align-items: start;
+}
+
+.tpe-column {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.caisse-tpe-layout {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 20px;
+}
+
+.actions-panel {
+  position: static;
+  transform: none;
+  width: 100%;
+  max-height: none;
+}
+
+.actions-panel.collapsed {
+  width: 100%;
+}
+
+.actions-panel.collapsed .actions-toggle {
+  writing-mode: horizontal-tb;
+  transform: none;
+  padding: 12px 16px;
+  text-align: left;
+}
+
+.screen-column {
+  display: flex;
+  justify-content: center;
+}
+
+.caisse-screen {
+  background: #0b0b0b;
+  border-radius: 22px;
+  padding: 24px;
+  width: min(90vw, 1000px);
+  max-width: 100%;
+  aspect-ratio: 25 / 18;
+  box-shadow: inset 0 0 24px rgba(0, 0, 0, 0.45), 0 18px 36px rgba(0, 0, 0, 0.2);
+}
+
+.caisse-screen .borne-ecran {
+  background: #f8fafc;
+  border-radius: 18px;
+  padding: 24px;
+  text-align: center;
+  border: 1px solid #e5e7eb;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  height: 100%;
+  box-sizing: border-box;
+  justify-content: center;
+}
+
+.borne-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #6b7280;
+  margin: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.borne-montant {
+  margin: 0;
+  font-size: 38px;
+  font-weight: 700;
+  color: #2563eb;
+}
+
+.borne-instructions {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: #111827;
+}
+
+.borne-start {
+  display: flex;
+  justify-content: center;
+}
+
+.borne-start-btn {
+  border: none;
+  border-radius: 14px;
+  padding: 12px 18px;
+  font-weight: 700;
+  cursor: pointer;
+  background: #111827;
+  color: #ffffff;
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.12);
+}
+
+.borne-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.borne-btn {
+  background: #ffffff;
+  border: 2px solid #e5e7eb;
+  border-radius: 16px;
+  padding: 18px 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: left;
+}
+
+.borne-btn:hover {
+  transform: translateY(-3px);
+  border-color: #2563eb;
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.12);
+  background: #eff6ff;
+}
+
+.borne-btn.bancaire {
+  background: #dbeafe;
+  border-color: #93c5fd;
+}
+
+.borne-btn.bancaire:hover {
+  background: #bfdbfe;
+  border-color: #60a5fa;
+}
+
+.borne-btn.cce {
+  background: #dcfce7;
+  border-color: #86efac;
+}
+
+.borne-btn.cce:hover {
+  background: #bbf7d0;
+  border-color: #4ade80;
+}
+
+.borne-btn:active {
+  transform: translateY(-1px);
+}
+
+.btn-label {
+  display: block;
+  font-size: 16px;
+  font-weight: 700;
+  color: #111827;
+}
+
+.btn-desc {
+  display: block;
+  margin-top: 6px;
+  font-size: 13px;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+@media (max-width: 1100px) {
+  .caisse-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .screen-column {
+    justify-content: flex-start;
+  }
+
+  .caisse-screen {
+    width: min(92vw, 720px);
+    aspect-ratio: 25 / 18;
+  }
+}

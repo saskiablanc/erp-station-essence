@@ -15,6 +15,13 @@ let removeTimer = null;
 let paymentActive = true;
 let cardInserted = false;
 
+function setMessage(message) {
+  const el = document.getElementById("message");
+  if (!el) return;
+  const next = String(message ?? "").trim();
+  el.innerText = next === "" ? "Bonjour" : message;
+}
+
 // ============================================================
 // Indicateur carte — aligné sur transaction.js
 // ============================================================
@@ -35,15 +42,14 @@ function insererCarte() {
   updateCardIndicator();
   if (!paymentActive) return;
   document.getElementById("code").disabled = false;
-  document.getElementById("message").innerText =
-    "Veuillez saisir votre code secret";
+  setMessage("Veuillez saisir votre code secret");
 }
 
 function retirerCarte() {
   clearTimers();
   cardInserted = false;
   updateCardIndicator();
-  document.getElementById("message").innerText = "";
+  setMessage("");
   document.getElementById("code").value = "";
   document.getElementById("code").disabled = true;
   paymentActive = false;
@@ -75,8 +81,7 @@ function annuler() {
     clearTimers();
     document.getElementById("code").value = "";
     document.getElementById("code").disabled = true;
-    document.getElementById("message").innerText =
-      "Paiement annulé. Retirez la carte";
+    setMessage("Paiement annulé. Retirez la carte");
     paymentActive = false;
     tentatives = 3;
     return;
@@ -106,26 +111,26 @@ function valider() {
       if (data.status === "erreur_code") {
         tentatives--;
         if (tentatives > 0) {
-          document.getElementById("message").innerText =
-            "Erreur : Code Secret. Il vous reste " + tentatives + " tentatives";
+          setMessage(
+            "Erreur : Code Secret. Il vous reste " + tentatives + " tentatives",
+          );
         } else {
-          document.getElementById("message").innerText = "Carte bloquée";
+          setMessage("Carte bloquée");
           document.getElementById("code").disabled = true;
         }
       }
 
       if (data.status === "solde_insuffisant") {
-        document.getElementById("message").innerText = data.message;
+        setMessage(data.message);
       }
 
       if (data.status === "ok") {
-        const message = document.getElementById("message");
-        message.innerText = "Code bon";
+        setMessage("Code bon");
         clearTimers();
         paymentTimer = setTimeout(() => {
-          message.innerText = "Paiement accepté";
+          setMessage("Paiement accepté");
           removeTimer = setTimeout(() => {
-            message.innerText = "Retirez la carte";
+            setMessage("Retirez la carte");
           }, 900);
         }, 800);
         document.getElementById("code").disabled = true;
@@ -149,7 +154,7 @@ function getPaiementEndpoint() {
 function cancelPayment() {
   if (!paymentActive) return;
   clearTimers();
-  document.getElementById("message").innerText = "";
+  setMessage("");
   document.getElementById("code").value = "";
   document.getElementById("code").disabled = true;
   paymentActive = false;

@@ -18,8 +18,6 @@ $back = ($base !== '' ? $base : '') . '/index.php?page=home';
 
 <div class="borne">
     <div class="borne-ecran">
-        <p class="borne-label">Montant à payer</p>
-        <p class="borne-montant"><?= $montantValue ?> €</p>
         <p class="borne-instructions">Veuillez choisir votre mode de paiement</p>
 
         <form class="borne-actions" method="POST" action="<?= htmlspecialchars($action, ENT_QUOTES, 'UTF-8') ?>">

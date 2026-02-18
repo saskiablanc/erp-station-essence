@@ -70,9 +70,7 @@ $actionLabel = $isElectric ? 'Maintenir pour charger' : 'Maintenir pour délivre
                     <div class="tpe-layout">
                         <div class="tpe">
                             <div class="ecran">
-                                <p id="message">
-                                    Montant à payer : <span id="montant">0,00</span> €
-                                </p>
+                                <p id="message">Bonjour</p>
                                 <input type="password" id="code" maxlength="4" placeholder="****" disabled>
                             </div>
 
@@ -162,9 +160,11 @@ $actionLabel = $isElectric ? 'Maintenir pour charger' : 'Maintenir pour délivre
 
                 <div id="choix-paiement" class="borne-embed" style="display: <?= $automate24 ? 'block' : 'none' ?>;">
                     <div class="borne-ecran">
-                        <p class="borne-label">Montant à payer</p>
-                        <p class="borne-montant"><span id="choix-montant">0,00</span> €</p>
                         <p id="choix-status" class="borne-instructions">Bonjour</p>
+
+                        <div id="choix-start" class="borne-start">
+                            <button type="button" class="borne-start-btn" id="btn-commencer">Commencer</button>
+                        </div>
 
                         <div class="borne-actions" id="choix-actions" style="display: none;">
                             <button type="button" class="borne-btn bancaire" data-paiement="bancaire">
