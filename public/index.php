@@ -102,10 +102,10 @@ $router->get('paiement', [new PaiementController(), 'index']);
 $router->post('paiement/traiter', [new PaiementController(), 'traiter']);
 
 // ============================================================
-// US28 : Sélection Pompe/Carburant (étape préalable)
+// US28 : Sélection Pompe/Carburant (via actions physiques)
 // ============================================================
-$router->get('selection-pompe', [new \App\Controllers\SelectionPompeController(), 'index']);
 $router->post('selection-pompe/selectionner', [new \App\Controllers\SelectionPompeController(), 'selectionner']);
+$router->post('selection-charge/selectionner', [new \App\Controllers\SelectionChargeController(), 'selectionner']);
 
 // ============================================================
 // US28 : Consultation Informations Énergie et Transaction

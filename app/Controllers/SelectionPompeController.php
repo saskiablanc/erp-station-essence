@@ -38,26 +38,38 @@ class SelectionPompeController extends Controller
         $idCarburant = $_POST['id_carburant'] ?? null;
 
         if (!$idCarburant) {
-            $_SESSION['erreur'] = 'Veuillez sélectionner un carburant';
-            header('Location: /selection-pompe');
-            exit;
+            $_SESSION['erreur_selection'] = 'Veuillez sélectionner un carburant';
+            $this->redirect($this->buildUrl('transaction'));
+            return;
         }
 
         // Vérifier que le carburant existe
         $carburant = $this->carburantModel->getById((int)$idCarburant);
 
         if (!$carburant) {
-            $_SESSION['erreur'] = 'Carburant invalide';
-            header('Location: /selection-pompe');
-            exit;
+            $_SESSION['erreur_selection'] = 'Carburant invalide';
+            $this->redirect($this->buildUrl('transaction'));
+            return;
         }
 
         // Stocker en session
         $_SESSION['id_carburant_selectionne'] = (int)$idCarburant;
         $_SESSION['carburant_libelle'] = $carburant['libelle'];
+        $_SESSION['type_energie'] = 'carburant';
+        $_SESSION['pistolet_decroche'] = true;
+        unset($_SESSION['id_electricite_selectionne']);
 
         // Rediriger vers la page de transaction (US28)
-        header('Location: /transaction');
-        exit;
+        $this->redirect($this->buildUrl('transaction'));
+    }
+
+    private function buildUrl(string $page, array $params = []): string
+    {
+        $base = rtrim(dirname($_SERVER['SCRIPT_NAME'] ?? ''), '/');
+        $url = ($base !== '' ? $base : '') . '/index.php?page=' . $page;
+        if ($params) {
+            $url .= '&' . http_build_query($params);
+        }
+        return $url;
     }
 }

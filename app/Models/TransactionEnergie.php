@@ -72,16 +72,33 @@ class TransactionEnergie
      * Mettre à jour la quantité délivrée (pendant la délivrance en temps réel)
      * US28 - critère 2
      */
-    public function mettreAJourQuantite(int $idTransactionEnergie, float $quantiteDelivree): bool
+    public function mettreAJourQuantite(
+        int $idTransactionEnergie,
+        float $quantiteDelivree,
+        ?string $tempsCharge = null
+    ): bool
     {
-        $sql = "UPDATE TransactionEnergie 
-                SET quantite_delivree = :quantite_delivree 
-                WHERE id_transaction_energie = :id";
-        
-        $rowsAffected = $this->db->execute($sql, [
-            'quantite_delivree' => $quantiteDelivree,
-            'id' => $idTransactionEnergie
-        ]);
+        if ($tempsCharge !== null) {
+            $sql = "UPDATE TransactionEnergie 
+                    SET quantite_delivree = :quantite_delivree,
+                        temps_charge = :temps_charge
+                    WHERE ` id_transaction_energie` = :id";
+            $params = [
+                'quantite_delivree' => $quantiteDelivree,
+                'temps_charge' => $tempsCharge,
+                'id' => $idTransactionEnergie
+            ];
+        } else {
+            $sql = "UPDATE TransactionEnergie 
+                    SET quantite_delivree = :quantite_delivree 
+                    WHERE ` id_transaction_energie` = :id";
+            $params = [
+                'quantite_delivree' => $quantiteDelivree,
+                'id' => $idTransactionEnergie
+            ];
+        }
+
+        $rowsAffected = $this->db->execute($sql, $params);
 
         return $rowsAffected > 0;
     }

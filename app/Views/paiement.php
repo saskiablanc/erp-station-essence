@@ -8,6 +8,12 @@
 </head>
 <body>
 
+<?php
+$montantValue = isset($montant) ? (float) $montant : 0.0;
+$montantAffiche = number_format($montantValue, 2, ',', ' ');
+$montantData = number_format($montantValue, 2, '.', '');
+?>
+
 <h1 class="page-title">TPE</h1>
 <div class="status-bar">
     <span id="card-indicator" class="card-indicator"></span>
@@ -18,7 +24,10 @@
     <div class="tpe">
         <div class="ecran">
             <p id="message">
-                Montant à payer : <span id="montant">80</span> €
+                Montant à payer :
+                <span id="montant" data-montant="<?= htmlspecialchars($montantData, ENT_QUOTES, 'UTF-8') ?>">
+                    <?= htmlspecialchars($montantAffiche, ENT_QUOTES, 'UTF-8') ?>
+                </span> €
             </p>
             <input type="password" id="code" maxlength="4" placeholder="****" disabled>
         </div>

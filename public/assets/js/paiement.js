@@ -1,5 +1,15 @@
 let tentatives = 3;
-let montant = 80;
+const montantElement = document.getElementById("montant");
+let montant = 0;
+if (montantElement) {
+  const rawMontant =
+    montantElement.dataset.montant || montantElement.textContent || "0";
+  const cleaned = String(rawMontant).replace(/\s/g, "").replace(",", ".");
+  montant = Number.parseFloat(cleaned);
+  if (Number.isNaN(montant)) {
+    montant = 0;
+  }
+}
 let paymentTimer = null;
 let removeTimer = null;
 let paymentActive = true;
@@ -17,14 +27,26 @@ function insererCarte() {
 }
 
 function ajouterChiffre(chiffre) {
+  if (!paymentActive || !cardInserted) {
+    return;
+  }
   let champ = document.getElementById("code");
+  if (champ.disabled) {
+    return;
+  }
   if (champ.value.length < 4) {
     champ.value += chiffre;
   }
 }
 
 function retour() {
+  if (!paymentActive || !cardInserted) {
+    return;
+  }
   let champ = document.getElementById("code");
+  if (champ.disabled) {
+    return;
+  }
   champ.value = champ.value.slice(0, -1);
 }
 

@@ -83,10 +83,11 @@ class Carburant
         $sql = "UPDATE Carburant 
                 SET stock_litre = stock_litre - :quantite 
                 WHERE id_carburant = :id_carburant 
-                AND stock_litre >= :quantite";
+                AND stock_litre >= :quantite_min";
         
         $rowsAffected = $this->db->execute($sql, [
             'quantite' => $quantiteDelivree,
+            'quantite_min' => $quantiteDelivree,
             'id_carburant' => $idCarburant
         ]);
 
