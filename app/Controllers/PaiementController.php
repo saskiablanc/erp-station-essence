@@ -68,8 +68,14 @@ class PaiementController extends Controller
             $resultat = $paiementModel->verifierPaiement($code, $montant);
 
             // Stocker l'ID de transaction en session si succès
-            if ($resultat['status'] === 'ok' && isset($resultat['id_transaction'])) {
-                $_SESSION['derniere_transaction'] = $resultat['id_transaction'];
+            if ($resultat['status'] === 'ok') {
+                if (isset($resultat['id_transaction'])) {
+                    $_SESSION['derniere_transaction'] = $resultat['id_transaction'];
+                }
+
+                // En mode simulation, on utilise le code comme dernier 4 chiffres
+                // pour permettre l'insertion du reçu.
+                $_SESSION['num_carte'] = (int) substr($code, -4);
             }
 
             echo json_encode($resultat);

@@ -8,7 +8,7 @@ use Exception;
 
 /**
  * Model Paiement - Orchestration du paiement pour l'US25
- * Gère les critères d'acceptation de l'US25 :
+ * Gère les critères d'acceptation de l'US25
 */
 
 class Paiement

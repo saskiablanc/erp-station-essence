@@ -210,7 +210,6 @@ class TransactionController extends Controller
         header('Content-Type: application/json');
 
         $energieType = $_SESSION['type_energie'] ?? 'carburant';
-        $idEnergie = null;
 
         if ($energieType === 'electricite') {
             $idElectricite = $_SESSION['id_electricite_selectionne'] ?? null;
@@ -231,7 +230,6 @@ class TransactionController extends Controller
                 exit;
             }
 
-            $idEnergie = (int) $electricite['id_energie'];
         } else {
             $idCarburant = $_SESSION['id_carburant_selectionne'] ?? null;
         
@@ -253,38 +251,24 @@ class TransactionController extends Controller
                 exit;
             }
 
-            $idEnergie = (int) $carburant['id_energie'];
         }
 
-        // Créer la transaction
-        $montantInitial = 0; // Sera calculé au fur et à mesure
-        $idTransaction = $this->transactionModel->creer($montantInitial);
-
-        if (!$idTransaction) {
-            echo json_encode([
-                'status' => 'erreur',
-                'message' => 'Erreur création transaction'
-            ]);
-            exit;
-        }
-
-        // Créer la transaction énergie
-        $idTransactionEnergie = $this->transactionEnergieModel->creer(
-            $idTransaction,
-            $idEnergie,
-            0.0 // Quantité initiale à 0
+        // Initialiser la session (la transaction sera enregistrée au raccrochage)
+        unset(
+            $_SESSION['id_transaction_courante'],
+            $_SESSION['id_transaction_energie'],
+            $_SESSION['quantite_finale'],
+            $_SESSION['total_final'],
+            $_SESSION['temps_charge_final']
         );
-
-        // Stocker en session
-        $_SESSION['id_transaction_courante'] = $idTransaction;
-        $_SESSION['id_transaction_energie'] = $idTransactionEnergie;
         $_SESSION['delivrance_en_cours'] = true;
+        $_SESSION['transaction_terminee'] = false;
+        $_SESSION['transaction_enregistree'] = false;
         $_SESSION['quantite_actuelle'] = 0.0;
         $_SESSION['temps_charge_secondes'] = 0.0;
 
         echo json_encode([
             'status' => 'ok',
-            'id_transaction' => $idTransaction,
             'message' => 'Délivrance démarrée'
         ]);
         exit;
@@ -310,12 +294,11 @@ class TransactionController extends Controller
             exit;
         }
 
-        $idTransactionEnergie = $_SESSION['id_transaction_energie'] ?? null;
         $idCarburant = $_SESSION['id_carburant_selectionne'] ?? null;
         $idElectricite = $_SESSION['id_electricite_selectionne'] ?? null;
         $energieType = $_SESSION['type_energie'] ?? 'carburant';
 
-        if (!$idTransactionEnergie || (!$idCarburant && !$idElectricite)) {
+        if ((!$idCarburant && !$idElectricite)) {
             echo json_encode([
                 'status' => 'erreur',
                 'message' => 'Session invalide'
@@ -323,13 +306,6 @@ class TransactionController extends Controller
             exit;
         }
 
-        // Mettre à jour la quantité
-        $this->transactionEnergieModel->mettreAJourQuantite(
-            (int)$idTransactionEnergie,
-            $quantite,
-            $energieType === 'electricite' ? $tempsCharge : null
-        );
-        
         $_SESSION['quantite_actuelle'] = $quantite;
         if ($energieType === 'electricite') {
             $_SESSION['temps_charge_secondes'] = $tempsSecondes;
@@ -368,14 +344,20 @@ class TransactionController extends Controller
             exit;
         }
 
-        $idTransaction = $_SESSION['id_transaction_courante'] ?? null;
+        if (isset($_POST['quantite'])) {
+            $_SESSION['quantite_actuelle'] = (float) $_POST['quantite'];
+        }
+        if (isset($_POST['temps_secondes'])) {
+            $_SESSION['temps_charge_secondes'] = (float) $_POST['temps_secondes'];
+        }
+
         $idCarburant = $_SESSION['id_carburant_selectionne'] ?? null;
         $idElectricite = $_SESSION['id_electricite_selectionne'] ?? null;
         $energieType = $_SESSION['type_energie'] ?? 'carburant';
         $quantiteFinale = $_SESSION['quantite_actuelle'] ?? 0.0;
         $tempsChargeSecondes = $_SESSION['temps_charge_secondes'] ?? 0.0;
 
-        if (!$idTransaction || (!$idCarburant && !$idElectricite)) {
+        if ((!$idCarburant && !$idElectricite)) {
             echo json_encode([
                 'status' => 'erreur',
                 'message' => 'Session invalide'
@@ -392,34 +374,136 @@ class TransactionController extends Controller
             $carburant = $this->carburantModel->getById((int)$idCarburant);
             $prixLitre = (float)$carburant['prix_litre'];
             $totalFinal = $quantiteFinale * $prixLitre;
-
-            // Mettre à jour le stock (critère 7)
-            $this->carburantModel->diminuerStock((int)$idCarburant, $quantiteFinale);
         }
-
-        // Mettre à jour le prix total de la transaction
-        $this->transactionModel->getById((int)$idTransaction); // Pour vérifier l'existence
 
         // Stocker les infos finales en session
         $_SESSION['delivrance_en_cours'] = false;
         $_SESSION['transaction_terminee'] = true;
+        $_SESSION['transaction_enregistree'] = false;
         $_SESSION['montant_a_payer'] = $totalFinal;
+        $_SESSION['quantite_finale'] = $quantiteFinale;
 
-        $tempsCharge = sprintf(
+        $tempsCharge = $_POST['temps_charge'] ?? sprintf(
             '%02d:%02d:%02d',
             (int) floor($tempsChargeSecondes / 3600),
             (int) floor(($tempsChargeSecondes % 3600) / 60),
             (int) floor($tempsChargeSecondes % 60)
         );
+        $_SESSION['temps_charge_final'] = $tempsCharge;
+        $_SESSION['total_final'] = round($totalFinal, 2);
 
         echo json_encode([
             'status' => 'ok',
-            'id_transaction' => $idTransaction,
+            'id_transaction' => null,
             'quantite_finale' => round($quantiteFinale, 3),
             'total_final' => round($totalFinal, 2),
             'temps_charge' => $energieType === 'electricite' ? $tempsCharge : null,
             'date_heure' => date('Y-m-d H:i:s'),
             'message' => 'Délivrance terminée'
+        ]);
+        exit;
+    }
+
+    /**
+     * Enregistrer la transaction en base au raccrochage du pistolet
+     */
+    public function finaliserTransaction(): void
+    {
+        header('Content-Type: application/json');
+
+        if (empty($_SESSION['transaction_terminee'])) {
+            echo json_encode([
+                'status' => 'erreur',
+                'message' => 'Aucune transaction à enregistrer'
+            ]);
+            exit;
+        }
+
+        if (!empty($_SESSION['transaction_enregistree'])) {
+            echo json_encode([
+                'status' => 'ok',
+                'id_transaction' => $_SESSION['id_transaction_courante'] ?? null,
+                'message' => 'Transaction déjà enregistrée'
+            ]);
+            exit;
+        }
+
+        $energieType = $_SESSION['type_energie'] ?? 'carburant';
+        $idCarburant = $_SESSION['id_carburant_selectionne'] ?? null;
+        $idElectricite = $_SESSION['id_electricite_selectionne'] ?? null;
+        $quantiteFinale = (float) ($_SESSION['quantite_finale'] ?? 0);
+        $totalFinal = (float) ($_SESSION['total_final'] ?? 0);
+        $tempsCharge = (string) ($_SESSION['temps_charge_final'] ?? '00:00:00');
+
+        if ((!$idCarburant && !$idElectricite) || $quantiteFinale <= 0) {
+            echo json_encode([
+                'status' => 'erreur',
+                'message' => 'Données de transaction invalides'
+            ]);
+            exit;
+        }
+
+        if ($energieType === 'electricite') {
+            $electricite = $this->electriciteModel->getById((int) $idElectricite);
+            if (!$electricite) {
+                echo json_encode([
+                    'status' => 'erreur',
+                    'message' => 'Type de charge introuvable'
+                ]);
+                exit;
+            }
+            $idEnergie = (int) $electricite['id_energie'];
+            if ($totalFinal <= 0) {
+                $totalFinal = $quantiteFinale * (float) ($electricite['prix_kwh'] ?? 0);
+            }
+        } else {
+            $carburant = $this->carburantModel->getById((int) $idCarburant);
+            if (!$carburant) {
+                echo json_encode([
+                    'status' => 'erreur',
+                    'message' => 'Carburant introuvable'
+                ]);
+                exit;
+            }
+            $idEnergie = (int) $carburant['id_energie'];
+            if ($totalFinal <= 0) {
+                $totalFinal = $quantiteFinale * (float) $carburant['prix_litre'];
+            }
+        }
+
+        $idTransaction = $this->transactionModel->creer(round($totalFinal, 2));
+        if (!$idTransaction) {
+            echo json_encode([
+                'status' => 'erreur',
+                'message' => 'Erreur création transaction'
+            ]);
+            exit;
+        }
+
+        $idTransactionEnergie = $this->transactionEnergieModel->creer(
+            $idTransaction,
+            $idEnergie,
+            $quantiteFinale,
+            $energieType === 'electricite' ? $tempsCharge : null
+        );
+
+        if ($energieType !== 'electricite') {
+            $this->carburantModel->diminuerStock((int) $idCarburant, $quantiteFinale);
+        }
+
+        $_SESSION['id_transaction_courante'] = $idTransaction;
+        $_SESSION['id_transaction_energie'] = $idTransactionEnergie;
+        $_SESSION['transaction_enregistree'] = true;
+        $_SESSION['montant_a_payer'] = $totalFinal;
+
+        $transaction = $this->transactionModel->getById($idTransaction);
+        $dateHeure = $transaction['date_heure'] ?? date('Y-m-d H:i:s');
+
+        echo json_encode([
+            'status' => 'ok',
+            'id_transaction' => $idTransaction,
+            'date_heure' => $dateHeure,
+            'total_final' => round($totalFinal, 2)
         ]);
         exit;
     }

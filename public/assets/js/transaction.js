@@ -20,6 +20,7 @@ let pistoletDecroche = false;
 const LAST_TOTAL_KEY = "transaction_last_total";
 const LAST_QUANTITE_KEY = "transaction_last_quantite";
 let transactionTerminee = false;
+let transactionEnregistree = false;
 let transactionFinale = null;
 let modePaiement = null;
 let tentatives = 3;
@@ -27,6 +28,12 @@ let paymentTimer = null;
 let removeTimer = null;
 let paymentActive = false;
 let cardInserted = false;
+let paymentAuthorized = false;
+let receiptWanted = null;
+let receiptRecorded = false;
+let receiptPromptActive = false;
+const PAYMENT_AUTH_KEY = "transaction_payment_authorized";
+const RECEIPT_WANTED_KEY = "transaction_receipt_wanted";
 
 // ============================================================
 // Éléments DOM
@@ -55,6 +62,7 @@ const choixMontant = document.getElementById("choix-montant");
 const choixStatus = document.getElementById("choix-status");
 const choixActions = document.getElementById("choix-actions");
 const choixButtons = document.querySelectorAll("[data-paiement]");
+const defaultChoixActionsHtml = choixActions ? choixActions.innerHTML : "";
 const cardIndicator = document.getElementById("card-indicator");
 const cardStatusText = document.getElementById("card-status-text");
 const actionsEssence = document.getElementById("actions-essence");
@@ -95,6 +103,7 @@ document.addEventListener("DOMContentLoaded", function () {
   if (energieToggle) {
     energieToggle.addEventListener("change", () => {
       const energie = energieToggle.checked ? "electricite" : "carburant";
+      clearPaymentStateStorage();
       const baseUrl = getTransactionEndpoint("transaction", true);
       const separator = baseUrl.includes("?") ? "&" : "?";
       window.location.href = baseUrl + separator + "energie=" + energie;
@@ -122,6 +131,10 @@ document.addEventListener("DOMContentLoaded", function () {
 
   if (btnDecrocher) {
     btnDecrocher.addEventListener("click", () => {
+      if (isAutomate24() && !paymentAuthorized) {
+        alert("Validez le paiement avant de vous servir.");
+        return;
+      }
       const selectionOk = isElectric()
         ? chargeSelect && chargeSelect.value
         : carburantSelect && carburantSelect.value;
@@ -144,31 +157,38 @@ document.addEventListener("DOMContentLoaded", function () {
     });
   }
 
+  restorePaymentState();
   updatePistoletIndicator();
   updateDelivranceAvailability();
   restoreLastTransactionDisplay();
+  updateActionPanels();
   updateFinTransactionDisplay();
   if (window.pistoletDecroche) {
     pistoletDecroche = true;
-    modePaiement = null;
     resetTransactionDisplay();
-    resetPaymentState();
     updatePistoletIndicator();
     updateDelivranceAvailability();
     updateFinTransactionDisplay();
   }
 
-  if (choixButtons.length) {
-    choixButtons.forEach((btn) => {
-      btn.addEventListener("click", () => {
-        modePaiement = btn.dataset.paiement || "bancaire";
-        paymentActive = true;
-        if (transactionFinale) {
-          renderMontantMessage();
-        }
-        updateChoixScreen();
-        updateFinTransactionDisplay();
-      });
+  if (choixPaiement) {
+    choixPaiement.addEventListener("click", (event) => {
+      const button = event.target.closest("[data-paiement]");
+      if (!button) {
+        return;
+      }
+      modePaiement = button.dataset.paiement || "bancaire";
+      paymentActive = true;
+      paymentAuthorized = false;
+      receiptWanted = null;
+      receiptRecorded = false;
+      persistPaymentState();
+      if (transactionFinale) {
+        renderMontantMessage();
+      }
+      updateChoixScreen();
+      updateActionPanels();
+      updateFinTransactionDisplay();
     });
   }
 
@@ -188,6 +208,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
 function resetTransactionDisplay() {
   transactionTerminee = false;
+  transactionEnregistree = false;
   transactionFinale = null;
   quantiteActuelle = 0.0;
   tempsChargeSecondes = 0;
@@ -212,6 +233,10 @@ function resetTransactionDisplay() {
 async function demarrerDelivrance() {
   console.log("Démarrage de la délivrance...");
   if (demarrageEnCours || delivranceEnCours) {
+    return;
+  }
+  if (isAutomate24() && !paymentAuthorized) {
+    alert("Validez le paiement avant de démarrer la délivrance.");
     return;
   }
   if (!pistoletDecroche) {
@@ -245,10 +270,13 @@ async function demarrerDelivrance() {
       return;
     }
 
-    console.log("Transaction créée:", data.id_transaction);
+    console.log("Délivrance démarrée");
 
     // Démarrer la simulation
     delivranceEnCours = true;
+    transactionTerminee = false;
+    transactionEnregistree = false;
+    transactionFinale = null;
     quantiteActuelle = 0.0;
     updateAffichage(quantiteActuelle, 0, 0);
 
@@ -383,13 +411,21 @@ async function arreterDelivrance() {
 
   // Appel API pour terminer la transaction
   try {
+    const params = new URLSearchParams();
+    params.append("quantite", quantiteActuelle.toFixed(3));
+    if (isElectric()) {
+      params.append("temps_secondes", String(tempsChargeSecondes.toFixed(1)));
+      params.append("temps_charge", formatTempsCharge(tempsChargeSecondes));
+    }
+
     const response = await fetch(
       getTransactionEndpoint("transaction/terminer"),
       {
         method: "POST",
         headers: {
-          "Content-Type": "application/json",
+          "Content-Type": "application/x-www-form-urlencoded",
         },
+        body: params.toString(),
       },
     );
 
@@ -419,15 +455,17 @@ async function arreterDelivrance() {
         : "Délivrance terminée";
       statusText.classList.remove("active");
 
-      // US28 - Critère 7 : Afficher les infos de transaction
-      afficherInfosTransaction(data);
+      if (data.id_transaction) {
+        // US28 - Critère 7 : Afficher les infos de transaction
+        afficherInfosTransaction(data);
+      }
       transactionTerminee = true;
       transactionFinale = {
         total: data.total_final,
         quantite: data.quantite_finale,
         tempsCharge: data.temps_charge ?? null,
         dateHeure: data.date_heure,
-        idTransaction: data.id_transaction,
+        idTransaction: data.id_transaction || null,
       };
       updateFinTransactionDisplay();
 
@@ -448,6 +486,7 @@ async function arreterDelivrance() {
           : data.quantite_finale.toFixed(3),
         data.total_final.toFixed(2),
       );
+
     } else {
       console.warn("Arrêt refusé:", data.message || "Erreur inconnue");
     }
@@ -515,15 +554,18 @@ function setupActionsPhysiques() {
   }
 }
 
-function simulerRaccrochage() {
+async function simulerRaccrochage() {
   console.log("Simulation : Pistolet raccroché");
   if (delivranceEnCours) {
-    arreterDelivrance();
+    await arreterDelivrance();
   }
   pistoletDecroche = false;
   updatePistoletIndicator();
   updateDelivranceAvailability();
   updateFinTransactionDisplay();
+  if (transactionTerminee && !transactionEnregistree) {
+    await enregistrerTransactionFinale();
+  }
 }
 
 function annulerTransaction() {
@@ -573,8 +615,9 @@ function updateDelivranceAvailability() {
   const selectionOk = isElectric()
     ? chargeSelect && chargeSelect.value
     : carburantSelect && carburantSelect.value;
+  const paymentOk = !isAutomate24() || paymentAuthorized;
   btnDelivrance.disabled =
-    !prixOk || !stockOk || !selectionOk || !pistoletDecroche;
+    !prixOk || !stockOk || !selectionOk || !pistoletDecroche || !paymentOk;
 }
 
 function updateFinTransactionDisplay() {
@@ -591,9 +634,6 @@ function updateFinTransactionDisplay() {
     if (tpeEmbed) {
       tpeEmbed.style.display = "flex";
     }
-    if (pretAffichage && transactionFinale && !modePaiement) {
-      renderMontantMessage();
-    }
     if (montantElem && transactionFinale) {
       montantElem.textContent = formatMontant(transactionFinale.total);
     }
@@ -603,7 +643,7 @@ function updateFinTransactionDisplay() {
     if (btnPaiement) {
       btnPaiement.style.display = "none";
     }
-    toggleActionsPanel(pretAffichage);
+    updateActionPanels();
     updateChoixScreen();
   } else {
     if (btnPaiement) {
@@ -615,7 +655,7 @@ function updateFinTransactionDisplay() {
     if (tpeEmbed) {
       tpeEmbed.style.display = "none";
     }
-    toggleActionsPanel(false);
+    updateActionPanels();
   }
 }
 
@@ -624,36 +664,41 @@ function updateChoixScreen() {
     return;
   }
 
-  const transactionEnCours = delivranceEnCours || pistoletDecroche;
-  const pretPaiement = transactionTerminee && !pistoletDecroche;
-
-  if (!transactionEnCours && !pretPaiement) {
+  if (!isAutomate24()) {
     choixStatus.textContent = "Bonjour";
     choixActions.style.display = "none";
     return;
   }
 
-  if (pretPaiement && !modePaiement) {
-    choixStatus.textContent = "Veuillez choisir votre mode de paiement";
-    choixActions.style.display = "grid";
+  if (receiptPromptActive) {
     return;
   }
 
-  if (pretPaiement && modePaiement) {
-    choixStatus.textContent = "Paiement en cours";
+  if (!paymentAuthorized) {
+    if (!modePaiement) {
+      choixStatus.textContent = "Veuillez choisir votre mode de paiement";
+      choixActions.style.display = "grid";
+      return;
+    }
+
+    choixStatus.textContent = "Insérez votre carte";
     choixActions.style.display = "none";
     return;
   }
 
-  if (statusText) {
-    const headerStatus = statusText.textContent.trim();
-    choixStatus.textContent =
-      headerStatus && headerStatus !== "En attente"
-        ? headerStatus
-        : "Transaction en cours";
-  } else {
-    choixStatus.textContent = "Transaction en cours";
+  if (transactionTerminee && !pistoletDecroche) {
+    choixStatus.textContent = "Transaction terminée";
+    choixActions.style.display = "none";
+    return;
   }
+
+  if (delivranceEnCours || pistoletDecroche) {
+    choixStatus.textContent = "Transaction en cours";
+    choixActions.style.display = "none";
+    return;
+  }
+
+  choixStatus.textContent = "Paiement validé. Vous pouvez vous servir";
   choixActions.style.display = "none";
 }
 
@@ -692,6 +737,10 @@ function renderMontantMessage() {
 }
 
 function insererCarte() {
+  if (isAutomate24() && !modePaiement) {
+    updateTpeMessage("Choisissez le mode de paiement");
+    return;
+  }
   cardInserted = true;
   updateCardIndicator();
   if (!paymentActive) {
@@ -706,6 +755,9 @@ function insererCarte() {
 function retirerCarte() {
   clearPaymentTimers();
   cardInserted = false;
+  if (!paymentAuthorized) {
+    modePaiement = null;
+  }
   updateCardIndicator();
   if (codeInput) {
     codeInput.value = "";
@@ -714,6 +766,9 @@ function retirerCarte() {
   updateTpeMessage("");
   paymentActive = false;
   tentatives = 3;
+  persistPaymentState();
+  updateActionPanels();
+  updateChoixScreen();
 }
 
 function ajouterChiffre(chiffre) {
@@ -744,7 +799,11 @@ function annuler() {
     }
     updateTpeMessage("Paiement annulé. Retirez la carte");
     paymentActive = false;
+    modePaiement = null;
     tentatives = 3;
+    persistPaymentState();
+    updateActionPanels();
+    updateChoixScreen();
     return;
   }
   resetPaymentState();
@@ -760,7 +819,7 @@ function valider() {
   }
 
   const code = codeInput ? codeInput.value : "";
-  const montant = transactionFinale ? transactionFinale.total : 0;
+  const montant = transactionFinale ? transactionFinale.total : 1;
   const endpoint = getPaiementEndpoint();
 
   fetch(endpoint, {
@@ -830,7 +889,11 @@ function resetPaymentState() {
   clearPaymentTimers();
   cardInserted = false;
   paymentActive = false;
+  paymentAuthorized = false;
   modePaiement = null;
+  receiptWanted = null;
+  receiptRecorded = false;
+  receiptPromptActive = false;
   tentatives = 3;
   if (codeInput) {
     codeInput.value = "";
@@ -838,6 +901,9 @@ function resetPaymentState() {
   }
   updateTpeMessage("");
   updateCardIndicator();
+  persistPaymentState();
+  updateDelivranceAvailability();
+  updateActionPanels();
   updateChoixScreen();
 }
 
@@ -861,6 +927,61 @@ function toggleActionsPanel(paiementEnCours) {
   }
   if (actionsCarte) {
     actionsCarte.style.display = paiementEnCours ? "flex" : "none";
+  }
+}
+
+function updateActionPanels() {
+  if (!actionsEssence || !actionsCarte) {
+    return;
+  }
+  if (!isAutomate24()) {
+    actionsEssence.style.display = "block";
+    actionsCarte.style.display = "none";
+    return;
+  }
+
+  if (paymentAuthorized) {
+    actionsEssence.style.display = "block";
+    actionsCarte.style.display = "none";
+  } else {
+    actionsEssence.style.display = "none";
+    actionsCarte.style.display = "flex";
+  }
+}
+
+function persistPaymentState() {
+  try {
+    const suffix = "_" + energieType;
+    localStorage.setItem(PAYMENT_AUTH_KEY + suffix, String(paymentAuthorized));
+    if (receiptWanted === null) {
+      localStorage.removeItem(RECEIPT_WANTED_KEY + suffix);
+    } else {
+      localStorage.setItem(RECEIPT_WANTED_KEY + suffix, String(receiptWanted));
+    }
+  } catch (error) {
+    console.warn("Impossible d'enregistrer l'état du paiement", error);
+  }
+}
+
+function restorePaymentState() {
+  try {
+    const suffix = "_" + energieType;
+    paymentAuthorized = localStorage.getItem(PAYMENT_AUTH_KEY + suffix) === "true";
+    const storedReceipt = localStorage.getItem(RECEIPT_WANTED_KEY + suffix);
+    receiptWanted = storedReceipt === null ? null : storedReceipt === "true";
+  } catch (error) {
+    paymentAuthorized = false;
+    receiptWanted = null;
+  }
+}
+
+function clearPaymentStateStorage() {
+  try {
+    const suffix = "_" + energieType;
+    localStorage.removeItem(PAYMENT_AUTH_KEY + suffix);
+    localStorage.removeItem(RECEIPT_WANTED_KEY + suffix);
+  } catch (error) {
+    console.warn("Impossible de nettoyer l'état du paiement", error);
   }
 }
 
@@ -994,60 +1115,137 @@ function formatTempsFromString(value) {
 
 function afficherPropositionRecu() {
   if (!choixPaiement) return;
+  if (!choixStatus || !choixActions) return;
 
-  const ecran = choixPaiement.querySelector(".borne-ecran");
-  if (!ecran) return;
-
-  ecran.innerHTML = `
-        <p class="borne-label">Transaction terminée</p>
-        <p class="borne-montant" style="color:#16a34a;">Paiement accepté ✓</p>
-        <p class="borne-instructions">Souhaitez-vous un reçu ?</p>
-        <div class="borne-actions" style="display:grid;">
-            <button type="button" class="borne-btn bancaire" id="btn-recu-oui">
-                <span class="btn-label">Oui, imprimer</span>
-            </button>
-            <button type="button" class="borne-btn" id="btn-recu-non"
-                    style="background:#f3f4f6; color:#111827;">
-                <span class="btn-label">Non, merci</span>
-            </button>
-        </div>
+  receiptPromptActive = true;
+  choixStatus.textContent = "Souhaitez-vous un reçu ?";
+  choixActions.innerHTML = `
+        <button type="button" class="borne-btn bancaire" id="btn-recu-oui">
+            <span class="btn-label">Oui, imprimer</span>
+        </button>
+        <button type="button" class="borne-btn" id="btn-recu-non"
+                style="background:#f3f4f6; color:#111827;">
+            <span class="btn-label">Non, merci</span>
+        </button>
     `;
+  choixActions.style.display = "grid";
 
-  document
-    .getElementById("btn-recu-oui")
-    .addEventListener("click", () => demanderImpression(true));
-  document
-    .getElementById("btn-recu-non")
-    .addEventListener("click", () => demanderImpression(false));
+  const btnOui = document.getElementById("btn-recu-oui");
+  const btnNon = document.getElementById("btn-recu-non");
+  if (btnOui) {
+    btnOui.addEventListener("click", () => demanderImpression(true));
+  }
+  if (btnNon) {
+    btnNon.addEventListener("click", () => demanderImpression(false));
+  }
 }
 
 function demanderImpression(accepte) {
-  if (!accepte) {
-    afficherFinAutomate();
+  receiptWanted = accepte;
+  receiptRecorded = false;
+  receiptPromptActive = false;
+  paymentAuthorized = true;
+  paymentActive = false;
+  clearPaymentTimers();
+  if (codeInput) {
+    codeInput.disabled = true;
+    codeInput.value = "";
+  }
+
+  if (choixActions) {
+    choixActions.innerHTML = defaultChoixActionsHtml;
+  }
+
+  persistPaymentState();
+  updateDelivranceAvailability();
+  updateActionPanels();
+  updateChoixScreen();
+}
+
+function enregistrerRecuSiDemande() {
+  if (!receiptWanted || receiptRecorded) {
     return;
   }
+
+  receiptRecorded = true;
 
   fetch(getTransactionEndpoint("recu/imprimer"), { method: "POST" })
     .then((r) => r.json())
     .then((data) => {
-      const ecran = choixPaiement.querySelector(".borne-ecran");
-      if (!ecran) return;
-
-      if (data.status === "ok") {
-        ecran.innerHTML = `
-                    <p class="borne-instructions" style="color:#16a34a; margin-top:20px;">
-                        Impression en cours...<br>Merci de votre visite.
-                    </p>
-                `;
-      } else {
-        ecran.innerHTML = `
-                    <p class="borne-instructions" style="color:#dc2626;">
-                        Impression impossible.<br>Merci de votre visite.
-                    </p>
-                `;
+      if (data.status !== "ok") {
+        console.warn("Impression reçu impossible", data.message);
       }
     })
-    .catch(() => afficherFinAutomate());
+    .catch((error) => {
+      console.warn("Impression reçu impossible", error);
+    });
+}
+
+async function enregistrerTransactionFinale() {
+  try {
+    const response = await fetch(
+      getTransactionEndpoint("transaction/finaliser"),
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      },
+    );
+
+    const data = await response.json();
+
+    if (data.status !== "ok") {
+      console.warn("Enregistrement transaction impossible", data.message);
+      return;
+    }
+
+    transactionEnregistree = true;
+
+    if (transactionFinale) {
+      if (data.total_final !== undefined) {
+        transactionFinale.total = data.total_final;
+      }
+      if (data.id_transaction) {
+        transactionFinale.idTransaction = data.id_transaction;
+      }
+      if (data.date_heure) {
+        transactionFinale.dateHeure = data.date_heure;
+      }
+    }
+
+    if (data.id_transaction) {
+      afficherInfosTransaction(data);
+    }
+
+    enregistrerRecuSiDemande();
+    finaliserTransaction();
+  } catch (error) {
+    console.warn("Enregistrement transaction impossible", error);
+  }
+}
+
+function finaliserTransaction() {
+  if (!isAutomate24()) {
+    return;
+  }
+
+  paymentAuthorized = false;
+  paymentActive = false;
+  modePaiement = null;
+  receiptWanted = null;
+  receiptRecorded = false;
+  receiptPromptActive = false;
+  cardInserted = false;
+  clearPaymentTimers();
+  if (codeInput) {
+    codeInput.value = "";
+    codeInput.disabled = true;
+  }
+  updateCardIndicator();
+  persistPaymentState();
+  updateActionPanels();
+  updateChoixScreen();
 }
 
 function afficherFinAutomate() {

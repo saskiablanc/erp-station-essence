@@ -115,6 +115,7 @@ $router->get('transaction/infos-carburant', [new \App\Controllers\TransactionCon
 $router->post('transaction/demarrer', [new \App\Controllers\TransactionController(), 'demarrerDelivrance']);
 $router->post('transaction/maj-delivrance', [new \App\Controllers\TransactionController(), 'mettreAJourDelivrance']);
 $router->post('transaction/terminer', [new \App\Controllers\TransactionController(), 'terminerDelivrance']);
+$router->post('transaction/finaliser', [new \App\Controllers\TransactionController(), 'finaliserTransaction']);
 
 // ============================================================
 // US26 : Reçu

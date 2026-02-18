@@ -59,4 +59,18 @@ class Transaction
 
         return $rowsAffected > 0;
     }
+
+    /**
+     * Mettre à jour le prix total d'une transaction
+     */
+    public function mettreAJourPrixTotal(int $idTransaction, float $prixTotal): bool
+    {
+        $sql = "UPDATE Transaction SET prix_total = :prix_total WHERE id_transaction = :id";
+        $rowsAffected = $this->db->execute($sql, [
+            'prix_total' => $prixTotal,
+            'id' => $idTransaction
+        ]);
+
+        return $rowsAffected > 0;
+    }
 }
