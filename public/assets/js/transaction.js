@@ -13,7 +13,8 @@ let intervalDelivrance = null;
 let quantiteActuelle = 0.0;
 let debitLitresParSeconde = 0.5; // 30L/min = 0.5L/s
 let prixLitre = Number(window.carburantData?.prixLitre) || 0;
-const energieType = window.energieType === "electricite" ? "electricite" : "carburant";
+const energieType =
+  window.energieType === "electricite" ? "electricite" : "carburant";
 let tempsChargeSecondes = 0;
 let pistoletDecroche = false;
 const LAST_TOTAL_KEY = "transaction_last_total";
@@ -128,7 +129,7 @@ document.addEventListener("DOMContentLoaded", function () {
         alert(
           isElectric()
             ? "Choisissez un type de charge avant de décrocher le pistolet."
-            : "Choisissez un carburant avant de décrocher le pistolet."
+            : "Choisissez un carburant avant de décrocher le pistolet.",
         );
         return;
       }
@@ -227,12 +228,15 @@ async function demarrerDelivrance() {
 
   // Appel API pour créer la transaction
   try {
-    const response = await fetch(getTransactionEndpoint("transaction/demarrer"), {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
+    const response = await fetch(
+      getTransactionEndpoint("transaction/demarrer"),
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
       },
-    });
+    );
 
     const data = await response.json();
 
@@ -249,7 +253,9 @@ async function demarrerDelivrance() {
     updateAffichage(quantiteActuelle, 0, 0);
 
     // Mettre à jour l'UI
-    statusText.textContent = isElectric() ? "Charge en cours" : "Délivrance en cours";
+    statusText.textContent = isElectric()
+      ? "Charge en cours"
+      : "Délivrance en cours";
     statusText.classList.add("active");
     updateFinTransactionDisplay();
 
@@ -305,7 +311,11 @@ function updateDelivrance() {
   updateAffichage(quantiteActuelle, total, tempsChargeSecondes);
 
   // Envoyer la mise à jour au serveur toutes les secondes
-  if (Math.floor((isElectric() ? tempsChargeSecondes : quantiteActuelle) * 10) % 10 === 0) {
+  if (
+    Math.floor((isElectric() ? tempsChargeSecondes : quantiteActuelle) * 10) %
+      10 ===
+    0
+  ) {
     envoyerMiseAJour(quantiteActuelle, tempsChargeSecondes);
   }
 }
@@ -373,12 +383,15 @@ async function arreterDelivrance() {
 
   // Appel API pour terminer la transaction
   try {
-    const response = await fetch(getTransactionEndpoint("transaction/terminer"), {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
+    const response = await fetch(
+      getTransactionEndpoint("transaction/terminer"),
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
       },
-    });
+    );
 
     if (!response.ok) {
       throw new Error("Réponse serveur invalide");
@@ -401,7 +414,9 @@ async function arreterDelivrance() {
       }
 
       // Mettre à jour l'UI
-      statusText.textContent = isElectric() ? "Charge terminée" : "Délivrance terminée";
+      statusText.textContent = isElectric()
+        ? "Charge terminée"
+        : "Délivrance terminée";
       statusText.classList.remove("active");
 
       // US28 - Critère 7 : Afficher les infos de transaction
@@ -412,7 +427,7 @@ async function arreterDelivrance() {
         quantite: data.quantite_finale,
         tempsCharge: data.temps_charge ?? null,
         dateHeure: data.date_heure,
-        idTransaction: data.id_transaction
+        idTransaction: data.id_transaction,
       };
       updateFinTransactionDisplay();
 
@@ -427,9 +442,11 @@ async function arreterDelivrance() {
 
       storeLastTransactionDisplay(
         isElectric()
-          ? (data.temps_charge ? formatTempsFromString(data.temps_charge) : formatTemps(tempsChargeSecondes))
+          ? data.temps_charge
+            ? formatTempsFromString(data.temps_charge)
+            : formatTemps(tempsChargeSecondes)
           : data.quantite_finale.toFixed(3),
-        data.total_final.toFixed(2)
+        data.total_final.toFixed(2),
       );
     } else {
       console.warn("Arrêt refusé:", data.message || "Erreur inconnue");
@@ -556,7 +573,8 @@ function updateDelivranceAvailability() {
   const selectionOk = isElectric()
     ? chargeSelect && chargeSelect.value
     : carburantSelect && carburantSelect.value;
-  btnDelivrance.disabled = !prixOk || !stockOk || !selectionOk || !pistoletDecroche;
+  btnDelivrance.disabled =
+    !prixOk || !stockOk || !selectionOk || !pistoletDecroche;
 }
 
 function updateFinTransactionDisplay() {
@@ -665,9 +683,11 @@ function renderMontantMessage() {
   if (!messageElem) {
     return;
   }
-  const montantText = formatMontant(transactionFinale ? transactionFinale.total : 0);
+  const montantText = formatMontant(
+    transactionFinale ? transactionFinale.total : 0,
+  );
   messageElem.innerHTML =
-    "Montant à payer : <span id=\"montant\">" + montantText + "</span> €";
+    'Montant à payer : <span id="montant">' + montantText + "</span> €";
   montantElem = messageElem.querySelector("#montant");
 }
 
@@ -748,7 +768,11 @@ function valider() {
     headers: {
       "Content-Type": "application/x-www-form-urlencoded",
     },
-    body: "code=" + encodeURIComponent(code) + "&montant=" + encodeURIComponent(montant),
+    body:
+      "code=" +
+      encodeURIComponent(code) +
+      "&montant=" +
+      encodeURIComponent(montant),
   })
     .then((response) => response.json())
     .then((data) => {
@@ -757,7 +781,7 @@ function valider() {
 
         if (tentatives > 0) {
           updateTpeMessage(
-            "Erreur : Code Secret. Il vous reste " + tentatives + " tentatives"
+            "Erreur : Code Secret. Il vous reste " + tentatives + " tentatives",
           );
         } else {
           updateTpeMessage("Carte bloquée");
@@ -778,6 +802,8 @@ function valider() {
           updateTpeMessage("Paiement accepté");
           removeTimer = setTimeout(() => {
             updateTpeMessage("Retirez la carte");
+            // US26.1 : proposer le reçu sur la borne après retrait carte
+            setTimeout(() => afficherPropositionRecu(), 1500);
           }, 900);
         }, 800);
         if (codeInput) {
@@ -823,7 +849,10 @@ function redirectToCaisse() {
   }
   const separator = target.includes("?") ? "&" : "?";
   window.location.href =
-    target + separator + "montant=" + encodeURIComponent(transactionFinale.total);
+    target +
+    separator +
+    "montant=" +
+    encodeURIComponent(transactionFinale.total);
 }
 
 function toggleActionsPanel(paiementEnCours) {
@@ -904,7 +933,7 @@ function formatMontant(value) {
   const numeric = Number(value) || 0;
   return new Intl.NumberFormat("fr-FR", {
     minimumFractionDigits: 2,
-    maximumFractionDigits: 2
+    maximumFractionDigits: 2,
   }).format(numeric);
 }
 
@@ -948,11 +977,85 @@ function formatTempsFromString(value) {
   if (!value) {
     return "00:00";
   }
-  const parts = String(value).split(":").map((part) => Number(part));
+  const parts = String(value)
+    .split(":")
+    .map((part) => Number(part));
   if (parts.length >= 2) {
     const mins = parts.length === 3 ? parts[1] : parts[0];
     const secs = parts.length === 3 ? parts[2] : parts[1];
     return String(mins).padStart(2, "0") + ":" + String(secs).padStart(2, "0");
   }
   return "00:00";
+}
+
+// ============================================================
+// US26.1 - Automate 24 : proposition du reçu sur la borne
+// ============================================================
+
+function afficherPropositionRecu() {
+  if (!choixPaiement) return;
+
+  const ecran = choixPaiement.querySelector(".borne-ecran");
+  if (!ecran) return;
+
+  ecran.innerHTML = `
+        <p class="borne-label">Transaction terminée</p>
+        <p class="borne-montant" style="color:#16a34a;">Paiement accepté ✓</p>
+        <p class="borne-instructions">Souhaitez-vous un reçu ?</p>
+        <div class="borne-actions" style="display:grid;">
+            <button type="button" class="borne-btn bancaire" id="btn-recu-oui">
+                <span class="btn-label">Oui, imprimer</span>
+            </button>
+            <button type="button" class="borne-btn" id="btn-recu-non"
+                    style="background:#f3f4f6; color:#111827;">
+                <span class="btn-label">Non, merci</span>
+            </button>
+        </div>
+    `;
+
+  document
+    .getElementById("btn-recu-oui")
+    .addEventListener("click", () => demanderImpression(true));
+  document
+    .getElementById("btn-recu-non")
+    .addEventListener("click", () => demanderImpression(false));
+}
+
+function demanderImpression(accepte) {
+  if (!accepte) {
+    afficherFinAutomate();
+    return;
+  }
+
+  fetch(getTransactionEndpoint("recu/imprimer"), { method: "POST" })
+    .then((r) => r.json())
+    .then((data) => {
+      const ecran = choixPaiement.querySelector(".borne-ecran");
+      if (!ecran) return;
+
+      if (data.status === "ok") {
+        ecran.innerHTML = `
+                    <p class="borne-instructions" style="color:#16a34a; margin-top:20px;">
+                        Impression en cours...<br>Merci de votre visite.
+                    </p>
+                `;
+      } else {
+        ecran.innerHTML = `
+                    <p class="borne-instructions" style="color:#dc2626;">
+                        Impression impossible.<br>Merci de votre visite.
+                    </p>
+                `;
+      }
+    })
+    .catch(() => afficherFinAutomate());
+}
+
+function afficherFinAutomate() {
+  const ecran = choixPaiement?.querySelector(".borne-ecran");
+  if (!ecran) return;
+  ecran.innerHTML = `
+        <p class="borne-instructions" style="margin-top: 20px;">
+            Merci de votre visite.
+        </p>
+    `;
 }

@@ -117,6 +117,12 @@ $router->post('transaction/maj-delivrance', [new \App\Controllers\TransactionCon
 $router->post('transaction/terminer', [new \App\Controllers\TransactionController(), 'terminerDelivrance']);
 
 // ============================================================
+// US26 : Reçu
+// ============================================================
+$router->post('recu/imprimer', [new \App\Controllers\RecuController(), 'imprimer']);
+$router->get('recu/caisse',    [new \App\Controllers\RecuController(), 'caisse']);
+
+// ============================================================
 // Route de test de connexion BD
 // ============================================================
 $router->get('test-db', function () {
