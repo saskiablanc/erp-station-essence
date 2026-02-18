@@ -2,6 +2,7 @@
 $montantValue = isset($montant) ? (float) $montant : 0.0;
 $montantData = number_format($montantValue, 2, '.', '');
 $base = rtrim(dirname($_SERVER['SCRIPT_NAME'] ?? ''), '/');
+$baseAttr = htmlspecialchars($base, ENT_QUOTES, 'UTF-8');
 ?>
 <!DOCTYPE html>
 <html lang="fr">
@@ -10,10 +11,13 @@ $base = rtrim(dirname($_SERVER['SCRIPT_NAME'] ?? ''), '/');
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Caisse - Paiement</title>
     <link rel="stylesheet" href="assets/css/paiement.css">
-    <link rel="stylesheet" href="assets/css/recu_caisse.css">
-    <script src="assets/js/caisse_paiement.js" defer></script>
+    <link rel="stylesheet" href="assets/css/caisse_layout.css">
+    <link rel="stylesheet" href="assets/css/caisse_screen.css">
+    <script src="assets/js/caisse_state.js" defer></script>
+    <script src="assets/js/caisse_screen.js" defer></script>
+    <script src="assets/js/caisse_tpe.js" defer></script>
 </head>
-<body>
+<body data-base-path="<?= $baseAttr ?>">
 
 <h1 class="page-title">Caisse - Paiement</h1>
 
@@ -33,25 +37,25 @@ $base = rtrim(dirname($_SERVER['SCRIPT_NAME'] ?? ''), '/');
                 </div>
 
                 <div class="clavier">
-                    <button onclick="ajouterChiffre(1)">1</button>
-                    <button onclick="ajouterChiffre(2)">2</button>
-                    <button onclick="ajouterChiffre(3)">3</button>
-                    <button onclick="ajouterChiffre(4)">4</button>
-                    <button onclick="ajouterChiffre(5)">5</button>
-                    <button onclick="ajouterChiffre(6)">6</button>
-                    <button onclick="ajouterChiffre(7)">7</button>
-                    <button onclick="ajouterChiffre(8)">8</button>
-                    <button onclick="ajouterChiffre(9)">9</button>
+                    <button type="button" data-key="1">1</button>
+                    <button type="button" data-key="2">2</button>
+                    <button type="button" data-key="3">3</button>
+                    <button type="button" data-key="4">4</button>
+                    <button type="button" data-key="5">5</button>
+                    <button type="button" data-key="6">6</button>
+                    <button type="button" data-key="7">7</button>
+                    <button type="button" data-key="8">8</button>
+                    <button type="button" data-key="9">9</button>
 
-                    <button class="special" onclick="annuler()">*</button>
-                    <button class="zero" onclick="ajouterChiffre(0)">0</button>
-                    <button class="special" onclick="valider()">#</button>
+                    <button type="button" class="special" data-action="annuler">*</button>
+                    <button type="button" class="zero" data-key="0">0</button>
+                    <button type="button" class="special" data-action="valider">#</button>
                 </div>
 
                 <div class="tpe-actions">
-                    <button class="action-btn cancel" onclick="annuler()">✖</button>
-                    <button class="action-btn back" onclick="retour()">&lt;</button>
-                    <button class="action-btn validate" onclick="valider()">✔</button>
+                    <button class="action-btn cancel" type="button" data-action="annuler">✖</button>
+                    <button class="action-btn back" type="button" data-action="retour">&lt;</button>
+                    <button class="action-btn validate" type="button" data-action="valider">✔</button>
                 </div>
             </div>
 
@@ -62,8 +66,8 @@ $base = rtrim(dirname($_SERVER['SCRIPT_NAME'] ?? ''), '/');
                 </button>
                 <div id="actions-content" class="actions-content">
                     <h2>Actions physiques</h2>
-                    <button class="action-btn" type="button" onclick="insererCarte()">Insérer carte</button>
-                    <button class="action-btn danger" type="button" onclick="retirerCarte()">Retirer carte</button>
+                    <button class="action-btn" type="button" data-action="inserer-carte">Insérer carte</button>
+                    <button class="action-btn danger" type="button" data-action="retirer-carte">Retirer carte</button>
                 </div>
             </aside>
         </div>
@@ -72,13 +76,13 @@ $base = rtrim(dirname($_SERVER['SCRIPT_NAME'] ?? ''), '/');
     <div class="screen-column">
         <div class="caisse-screen">
             <div class="borne-ecran">
-                <p id="caisse-montant-label" class="borne-label" style="display: none;">Montant à payer</p>
-                <p id="caisse-montant" class="borne-montant" style="display: none;">
+                <p id="caisse-montant-label" class="borne-label is-hidden">Montant à payer</p>
+                <p id="caisse-montant" class="borne-montant is-hidden">
                     <?= htmlspecialchars(number_format($montantValue, 2, ',', ' '), ENT_QUOTES, 'UTF-8') ?> €
                 </p>
                 <p id="caisse-status" class="borne-instructions">Veuillez choisir votre mode de paiement</p>
 
-                <div class="borne-actions" id="caisse-actions" style="display: grid;">
+                <div class="borne-actions" id="caisse-actions">
                     <button type="button" class="borne-btn bancaire" data-paiement="bancaire">
                         <span class="btn-label">Carte bancaire</span>
                         <span class="btn-desc">Paiement immédiat</span>
@@ -92,10 +96,6 @@ $base = rtrim(dirname($_SERVER['SCRIPT_NAME'] ?? ''), '/');
         </div>
     </div>
 </div>
-
-<script>
-    window.basePath = <?= json_encode($base) ?>;
-</script>
 
 </body>
 </html>

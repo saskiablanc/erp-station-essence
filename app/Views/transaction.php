@@ -11,6 +11,7 @@
 
 <?php
 $base = rtrim(dirname($_SERVER['SCRIPT_NAME'] ?? ''), '/');
+$baseAttr = htmlspecialchars($base, ENT_QUOTES, 'UTF-8');
 $selectionAction = ($base !== '' ? $base : '') . '/index.php?page=selection-pompe/selectionner';
 $selectionChargeAction = ($base !== '' ? $base : '') . '/index.php?page=selection-charge/selectionner';
 $energieType = $energie_type ?? 'carburant';
@@ -24,6 +25,21 @@ $energieAffiche = $isElectric
     : (string) ($carburant['libelle'] ?? 'Aucune sélection');
 $selectionManquante = $isElectric ? empty($electricite_selectionne) : empty($carburant_selectionne);
 $actionLabel = $isElectric ? 'Maintenir pour charger' : 'Maintenir pour délivrer';
+
+$carburantData = [
+    'libelle' => (string) ($carburant['libelle'] ?? ''),
+    'prixLitre' => (float) ($carburant['prix_litre'] ?? 0),
+    'stockLitre' => (float) ($carburant['stock_litre'] ?? 0),
+    'prixDisponible' => (bool) $prix_disponible,
+    'stockDisponible' => (bool) $stock_disponible,
+];
+$electriciteData = [
+    'typeCharge' => (string) ($electricite['type_charge'] ?? ''),
+    'prixKwh' => isset($electricite['prix_kwh']) ? (float) $electricite['prix_kwh'] : 0,
+    'idEnergie' => isset($electricite['id_energie']) ? (int) $electricite['id_energie'] : 0,
+];
+$carburantJson = htmlspecialchars(json_encode($carburantData), ENT_QUOTES, 'UTF-8');
+$electriciteJson = htmlspecialchars(json_encode($electriciteData), ENT_QUOTES, 'UTF-8');
 ?>
 
 <div class="container">
@@ -62,7 +78,7 @@ $actionLabel = $isElectric ? 'Maintenir pour charger' : 'Maintenir pour délivre
 
         <div class="transaction-layout">
             <div class="layout-column left-column">
-                <div id="tpe-automate" class="tpe-embed" style="display: <?= $automate24 ? 'flex' : 'none' ?>;">
+                <div id="tpe-automate" class="tpe-embed <?= $automate24 ? '' : 'is-hidden' ?>">
                     <div class="status-bar tpe-status">
                         <span id="card-indicator" class="card-indicator"></span>
                         <span id="card-status-text" class="status-text">Carte retirée</span>
@@ -75,32 +91,32 @@ $actionLabel = $isElectric ? 'Maintenir pour charger' : 'Maintenir pour délivre
                             </div>
 
                             <div class="clavier">
-                                <button onclick="ajouterChiffre(1)">1</button>
-                                <button onclick="ajouterChiffre(2)">2</button>
-                                <button onclick="ajouterChiffre(3)">3</button>
-                                <button onclick="ajouterChiffre(4)">4</button>
-                                <button onclick="ajouterChiffre(5)">5</button>
-                                <button onclick="ajouterChiffre(6)">6</button>
-                                <button onclick="ajouterChiffre(7)">7</button>
-                                <button onclick="ajouterChiffre(8)">8</button>
-                                <button onclick="ajouterChiffre(9)">9</button>
+                                <button type="button" data-key="1">1</button>
+                                <button type="button" data-key="2">2</button>
+                                <button type="button" data-key="3">3</button>
+                                <button type="button" data-key="4">4</button>
+                                <button type="button" data-key="5">5</button>
+                                <button type="button" data-key="6">6</button>
+                                <button type="button" data-key="7">7</button>
+                                <button type="button" data-key="8">8</button>
+                                <button type="button" data-key="9">9</button>
 
-                                <button class="special" onclick="annuler()">*</button>
-                                <button class="zero" onclick="ajouterChiffre(0)">0</button>
-                                <button class="special" onclick="valider()">#</button>
+                                <button type="button" class="special" data-action="annuler">*</button>
+                                <button type="button" class="zero" data-key="0">0</button>
+                                <button type="button" class="special" data-action="valider">#</button>
                             </div>
 
                             <div class="tpe-actions">
-                                <button class="action-btn cancel" onclick="annuler()">X</button>
-                                <button class="action-btn back" onclick="retour()">&lt;</button>
-                                <button class="action-btn validate" onclick="valider()">✔</button>
+                                <button class="action-btn cancel" type="button" data-action="annuler">X</button>
+                                <button class="action-btn back" type="button" data-action="retour">&lt;</button>
+                                <button class="action-btn validate" type="button" data-action="valider">✔</button>
                             </div>
                         </div>
                     </div>
                 </div>
 
                 <!-- US28 - Critère 7 : Affichage ID transaction et date/heure en fin -->
-                <div id="info-transaction" class="transaction-info" style="display: none;">
+                <div id="info-transaction" class="transaction-info is-hidden">
                     <h3>Informations de transaction</h3>
                     <div class="transaction-details">
                         <div class="detail-row">
@@ -158,7 +174,7 @@ $actionLabel = $isElectric ? 'Maintenir pour charger' : 'Maintenir pour délivre
                 </div>
                 </div>
 
-                <div id="choix-paiement" class="borne-embed" style="display: <?= $automate24 ? 'block' : 'none' ?>;">
+                <div id="choix-paiement" class="borne-embed <?= $automate24 ? '' : 'is-hidden' ?>">
                     <div class="borne-ecran">
                         <p id="choix-status" class="borne-instructions">Bonjour</p>
 
@@ -166,7 +182,7 @@ $actionLabel = $isElectric ? 'Maintenir pour charger' : 'Maintenir pour délivre
                             <button type="button" class="borne-start-btn" id="btn-commencer">Commencer</button>
                         </div>
 
-                        <div class="borne-actions" id="choix-actions" style="display: none;">
+                        <div class="borne-actions is-hidden" id="choix-actions">
                             <button type="button" class="borne-btn bancaire" data-paiement="bancaire">
                                 <span class="btn-label">Carte bancaire</span>
                                 <span class="btn-desc">Paiement immédiat</span>
@@ -199,7 +215,7 @@ $actionLabel = $isElectric ? 'Maintenir pour charger' : 'Maintenir pour délivre
         </button>
         <div id="actions-content" class="actions-content">
             <div id="actions-essence">
-                <form id="form-selection" class="action-select" method="POST" action="<?= htmlspecialchars($selectionAction, ENT_QUOTES, 'UTF-8') ?>" style="display: <?= $isElectric ? 'none' : 'flex' ?>;">
+                <form id="form-selection" class="action-select <?= $isElectric ? 'is-hidden' : '' ?>" method="POST" action="<?= htmlspecialchars($selectionAction, ENT_QUOTES, 'UTF-8') ?>">
                     <label for="carburant-select">Sélectionner une pompe</label>
                 <select id="carburant-select" name="id_carburant" required>
                     <option value="">Choisir un carburant</option>
@@ -216,7 +232,7 @@ $actionLabel = $isElectric ? 'Maintenir pour charger' : 'Maintenir pour délivre
                     <?php endforeach; ?>
                 </select>
             </form>
-                <form id="form-selection-charge" class="action-select" method="POST" action="<?= htmlspecialchars($selectionChargeAction, ENT_QUOTES, 'UTF-8') ?>" style="display: <?= $isElectric ? 'flex' : 'none' ?>;">
+                <form id="form-selection-charge" class="action-select <?= $isElectric ? '' : 'is-hidden' ?>" method="POST" action="<?= htmlspecialchars($selectionChargeAction, ENT_QUOTES, 'UTF-8') ?>">
                     <label for="charge-select">Sélectionner un type de charge</label>
                     <select id="charge-select" name="id_electricite" required>
                         <option value="">Choisir une charge</option>
@@ -243,18 +259,18 @@ $actionLabel = $isElectric ? 'Maintenir pour charger' : 'Maintenir pour délivre
                 <button id="btn-decrocher" class="action-btn" type="button">
                     Décrocher le pistolet
                 </button>
-                <button class="action-btn" type="button" onclick="simulerRaccrochage()">
+                <button class="action-btn" type="button" data-action="raccrocher">
                     Raccrocher le pistolet
                 </button>
-                <button class="action-btn danger" type="button" onclick="annulerTransaction()">
+                <button class="action-btn danger" type="button" data-action="annuler-transaction">
                     Annuler la transaction
                 </button>
-                <button id="btn-paiement" class="action-btn success" type="button" style="display: none;">
+                <button id="btn-paiement" class="action-btn success is-hidden" type="button">
                     Se rendre à la caisse
                 </button>
             </div>
 
-            <div id="actions-carte" class="actions-carte" style="display: none;">
+            <div id="actions-carte" class="actions-carte is-hidden">
                 <button id="btn-inserer-carte" class="action-btn" type="button">
                     Insérer carte
                 </button>
@@ -266,26 +282,15 @@ $actionLabel = $isElectric ? 'Maintenir pour charger' : 'Maintenir pour délivre
     </aside>
 </div>
 
-<!-- Script inline pour passer les données PHP à JavaScript -->
-<script>
-    // Données du carburant depuis PHP
-    window.carburantData = {
-        libelle: <?= json_encode($carburant['libelle']) ?>,
-        prixLitre: <?= (float) $carburant['prix_litre'] ?>,
-        stockLitre: <?= (float) $carburant['stock_litre'] ?>,
-        prixDisponible: <?= $prix_disponible ? 'true' : 'false' ?>,
-        stockDisponible: <?= $stock_disponible ? 'true' : 'false' ?>
-    };
-    window.electriciteData = {
-        typeCharge: <?= json_encode($electricite['type_charge'] ?? null) ?>,
-        prixKwh: <?= isset($electricite['prix_kwh']) ? (float) $electricite['prix_kwh'] : 0 ?>,
-        idEnergie: <?= isset($electricite['id_energie']) ? (int) $electricite['id_energie'] : 0 ?>
-    };
-    window.basePath = <?= json_encode($base) ?>;
-    window.typeAutomate = <?= ($type_automate ?? 24) === 24 ? '24' : '0' ?>;
-    window.pistoletDecroche = <?= !empty($pistolet_decroche) ? 'true' : 'false' ?>;
-    window.energieType = <?= json_encode($energieType) ?>;
-</script>
+<div id="transaction-data"
+     class="is-hidden"
+     data-base-path="<?= $baseAttr ?>"
+     data-type-automate="<?= $automate24 ? '24' : '0' ?>"
+     data-pistolet-decroche="<?= !empty($pistolet_decroche) ? '1' : '0' ?>"
+     data-energie-type="<?= htmlspecialchars($energieType, ENT_QUOTES, 'UTF-8') ?>"
+     data-carburant="<?= $carburantJson ?>"
+     data-electricite="<?= $electriciteJson ?>">
+</div>
 
 </body>
 </html>

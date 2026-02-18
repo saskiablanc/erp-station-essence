@@ -172,6 +172,38 @@ function clearTimers() {
 document.addEventListener("DOMContentLoaded", () => {
   updateCardIndicator();
 
+  const keypad = document.querySelector(".clavier");
+  if (keypad) {
+    keypad.addEventListener("click", (event) => {
+      const keyButton = event.target.closest("[data-key]");
+      if (keyButton) {
+        ajouterChiffre(keyButton.dataset.key);
+        return;
+      }
+      const actionButton = event.target.closest("[data-action]");
+      if (!actionButton) return;
+      handleAction(actionButton.dataset.action);
+    });
+  }
+
+  const tpeActions = document.querySelector(".tpe-actions");
+  if (tpeActions) {
+    tpeActions.addEventListener("click", (event) => {
+      const actionButton = event.target.closest("[data-action]");
+      if (!actionButton) return;
+      handleAction(actionButton.dataset.action);
+    });
+  }
+
+  const actionsContent = document.getElementById("actions-content");
+  if (actionsContent) {
+    actionsContent.addEventListener("click", (event) => {
+      const actionButton = event.target.closest("[data-action]");
+      if (!actionButton) return;
+      handleAction(actionButton.dataset.action);
+    });
+  }
+
   const toggle = document.getElementById("actions-toggle");
   const content = document.getElementById("actions-content");
   if (toggle && content) {
@@ -182,3 +214,25 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 });
+
+function handleAction(action) {
+  if (action === "annuler") {
+    annuler();
+    return;
+  }
+  if (action === "valider") {
+    valider();
+    return;
+  }
+  if (action === "retour") {
+    retour();
+    return;
+  }
+  if (action === "inserer-carte") {
+    insererCarte();
+    return;
+  }
+  if (action === "retirer-carte") {
+    retirerCarte();
+  }
+}

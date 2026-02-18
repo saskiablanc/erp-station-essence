@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sélection Carburant - Station</title>
+    <link rel="stylesheet" href="assets/css/selection_pompe.css">
+    <script src="assets/js/selection_pompe.js" defer></script>
 </head>
 <body>
 
@@ -50,24 +52,6 @@
         </div>
     </form>
 </div>
-
-<script>
-    // Ajouter effet visuel sur sélection
-    document.querySelectorAll('.carburant-card').forEach(card => {
-        card.addEventListener('click', function() {
-            const radio = this.querySelector('input[type="radio"]');
-            radio.checked = true;
-            
-            // Retirer la sélection des autres
-            document.querySelectorAll('.carburant-card').forEach(c => {
-                c.style.borderColor = '#e2e8f0';
-            });
-            
-            // Appliquer au sélectionné
-            this.style.borderColor = '#667eea';
-        });
-    });
-</script>
 
 </body>
 </html>

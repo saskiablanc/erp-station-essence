@@ -6,6 +6,10 @@ body {
   color: #111827;
 }
 
+.is-hidden {
+  display: none;
+}
+
 .container {
   max-width: 1100px;
   margin: 0 auto;
@@ -388,6 +392,10 @@ body {
   color: #111827;
 }
 
+.borne-instructions.spaced {
+  margin-top: 20px;
+}
+
 .borne-start {
   display: flex;
   justify-content: center;
@@ -422,6 +430,11 @@ body {
   gap: 4px;
   font-weight: 600;
   box-shadow: 0 6px 12px rgba(0, 0, 0, 0.12);
+}
+
+.borne-btn.muted {
+  background: #f3f4f6;
+  color: #111827;
 }
 
 .borne-btn.bancaire {
@@ -747,6 +760,10 @@ body {
   display: flex;
   flex-direction: column;
   gap: 10px;
+}
+
+.action-select.is-hidden {
+  display: none;
 }
 
 .action-select label {

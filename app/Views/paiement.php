@@ -31,25 +31,25 @@ $montantData    = number_format($montantValue, 2, '.', '');
         </div>
 
         <div class="clavier">
-            <button onclick="ajouterChiffre(1)">1</button>
-            <button onclick="ajouterChiffre(2)">2</button>
-            <button onclick="ajouterChiffre(3)">3</button>
-            <button onclick="ajouterChiffre(4)">4</button>
-            <button onclick="ajouterChiffre(5)">5</button>
-            <button onclick="ajouterChiffre(6)">6</button>
-            <button onclick="ajouterChiffre(7)">7</button>
-            <button onclick="ajouterChiffre(8)">8</button>
-            <button onclick="ajouterChiffre(9)">9</button>
+            <button type="button" data-key="1">1</button>
+            <button type="button" data-key="2">2</button>
+            <button type="button" data-key="3">3</button>
+            <button type="button" data-key="4">4</button>
+            <button type="button" data-key="5">5</button>
+            <button type="button" data-key="6">6</button>
+            <button type="button" data-key="7">7</button>
+            <button type="button" data-key="8">8</button>
+            <button type="button" data-key="9">9</button>
 
-            <button class="special" onclick="annuler()">*</button>
-            <button class="zero"    onclick="ajouterChiffre(0)">0</button>
-            <button class="special" onclick="valider()">#</button>
+            <button type="button" class="special" data-action="annuler">*</button>
+            <button type="button" class="zero" data-key="0">0</button>
+            <button type="button" class="special" data-action="valider">#</button>
         </div>
 
         <div class="tpe-actions">
-            <button class="action-btn cancel"   onclick="annuler()">✖</button>
-            <button class="action-btn back"     onclick="retour()">&lt;</button>
-            <button class="action-btn validate" onclick="valider()">✔</button>
+            <button class="action-btn cancel" type="button" data-action="annuler">✖</button>
+            <button class="action-btn back" type="button" data-action="retour">&lt;</button>
+            <button class="action-btn validate" type="button" data-action="valider">✔</button>
         </div>
     </div>
 
@@ -60,8 +60,8 @@ $montantData    = number_format($montantValue, 2, '.', '');
         </button>
         <div id="actions-content" class="actions-content">
             <h2>Actions physiques</h2>
-            <button class="action-btn" type="button" onclick="insererCarte()">Insérer carte</button>
-            <button class="action-btn danger" type="button" onclick="retirerCarte()">Retirer carte</button>
+            <button class="action-btn" type="button" data-action="inserer-carte">Insérer carte</button>
+            <button class="action-btn danger" type="button" data-action="retirer-carte">Retirer carte</button>
         </div>
     </aside>
 </div>

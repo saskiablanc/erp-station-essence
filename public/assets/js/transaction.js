@@ -6,15 +6,43 @@
 // ============================================================
 // Variables globales
 // ============================================================
+const dataElement = document.getElementById("transaction-data");
+let carburantData = {};
+let electriciteData = {};
+let basePath = "";
+let typeAutomate = 24;
+let initialPistoletDecroche = false;
+let energieType = "carburant";
+
+if (dataElement) {
+  basePath = dataElement.dataset.basePath || "";
+  typeAutomate = Number(dataElement.dataset.typeAutomate || 24);
+  initialPistoletDecroche = dataElement.dataset.pistoletDecroche === "1";
+  energieType =
+    dataElement.dataset.energieType === "electricite"
+      ? "electricite"
+      : "carburant";
+
+  try {
+    carburantData = JSON.parse(dataElement.dataset.carburant || "{}");
+  } catch (error) {
+    carburantData = {};
+  }
+
+  try {
+    electriciteData = JSON.parse(dataElement.dataset.electricite || "{}");
+  } catch (error) {
+    electriciteData = {};
+  }
+}
+
 let delivranceEnCours = false;
 let demarrageEnCours = false;
 let arretDemande = false;
 let intervalDelivrance = null;
 let quantiteActuelle = 0.0;
 let debitLitresParSeconde = 0.5; // 30L/min = 0.5L/s
-let prixLitre = Number(window.carburantData?.prixLitre) || 0;
-const energieType =
-  window.energieType === "electricite" ? "electricite" : "carburant";
+let prixLitre = Number(carburantData?.prixLitre) || 0;
 let tempsChargeSecondes = 0;
 let pistoletDecroche = false;
 const LAST_TOTAL_KEY = "transaction_last_total";
@@ -78,12 +106,12 @@ const energieToggle = document.getElementById("energie-toggle");
 // ============================================================
 document.addEventListener("DOMContentLoaded", function () {
   console.log("Transaction JS chargé");
-  console.log("Carburant:", window.carburantData);
+  console.log("Carburant:", carburantData);
 
   // Vérifier si les données sont disponibles
   if (
-    !window.carburantData.prixDisponible ||
-    !window.carburantData.stockDisponible
+    !carburantData.prixDisponible ||
+    !carburantData.stockDisponible
   ) {
     console.warn("Données indisponibles - paiement désactivé");
   }
@@ -165,7 +193,7 @@ document.addEventListener("DOMContentLoaded", function () {
   restoreLastTransactionDisplay();
   updateActionPanels();
   updateFinTransactionDisplay();
-  if (window.pistoletDecroche) {
+  if (initialPistoletDecroche) {
     pistoletDecroche = true;
     resetTransactionDisplay();
     updatePistoletIndicator();
@@ -206,6 +234,21 @@ document.addEventListener("DOMContentLoaded", function () {
       choixStarted = true;
       updateChoixScreen();
     });
+  }
+
+  const tpeKeypad = document.querySelector("#tpe-automate .clavier");
+  if (tpeKeypad) {
+    tpeKeypad.addEventListener("click", handleTpeInput);
+  }
+
+  const tpeActions = document.querySelector("#tpe-automate .tpe-actions");
+  if (tpeActions) {
+    tpeActions.addEventListener("click", handleTpeInput);
+  }
+
+  const actionsContent = document.getElementById("actions-content");
+  if (actionsContent) {
+    actionsContent.addEventListener("click", handlePhysicalActions);
   }
 
   updateCardIndicator();
@@ -258,7 +301,10 @@ async function demarrerDelivrance() {
 
   demarrageEnCours = true;
   arretDemande = false;
-  tempsChargeSecondes = 0;
+  const reprise = transactionTerminee && !transactionEnregistree;
+  if (!reprise) {
+    tempsChargeSecondes = 0;
+  }
 
   // Appel API pour créer la transaction
   try {
@@ -286,8 +332,11 @@ async function demarrerDelivrance() {
     transactionTerminee = false;
     transactionEnregistree = false;
     transactionFinale = null;
-    quantiteActuelle = 0.0;
-    updateAffichage(quantiteActuelle, 0, 0);
+    if (!reprise) {
+      quantiteActuelle = 0.0;
+    }
+    const totalDepart = quantiteActuelle * prixLitre;
+    updateAffichage(quantiteActuelle, totalDepart, tempsChargeSecondes);
 
     // Mettre à jour l'UI
     statusText.textContent = isElectric()
@@ -325,7 +374,7 @@ function updateDelivrance() {
     quantiteActuelle += debitLitresParSeconde * 0.1;
 
     // Vérifier qu'on ne dépasse pas le stock
-    const stockMax = window.carburantData.stockLitre;
+    const stockMax = carburantData.stockLitre;
     if (stockMax > 0 && quantiteActuelle >= stockMax) {
       quantiteActuelle = stockMax;
       arreterDelivrance();
@@ -481,7 +530,7 @@ async function arreterDelivrance() {
       // Mettre à jour le stock restant
       if (!isElectric()) {
         const stockRestantValue =
-          window.carburantData.stockLitre - data.quantite_finale;
+          carburantData.stockLitre - data.quantite_finale;
         if (stockRestant) {
           stockRestant.textContent = stockRestantValue.toFixed(3) + " L";
         }
@@ -563,6 +612,46 @@ function setupActionsPhysiques() {
   }
 }
 
+function handleTpeInput(event) {
+  const keyButton = event.target.closest("[data-key]");
+  if (keyButton) {
+    ajouterChiffre(keyButton.dataset.key);
+    return;
+  }
+
+  const actionButton = event.target.closest("[data-action]");
+  if (!actionButton) return;
+  handleAction(actionButton.dataset.action);
+}
+
+function handlePhysicalActions(event) {
+  const actionButton = event.target.closest("[data-action]");
+  if (!actionButton) return;
+  handleAction(actionButton.dataset.action);
+}
+
+function handleAction(action) {
+  if (action === "annuler") {
+    annuler();
+    return;
+  }
+  if (action === "valider") {
+    valider();
+    return;
+  }
+  if (action === "retour") {
+    retour();
+    return;
+  }
+  if (action === "raccrocher") {
+    simulerRaccrochage();
+    return;
+  }
+  if (action === "annuler-transaction") {
+    annulerTransaction();
+  }
+}
+
 async function simulerRaccrochage() {
   console.log("Simulation : Pistolet raccroché");
   if (delivranceEnCours) {
@@ -619,8 +708,8 @@ function updateDelivranceAvailability() {
   if (!btnDelivrance) {
     return;
   }
-  const prixOk = !!window.carburantData?.prixDisponible;
-  const stockOk = isElectric() ? true : !!window.carburantData?.stockDisponible;
+  const prixOk = !!carburantData?.prixDisponible;
+  const stockOk = isElectric() ? true : !!carburantData?.stockDisponible;
   const selectionOk = isElectric()
     ? chargeSelect && chargeSelect.value
     : carburantSelect && carburantSelect.value;
@@ -1064,7 +1153,7 @@ function formatLitres(quantite) {
 
 function getTransactionEndpoint(path, isPage) {
   const current = window.location.pathname || "";
-  const base = window.basePath || "";
+  const base = basePath || "";
   const cleaned = path.replace(/^\/+/, "");
   if (current.includes("index.php")) {
     return (base ? base + "/" : "") + "index.php?page=" + cleaned;
@@ -1074,7 +1163,7 @@ function getTransactionEndpoint(path, isPage) {
 }
 
 function isAutomate24() {
-  return Number(window.typeAutomate) === 24;
+  return Number(typeAutomate) === 24;
 }
 
 function formatMontant(value) {
@@ -1090,7 +1179,7 @@ function isElectric() {
 }
 
 function getDebitKwhParSeconde() {
-  const typeCharge = (window.electriciteData?.typeCharge || "").toLowerCase();
+  const typeCharge = (electriciteData?.typeCharge || "").toLowerCase();
   if (typeCharge === "rapide") {
     return 0.02;
   }
@@ -1153,8 +1242,7 @@ function afficherPropositionRecu() {
         <button type="button" class="borne-btn bancaire" id="btn-recu-oui">
             <span class="btn-label">Oui, imprimer</span>
         </button>
-        <button type="button" class="borne-btn" id="btn-recu-non"
-                style="background:#f3f4f6; color:#111827;">
+        <button type="button" class="borne-btn muted" id="btn-recu-non">
             <span class="btn-label">Non, merci</span>
         </button>
     `;
@@ -1283,7 +1371,7 @@ function afficherFinAutomate() {
   const ecran = choixPaiement?.querySelector(".borne-ecran");
   if (!ecran) return;
   ecran.innerHTML = `
-        <p class="borne-instructions" style="margin-top: 20px;">
+        <p class="borne-instructions spaced">
             Merci de votre visite.
         </p>
     `;
