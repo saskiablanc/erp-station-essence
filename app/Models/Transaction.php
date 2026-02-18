@@ -8,7 +8,6 @@ use PDO;
 
 /**
  * Model Transaction - Gère les transactions de paiement
- * Adapté au schéma SQL existant pour l'US25
  */
 class Transaction
 {
@@ -21,9 +20,6 @@ class Transaction
 
     /**
      * Créer une nouvelle transaction (US25)
-     * Note : Votre schéma utilise 'date_heure' au lieu de 'horodatage_DATETIME'
-     * 
-     * @return int|null L'ID de la transaction créée
      */
     public function creer(float $prixTotal): ?int
     {
@@ -54,7 +50,7 @@ class Transaction
     }
 
     /**
-     * Supprimer une transaction (US25 - critère 6 : annulation)
+     * Supprimer une transaction 
      */
     public function supprimer(int $idTransaction): bool
     {

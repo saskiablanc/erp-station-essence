@@ -206,7 +206,7 @@ function resetTransactionDisplay() {
 }
 
 // ============================================================
-// US28 - Critères 2, 3 : Démarrer la délivrance
+// Démarrer la délivrance
 // ============================================================
 async function demarrerDelivrance() {
   console.log("Démarrage de la délivrance...");
@@ -269,7 +269,7 @@ async function demarrerDelivrance() {
 }
 
 // ============================================================
-// US28 - Critère 2 : Mise à jour continue de la quantité
+// Mise à jour continue de la quantité
 // ============================================================
 function updateDelivrance() {
   if (!delivranceEnCours) return;
@@ -298,7 +298,7 @@ function updateDelivrance() {
     }
   }
 
-  // US28 - Critère 3 : Calcul automatique du total
+  // Calcul automatique du total
   const total = quantiteActuelle * prixLitre;
 
   // Mettre à jour l'affichage avec animation
@@ -311,7 +311,7 @@ function updateDelivrance() {
 }
 
 // ============================================================
-// US28 - Critère 2 : Mettre à jour l'affichage avec animation
+// Mettre à jour l'affichage avec animation
 // ============================================================
 function updateAffichage(quantite, total, tempsSecondes) {
   // Animation de mise à jour

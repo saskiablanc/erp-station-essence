@@ -61,26 +61,7 @@ $actionLabel = $isElectric ? 'Maintenir pour charger' : 'Maintenir pour délivre
         <?php $automate24 = ($type_automate ?? 24) === 24; ?>
 
         <div class="transaction-layout">
-            <div class="payment-flow">
-                <div id="choix-paiement" class="borne-embed" style="display: <?= $automate24 ? 'block' : 'none' ?>;">
-                    <div class="borne-ecran">
-                        <p class="borne-label">Montant à payer</p>
-                        <p class="borne-montant"><span id="choix-montant">0,00</span> €</p>
-                        <p id="choix-status" class="borne-instructions">Bonjour</p>
-
-                        <div class="borne-actions" id="choix-actions" style="display: none;">
-                            <button type="button" class="borne-btn bancaire" data-paiement="bancaire">
-                                <span class="btn-label">Carte bancaire</span>
-                                <span class="btn-desc">Paiement immédiat</span>
-                            </button>
-                            <button type="button" class="borne-btn cce" data-paiement="cce">
-                                <span class="btn-label">Carte CCE</span>
-                                <span class="btn-desc">Crédit énergie</span>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-
+            <div class="layout-column left-column">
                 <div id="tpe-automate" class="tpe-embed" style="display: <?= $automate24 ? 'flex' : 'none' ?>;">
                     <div class="status-bar tpe-status">
                         <span id="card-indicator" class="card-indicator"></span>
@@ -119,48 +100,84 @@ $actionLabel = $isElectric ? 'Maintenir pour charger' : 'Maintenir pour délivre
                         </div>
                     </div>
                 </div>
-            </div>
 
-            <!-- US28 - Critère 1 : Affichage simultané des informations -->
-            <div class="station-screen">
-            <div class="screen-top">
-                <div class="screen-label"><?= $labelType ?></div>
-                <div class="screen-fuel" id="type-energie">
-                    <?= htmlspecialchars($energieAffiche, ENT_QUOTES, 'UTF-8') ?>
+                <!-- US28 - Critère 7 : Affichage ID transaction et date/heure en fin -->
+                <div id="info-transaction" class="transaction-info" style="display: none;">
+                    <h3>Informations de transaction</h3>
+                    <div class="transaction-details">
+                        <div class="detail-row">
+                            <span class="detail-label">ID Transaction :</span>
+                            <span id="id-transaction" class="detail-value">-</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-label">Date et heure :</span>
+                            <span id="date-heure" class="detail-value">-</span>
+                        </div>
+                    </div>
                 </div>
             </div>
 
-            <div class="screen-row">
-                <div class="screen-label">PRIX</div>
-                <div class="screen-value">
-                    <span id="total-value" class="screen-digits">0.00</span>
+            <div class="layout-column right-column">
+                <!--Affichage simultané des informations -->
+                <div class="station-screen">
+                <div class="screen-top">
+                    <div class="screen-label"><?= $labelType ?></div>
+                    <div class="screen-fuel" id="type-energie">
+                        <?= htmlspecialchars($energieAffiche, ENT_QUOTES, 'UTF-8') ?>
+                    </div>
                 </div>
-                <div class="screen-unit">€</div>
-            </div>
 
-            <div class="screen-row">
-                <div class="screen-label"><?= $labelQuantite ?></div>
-                <div class="screen-value">
-                    <span id="quantite-value" class="screen-digits">
-                        <?= $isElectric ? '00:00' : '0.000' ?>
-                    </span>
+                <div class="screen-row">
+                    <div class="screen-label">PRIX</div>
+                    <div class="screen-value">
+                        <span id="total-value" class="screen-digits">0.00</span>
+                    </div>
+                    <div class="screen-unit">€</div>
                 </div>
-                <div class="screen-unit"><?= $unitQuantite ?></div>
-            </div>
 
-            <div class="screen-row small price-row">
-                <div class="screen-label"><?= $labelPrixUnitaire ?></div>
-                <div class="screen-value small" id="prix-litre">
-                    <?php if ($prix_disponible): ?>
-                        <span class="screen-digits small">
-                            <?= number_format((float)($carburant['prix_litre'] ?? 0), 3, ',', ' ') ?>
+                <div class="screen-row">
+                    <div class="screen-label"><?= $labelQuantite ?></div>
+                    <div class="screen-value">
+                        <span id="quantite-value" class="screen-digits">
+                            <?= $isElectric ? '00:00' : '0.000' ?>
                         </span>
-                    <?php else: ?>
-                        <span class="error">Indisponible</span>
-                    <?php endif; ?>
+                    </div>
+                    <div class="screen-unit"><?= $unitQuantite ?></div>
                 </div>
-                <div class="screen-unit">€</div>
-            </div>
+
+                <div class="screen-row small price-row">
+                    <div class="screen-label"><?= $labelPrixUnitaire ?></div>
+                    <div class="screen-value small" id="prix-litre">
+                        <?php if ($prix_disponible): ?>
+                            <span class="screen-digits small">
+                                <?= number_format((float)($carburant['prix_litre'] ?? 0), 3, ',', ' ') ?>
+                            </span>
+                        <?php else: ?>
+                            <span class="error">Indisponible</span>
+                        <?php endif; ?>
+                    </div>
+                    <div class="screen-unit">€</div>
+                </div>
+                </div>
+
+                <div id="choix-paiement" class="borne-embed" style="display: <?= $automate24 ? 'block' : 'none' ?>;">
+                    <div class="borne-ecran">
+                        <p class="borne-label">Montant à payer</p>
+                        <p class="borne-montant"><span id="choix-montant">0,00</span> €</p>
+                        <p id="choix-status" class="borne-instructions">Bonjour</p>
+
+                        <div class="borne-actions" id="choix-actions" style="display: none;">
+                            <button type="button" class="borne-btn bancaire" data-paiement="bancaire">
+                                <span class="btn-label">Carte bancaire</span>
+                                <span class="btn-desc">Paiement immédiat</span>
+                            </button>
+                            <button type="button" class="borne-btn cce" data-paiement="cce">
+                                <span class="btn-label">Carte CCE</span>
+                                <span class="btn-desc">Crédit énergie</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -171,49 +188,7 @@ $actionLabel = $isElectric ? 'Maintenir pour charger' : 'Maintenir pour délivre
         <?php unset($_SESSION['erreur_selection']); ?>
         <?php endif; ?>
 
-        <!-- US28 - Critère 6 : Message d'erreur si données indisponibles -->
-        <?php if (!$prix_disponible || !$stock_disponible): ?>
-        <div class="alert alert-error">
-            <strong>Attention :</strong>
-            <?php if ($selectionManquante): ?>
-                <?= $isElectric ? 'Aucun type de charge sélectionné.' : 'Aucun carburant sélectionné.' ?>
-                Choisissez une option dans le menu d'actions physiques.
-            <?php else: ?>
-            <?php if (!$prix_disponible): ?>
-                Le prix de l'énergie n'est pas disponible actuellement.
-            <?php endif; ?>
-            <?php if (!$stock_disponible && !$isElectric): ?>
-                Stock insuffisant pour ce carburant.
-            <?php endif; ?>
-            <?php endif; ?>
-            <br>Le paiement est désactivé jusqu'au retour des données.
-        </div>
-        <?php endif; ?>
-
         
-
-        
-
-        <!-- US28 - Critère 7 : Affichage ID transaction et date/heure en fin -->
-        <div id="info-transaction" class="transaction-info" style="display: none;">
-            <h3>Informations de transaction</h3>
-            <div class="transaction-details">
-                <div class="detail-row">
-                    <span class="detail-label">ID Transaction :</span>
-                    <span id="id-transaction" class="detail-value">-</span>
-                </div>
-                <div class="detail-row">
-                    <span class="detail-label">Date et heure :</span>
-                    <span id="date-heure" class="detail-value">-</span>
-                </div>
-                <div class="detail-row">
-                    <span class="detail-label">Stock restant :</span>
-                    <span id="stock-restant" class="detail-value">
-                        <?= $isElectric ? '—' : (number_format((float)$carburant['stock_litre'], 3, ',', ' ') . ' L') ?>
-                    </span>
-                </div>
-            </div>
-        </div>
 
     </main>
 

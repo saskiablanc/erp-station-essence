@@ -20,8 +20,7 @@ class TransactionEnergie
     }
 
     /**
-     * Créer une transaction d'énergie (carburant délivré)
-     * US28 - critère 7
+     * Créer une transaction d'énergie 
      */
     public function creer(
         int $idTransaction, 
@@ -29,7 +28,7 @@ class TransactionEnergie
         float $quantiteDelivree, 
         ?string $tempsCharge = null
     ): ?int {
-        // Pour les carburants, temps_charge doit être '00:00:00' selon le schéma
+        // Pour les carburants, temps_charge
         $tempsCharge = $tempsCharge ?? '00:00:00';
         
         $sql = "INSERT INTO TransactionEnergie 
@@ -69,8 +68,7 @@ class TransactionEnergie
     }
 
     /**
-     * Mettre à jour la quantité délivrée (pendant la délivrance en temps réel)
-     * US28 - critère 2
+     * Mettre à jour la quantité délivrée
      */
     public function mettreAJourQuantite(
         int $idTransactionEnergie,

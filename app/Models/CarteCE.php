@@ -32,7 +32,7 @@ class CarteCE
             return false;
         }
 
-        // Comparaison simple car code_secret est INT dans votre BD
+        // Comparaison simple car code_secret est INT
         return (string)$result['code_secret'] === $codeSecret;
     }
 
@@ -53,7 +53,7 @@ class CarteCE
     }
 
     /**
-     * Débiter une carte CCE (US25 - critère d'acceptation)
+     * Débiter une carte CCE
      */
     public function debiter(int $idCarteCE, float $montant): bool
     {
