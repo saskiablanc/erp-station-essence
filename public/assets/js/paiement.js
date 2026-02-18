@@ -15,60 +15,96 @@ let removeTimer = null;
 let paymentActive = true;
 let cardInserted = false;
 
+// ============================================================
+// Indicateur carte — aligné sur transaction.js
+// ============================================================
+function updateCardIndicator() {
+  const indicator = document.getElementById("card-indicator");
+  const statusText = document.getElementById("card-status-text");
+  if (!indicator || !statusText) return;
+
+  indicator.classList.toggle("is-on", cardInserted);
+  statusText.textContent = cardInserted ? "Carte insérée" : "Carte retirée";
+}
+
+// ============================================================
+// Actions physiques
+// ============================================================
 function insererCarte() {
   cardInserted = true;
   updateCardIndicator();
-  if (!paymentActive) {
-    return;
-  }
+  if (!paymentActive) return;
   document.getElementById("code").disabled = false;
   document.getElementById("message").innerText =
     "Veuillez saisir votre code secret";
 }
 
+function retirerCarte() {
+  clearTimers();
+  cardInserted = false;
+  updateCardIndicator();
+  document.getElementById("message").innerText = "";
+  document.getElementById("code").value = "";
+  document.getElementById("code").disabled = true;
+  paymentActive = false;
+  tentatives = 3;
+}
+
+// ============================================================
+// Saisie du code
+// ============================================================
 function ajouterChiffre(chiffre) {
-  if (!paymentActive || !cardInserted) {
-    return;
-  }
-  let champ = document.getElementById("code");
-  if (champ.disabled) {
-    return;
-  }
+  if (!paymentActive || !cardInserted) return;
+  const champ = document.getElementById("code");
+  if (champ.disabled) return;
   if (champ.value.length < 4) {
     champ.value += chiffre;
   }
 }
 
 function retour() {
-  if (!paymentActive || !cardInserted) {
-    return;
-  }
-  let champ = document.getElementById("code");
-  if (champ.disabled) {
-    return;
-  }
+  if (!paymentActive || !cardInserted) return;
+  const champ = document.getElementById("code");
+  if (champ.disabled) return;
   champ.value = champ.value.slice(0, -1);
 }
 
-function valider() {
-  if (!paymentActive) {
+function annuler() {
+  if (!paymentActive) return;
+  if (cardInserted) {
+    clearTimers();
+    document.getElementById("code").value = "";
+    document.getElementById("code").disabled = true;
+    document.getElementById("message").innerText =
+      "Paiement annulé. Retirez la carte";
+    paymentActive = false;
+    tentatives = 3;
     return;
   }
-  let code = document.getElementById("code").value;
+  cancelPayment();
+}
 
+// ============================================================
+// Validation du paiement
+// ============================================================
+function valider() {
+  if (!paymentActive) return;
+  const code = document.getElementById("code").value;
   const endpoint = getPaiementEndpoint();
+
   fetch(endpoint, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/x-www-form-urlencoded",
-    },
-    body: "code=" + code + "&montant=" + montant,
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body:
+      "code=" +
+      encodeURIComponent(code) +
+      "&montant=" +
+      encodeURIComponent(montant),
   })
     .then((response) => response.json())
     .then((data) => {
       if (data.status === "erreur_code") {
         tentatives--;
-
         if (tentatives > 0) {
           document.getElementById("message").innerText =
             "Erreur : Code Secret. Il vous reste " + tentatives + " tentatives";
@@ -85,12 +121,7 @@ function valider() {
       if (data.status === "ok") {
         const message = document.getElementById("message");
         message.innerText = "Code bon";
-        if (paymentTimer) {
-          clearTimeout(paymentTimer);
-        }
-        if (removeTimer) {
-          clearTimeout(removeTimer);
-        }
+        clearTimers();
         paymentTimer = setTimeout(() => {
           message.innerText = "Paiement accepté";
           removeTimer = setTimeout(() => {
@@ -104,24 +135,9 @@ function valider() {
     });
 }
 
-function annuler() {
-  if (!paymentActive) {
-    return;
-  }
-  if (cardInserted) {
-    clearTimers();
-    document.getElementById("code").value = "";
-    document.getElementById("code").disabled = true;
-    document.getElementById("message").innerText =
-      "Paiement annulé. Retirez la carte";
-    paymentActive = false;
-    tentatives = 3;
-    return;
-  }
-
-  cancelPayment();
-}
-
+// ============================================================
+// Utilitaires
+// ============================================================
 function getPaiementEndpoint() {
   const path = window.location.pathname || "";
   if (path.includes("index.php")) {
@@ -130,10 +146,9 @@ function getPaiementEndpoint() {
   return "paiement/traiter";
 }
 
-function retirerCarte() {
+function cancelPayment() {
+  if (!paymentActive) return;
   clearTimers();
-  cardInserted = false;
-  updateCardIndicator();
   document.getElementById("message").innerText = "";
   document.getElementById("code").value = "";
   document.getElementById("code").disabled = true;
@@ -141,46 +156,24 @@ function retirerCarte() {
   tentatives = 3;
 }
 
-function cancelPayment() {
-  if (!paymentActive) {
-    return;
-  }
-  clearTimers();
-  const message = document.getElementById("message");
-  message.innerText = "";
-  document.getElementById("code").value = "";
-  document.getElementById("code").disabled = true;
-  paymentActive = false;
-  tentatives = 3;
-}
-
 function clearTimers() {
-  if (paymentTimer) {
-    clearTimeout(paymentTimer);
-  }
-  if (removeTimer) {
-    clearTimeout(removeTimer);
-  }
+  if (paymentTimer) clearTimeout(paymentTimer);
+  if (removeTimer) clearTimeout(removeTimer);
 }
 
-function updateCardIndicator() {
-  const indicator = document.getElementById("card-indicator");
-  if (!indicator) {
-    return;
-  }
-  indicator.classList.toggle("is-on", cardInserted);
-}
-
+// ============================================================
+// Init
+// ============================================================
 document.addEventListener("DOMContentLoaded", () => {
   updateCardIndicator();
-  const panel = document.getElementById("actions-panel");
-  const toggle = document.getElementById("actions-toggle");
-  if (!panel || !toggle) {
-    return;
-  }
 
-  toggle.addEventListener("click", () => {
-    const collapsed = panel.classList.toggle("collapsed");
-    toggle.setAttribute("aria-expanded", collapsed ? "false" : "true");
-  });
+  const toggle = document.getElementById("actions-toggle");
+  const content = document.getElementById("actions-content");
+  if (toggle && content) {
+    toggle.addEventListener("click", () => {
+      const collapsed = content.style.display === "none";
+      content.style.display = collapsed ? "block" : "none";
+      toggle.setAttribute("aria-expanded", collapsed ? "true" : "false");
+    });
+  }
 });
