@@ -16,7 +16,7 @@ let paymentActive = true;
 let cardInserted = false;
 
 // ============================================================
-// Indicateur carte — aligné sur transaction.js
+// Indicateur carte
 // ============================================================
 function updateCardIndicator() {
   const indicator = document.getElementById("card-indicator");
