@@ -40,6 +40,7 @@ let delivranceEnCours = false;
 let demarrageEnCours = false;
 let arretDemande = false;
 let intervalDelivrance = null;
+let sessionActive = false;
 let quantiteActuelle = 0.0;
 let debitLitresParSeconde = 0.5; // 30L/min = 0.5L/s
 let prixLitre = Number(carburantData?.prixLitre) || 0;
@@ -100,6 +101,17 @@ const actionsCarte = document.getElementById("actions-carte");
 const btnInsererCarte = document.getElementById("btn-inserer-carte");
 const btnRetirerCarte = document.getElementById("btn-retirer-carte");
 const energieToggle = document.getElementById("energie-toggle");
+const btnAnnulerTransaction = document.querySelector(
+  "[data-action=\"annuler-transaction\"]",
+);
+let annulationLocked = false;
+const timeControl = document.getElementById("time-control");
+const timeAddInput = document.getElementById("time-add");
+const btnAddTime = document.getElementById("btn-ajouter-temps");
+
+if (energieType === "electricite") {
+  prixLitre = Number(electriciteData?.prixKwh) || 0;
+}
 
 // ============================================================
 // US28 - Critère 2 : Initialisation
@@ -146,6 +158,10 @@ document.addEventListener("DOMContentLoaded", function () {
         return;
       }
       event.preventDefault();
+      if (!annulationLocked) {
+        annulationLocked = true;
+        updateAnnulerTransactionButton();
+      }
       btnDelivrance.setPointerCapture(event.pointerId);
       demarrerDelivrance();
     });
@@ -251,7 +267,22 @@ document.addEventListener("DOMContentLoaded", function () {
     actionsContent.addEventListener("click", handlePhysicalActions);
   }
 
+  if (timeAddInput) {
+    timeAddInput.addEventListener("change", () => {
+      const normalized = normalizeHours(timeAddInput.value);
+      timeAddInput.value = String(normalized);
+    });
+  }
+
+  if (btnAddTime) {
+    btnAddTime.addEventListener("click", () => {
+      ajouterTempsManuel();
+    });
+  }
+
   updateCardIndicator();
+  updateAnnulerTransactionButton();
+  updateTimeControlVisibility();
 
   // Actions physiques
   setupActionsPhysiques();
@@ -260,6 +291,8 @@ document.addEventListener("DOMContentLoaded", function () {
 function resetTransactionDisplay() {
   transactionTerminee = false;
   transactionEnregistree = false;
+  sessionActive = false;
+  annulationLocked = false;
   choixStarted = false;
   transactionFinale = null;
   quantiteActuelle = 0.0;
@@ -277,6 +310,8 @@ function resetTransactionDisplay() {
     statusText.textContent = "En attente";
     statusText.classList.remove("active");
   }
+  updateAnnulerTransactionButton();
+  updateTimeControlVisibility();
 }
 
 // ============================================================
@@ -301,34 +336,37 @@ async function demarrerDelivrance() {
 
   demarrageEnCours = true;
   arretDemande = false;
-  const reprise = transactionTerminee && !transactionEnregistree;
+  const reprise = sessionActive && !transactionTerminee;
   if (!reprise) {
     tempsChargeSecondes = 0;
   }
 
-  // Appel API pour créer la transaction
   try {
-    const response = await fetch(
-      getTransactionEndpoint("transaction/demarrer"),
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
+    if (!reprise) {
+      // Appel API pour créer la transaction
+      const response = await fetch(
+        getTransactionEndpoint("transaction/demarrer"),
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
         },
-      },
-    );
+      );
 
-    const data = await response.json();
+      const data = await response.json();
 
-    if (data.status !== "ok") {
-      alert("Erreur : " + data.message);
-      return;
+      if (data.status !== "ok") {
+        alert("Erreur : " + data.message);
+        return;
+      }
+
+      console.log("Délivrance démarrée");
     }
-
-    console.log("Délivrance démarrée");
 
     // Démarrer la simulation
     delivranceEnCours = true;
+    sessionActive = true;
     transactionTerminee = false;
     transactionEnregistree = false;
     transactionFinale = null;
@@ -350,7 +388,7 @@ async function demarrerDelivrance() {
 
     if (arretDemande) {
       arretDemande = false;
-      arreterDelivrance();
+      pauseDelivrance();
     }
   } catch (error) {
     console.error("Erreur démarrage:", error);
@@ -455,7 +493,7 @@ async function envoyerMiseAJour(quantite, tempsSecondes) {
 // ============================================================
 async function arreterDelivrance() {
   console.log("Arrêt de la délivrance...");
-  if (!delivranceEnCours) {
+  if (!sessionActive) {
     return;
   }
 
@@ -518,6 +556,7 @@ async function arreterDelivrance() {
         afficherInfosTransaction(data);
       }
       transactionTerminee = true;
+      sessionActive = false;
       transactionFinale = {
         total: data.total_final,
         quantite: data.quantite_finale,
@@ -654,7 +693,7 @@ function handleAction(action) {
 
 async function simulerRaccrochage() {
   console.log("Simulation : Pistolet raccroché");
-  if (delivranceEnCours) {
+  if (sessionActive && !transactionTerminee) {
     await arreterDelivrance();
   }
   pistoletDecroche = false;
@@ -688,7 +727,24 @@ function demanderArret() {
     arretDemande = true;
     return;
   }
-  arreterDelivrance();
+  pauseDelivrance();
+}
+
+function pauseDelivrance() {
+  if (!delivranceEnCours) {
+    return;
+  }
+  if (intervalDelivrance) {
+    clearInterval(intervalDelivrance);
+    intervalDelivrance = null;
+  }
+  delivranceEnCours = false;
+  if (statusText) {
+    statusText.textContent = isElectric()
+      ? "Charge en pause"
+      : "Délivrance en pause";
+    statusText.classList.remove("active");
+  }
 }
 
 function updatePistoletIndicator() {
@@ -702,6 +758,7 @@ function updatePistoletIndicator() {
     pistoletDot.classList.remove("active");
     pistoletText.textContent = "Pistolet raccroché";
   }
+  updateTimeControlVisibility();
 }
 
 function updateDelivranceAvailability() {
@@ -716,6 +773,107 @@ function updateDelivranceAvailability() {
   const paymentOk = !isAutomate24() || paymentAuthorized;
   btnDelivrance.disabled =
     !prixOk || !stockOk || !selectionOk || !pistoletDecroche || !paymentOk;
+}
+
+function updateAnnulerTransactionButton() {
+  if (!btnAnnulerTransaction) {
+    return;
+  }
+  btnAnnulerTransaction.classList.toggle("is-hidden", annulationLocked);
+}
+
+function normalizeHours(value) {
+  const step = 1;
+  const min = 1;
+  const max = 5;
+  let hours = parseInt(value, 10);
+  if (Number.isNaN(hours)) {
+    hours = min;
+  }
+  hours = Math.round(hours / step) * step;
+  if (hours < min) hours = min;
+  if (hours > max) hours = max;
+  return hours;
+}
+
+async function ajouterTempsManuel() {
+  if (!isElectric()) {
+    return;
+  }
+  if (!chargeSelect || !chargeSelect.value) {
+    alert("Choisissez un type de charge avant d'ajouter du temps.");
+    return;
+  }
+  if (isAutomate24() && !paymentAuthorized) {
+    alert("Validez le paiement avant de vous servir.");
+    return;
+  }
+  if (!pistoletDecroche) {
+    alert("Décrochez le pistolet avant d'ajouter du temps.");
+    return;
+  }
+  if (transactionTerminee) {
+    alert("Transaction terminée. Raccrochez pour payer.");
+    return;
+  }
+
+  const hours = normalizeHours(timeAddInput ? timeAddInput.value : 1);
+  if (timeAddInput) {
+    timeAddInput.value = String(hours);
+  }
+
+  if (!sessionActive) {
+    const started = await demarrerSessionSansDelivrance();
+    if (!started) {
+      return;
+    }
+  }
+
+  const seconds = hours * 3600;
+  tempsChargeSecondes += seconds;
+  quantiteActuelle += getDebitKwhParSeconde() * seconds;
+  const total = quantiteActuelle * prixLitre;
+  updateAffichage(quantiteActuelle, total, tempsChargeSecondes);
+  envoyerMiseAJour(quantiteActuelle, tempsChargeSecondes);
+}
+
+function updateTimeControlVisibility() {
+  if (!timeControl) {
+    return;
+  }
+  const shouldShow = isElectric() && pistoletDecroche;
+  timeControl.classList.toggle("is-hidden", !shouldShow);
+}
+
+async function demarrerSessionSansDelivrance() {
+  try {
+    const response = await fetch(
+      getTransactionEndpoint("transaction/demarrer"),
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      },
+    );
+
+    const data = await response.json();
+
+    if (data.status !== "ok") {
+      alert("Erreur : " + data.message);
+      return false;
+    }
+
+    sessionActive = true;
+    transactionTerminee = false;
+    transactionEnregistree = false;
+    transactionFinale = null;
+    return true;
+  } catch (error) {
+    console.error("Erreur démarrage:", error);
+    alert("Erreur lors du démarrage de la délivrance");
+    return false;
+  }
 }
 
 function updateFinTransactionDisplay() {
@@ -850,7 +1008,9 @@ function renderMontantMessage() {
 
 function insererCarte() {
   if (isAutomate24() && !modePaiement) {
-    updateTpeMessage("Choisissez le mode de paiement");
+    cardInserted = false;
+    updateCardIndicator();
+    updateTpeMessage("Retirez la carte");
     return;
   }
   cardInserted = true;
@@ -1348,6 +1508,7 @@ function finaliserTransaction() {
     return;
   }
 
+  annulationLocked = false;
   paymentAuthorized = false;
   paymentActive = false;
   modePaiement = null;
@@ -1365,6 +1526,7 @@ function finaliserTransaction() {
   persistPaymentState();
   updateActionPanels();
   updateChoixScreen();
+  updateAnnulerTransactionButton();
 }
 
 function afficherFinAutomate() {

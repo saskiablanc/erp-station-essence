@@ -248,6 +248,13 @@ $electriciteJson = htmlspecialchars(json_encode($electriciteData), ENT_QUOTES, '
                         <?php endforeach; ?>
                     </select>
                 </form>
+                <div id="time-control" class="action-time <?= ($isElectric && !empty($pistolet_decroche)) ? '' : 'is-hidden' ?>">
+                    <label for="time-add">Ajouter du temps (heures)</label>
+                    <div class="time-stepper">
+                        <input id="time-add" type="number" min="1" max="5" step="1" value="1">
+                        <button id="btn-ajouter-temps" class="action-btn" type="button">Ajouter</button>
+                    </div>
+                </div>
                 <button
                     id="btn-delivrance"
                     class="action-btn hold"

@@ -26,8 +26,13 @@ body {
   display: flex;
   align-items: center;
   gap: 12px;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   justify-content: flex-end;
+  overflow-x: auto;
+}
+
+.header-meta > * {
+  flex-shrink: 0;
 }
 
 .mode-switch {
@@ -359,6 +364,7 @@ body {
   padding: 18px;
   width: min(100%, 400px);
   max-width: 400px;
+  height: 320px;
   box-shadow: inset 0 0 24px rgba(0, 0, 0, 0.45), 0 16px 32px rgba(0, 0, 0, 0.18);
 }
 
@@ -368,6 +374,11 @@ body {
   padding: 16px;
   text-align: center;
   border: 1px solid #e5e7eb;
+  height: 100%;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
 }
 
 .borne-label {
@@ -605,6 +616,11 @@ body {
   .transaction-layout .station-screen {
     justify-self: start;
   }
+
+  .header-meta {
+    flex-wrap: wrap;
+    overflow-x: visible;
+  }
 }
 
 .automate-panel {
@@ -766,6 +782,32 @@ body {
   display: none;
 }
 
+.action-time {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.action-time.is-hidden {
+  display: none;
+}
+
+.time-stepper {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.time-stepper input {
+  flex: 1;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid #d1d5db;
+  font-size: 14px;
+}
+
+
 .action-select label {
   font-size: 12px;
   text-transform: uppercase;
@@ -777,6 +819,7 @@ body {
   padding: 10px;
   border-radius: 10px;
   border: 1px solid #d1d5db;
+  margin-bottom: 6px;
 }
 
 .actions-carte {
