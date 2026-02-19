@@ -257,6 +257,17 @@ body {
   padding: 6px 12px;
   border-radius: 6px;
   letter-spacing: 0.05em;
+  min-width: 100px;
+  display: inline-flex;
+  justify-content: center;
+}
+
+.screen-fuel.is-empty {
+  color: transparent;
+}
+
+.screen-fuel.error-text {
+  color: #ef4444;
 }
 
 .screen-row {
@@ -309,6 +320,14 @@ body {
   font-size: 18px;
   width: var(--digit-width-small);
   padding: 6px 10px;
+}
+
+.screen-digits.small.is-empty {
+  color: transparent;
+}
+
+.screen-digits.error-text {
+  color: #ef4444;
 }
 
 .screen-unit {

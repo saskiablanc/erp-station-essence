@@ -136,9 +136,15 @@ $electriciteJson = htmlspecialchars(json_encode($electriciteData), ENT_QUOTES, '
                 <div class="station-screen">
                 <div class="screen-top">
                     <div class="screen-label"><?= $labelType ?></div>
-                    <div class="screen-fuel" id="type-energie">
-                        <?= htmlspecialchars($energieAffiche, ENT_QUOTES, 'UTF-8') ?>
-                    </div>
+                    <?php if (!empty($db_error)): ?>
+                        <div class="screen-fuel error-text" id="type-energie">Indisponible</div>
+                    <?php elseif ($selectionManquante): ?>
+                        <div class="screen-fuel is-empty" id="type-energie">&nbsp;</div>
+                    <?php else: ?>
+                        <div class="screen-fuel" id="type-energie">
+                            <?= htmlspecialchars($energieAffiche, ENT_QUOTES, 'UTF-8') ?>
+                        </div>
+                    <?php endif; ?>
                 </div>
 
                 <div class="screen-row">
@@ -166,8 +172,10 @@ $electriciteJson = htmlspecialchars(json_encode($electriciteData), ENT_QUOTES, '
                             <span class="screen-digits small">
                                 <?= number_format((float)($carburant['prix_litre'] ?? 0), 3, ',', ' ') ?>
                             </span>
+                        <?php elseif (!empty($db_error)): ?>
+                            <span class="screen-digits small error-text">Indisponible</span>
                         <?php else: ?>
-                            <span class="error">Indisponible</span>
+                            <span class="screen-digits small is-empty">&nbsp;</span>
                         <?php endif; ?>
                     </div>
                     <div class="screen-unit">€</div>

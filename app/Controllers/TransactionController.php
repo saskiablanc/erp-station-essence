@@ -75,59 +75,81 @@ class TransactionController extends Controller
         $idCarburant = null;
         $idElectricite = null;
         $electricite = null;
+        $dbError = false;
 
-        if ($energieType === 'electricite') {
-            $electricites = $this->electriciteModel->getTous();
-            $idElectricite = $_SESSION['id_electricite_selectionne'] ?? null;
-            if ($idElectricite) {
-                $electricite = $this->electriciteModel->getById((int) $idElectricite);
+        try {
+            if ($energieType === 'electricite') {
+                $electricites = $this->electriciteModel->getTous();
+                $idElectricite = $_SESSION['id_electricite_selectionne'] ?? null;
+                if ($idElectricite) {
+                    $electricite = $this->electriciteModel->getById((int) $idElectricite);
+                    if (!$electricite) {
+                        unset($_SESSION['id_electricite_selectionne']);
+                        $idElectricite = null;
+                    }
+                }
+
                 if (!$electricite) {
-                    unset($_SESSION['id_electricite_selectionne']);
-                    $idElectricite = null;
+                    $electricite = [
+                        'type_charge' => 'Aucune sélection',
+                        'prix_kwh' => 0,
+                        'id_energie' => 0,
+                    ];
                 }
-            }
 
-            if (!$electricite) {
-                $electricite = [
-                    'type_charge' => 'Aucune sélection',
-                    'prix_kwh' => 0,
-                    'id_energie' => 0,
-                ];
-            }
-
-            $carburant = [
-                'libelle' => ucfirst($electricite['type_charge']),
-                'prix_litre' => (float) $electricite['prix_kwh'],
-                'stock_litre' => 0,
-                'id_energie' => (int) $electricite['id_energie'],
-            ];
-
-            $prixDisponible = $idElectricite && (float) $electricite['prix_kwh'] > 0;
-            $stockDisponible = true;
-        } else {
-            $idCarburant = $_SESSION['id_carburant_selectionne'] ?? null;
-            $carburants = $this->carburantModel->getTous();
-
-            $carburant = null;
-            if ($idCarburant) {
-                $carburant = $this->carburantModel->getById((int)$idCarburant);
-                if (!$carburant) {
-                    unset($_SESSION['id_carburant_selectionne']);
-                    $idCarburant = null;
-                }
-            }
-
-            if (!$carburant) {
                 $carburant = [
-                    'libelle' => 'Aucune sélection',
-                    'prix_litre' => 0,
+                    'libelle' => ucfirst($electricite['type_charge']),
+                    'prix_litre' => (float) $electricite['prix_kwh'],
                     'stock_litre' => 0,
-                    'id_energie' => 0,
+                    'id_energie' => (int) $electricite['id_energie'],
                 ];
-            }
 
-            $prixDisponible = $idCarburant && isset($carburant['prix_litre']) && $carburant['prix_litre'] > 0;
-            $stockDisponible = $idCarburant && isset($carburant['stock_litre']) && $carburant['stock_litre'] > 0;
+                $prixDisponible = $idElectricite && (float) $electricite['prix_kwh'] > 0;
+                $stockDisponible = true;
+            } else {
+                $idCarburant = $_SESSION['id_carburant_selectionne'] ?? null;
+                $carburants = $this->carburantModel->getTous();
+
+                $carburant = null;
+                if ($idCarburant) {
+                    $carburant = $this->carburantModel->getById((int)$idCarburant);
+                    if (!$carburant) {
+                        unset($_SESSION['id_carburant_selectionne']);
+                        $idCarburant = null;
+                    }
+                }
+
+                if (!$carburant) {
+                    $carburant = [
+                        'libelle' => 'Aucune sélection',
+                        'prix_litre' => 0,
+                        'stock_litre' => 0,
+                        'id_energie' => 0,
+                    ];
+                }
+
+                $prixDisponible = $idCarburant && isset($carburant['prix_litre']) && $carburant['prix_litre'] > 0;
+                $stockDisponible = $idCarburant && isset($carburant['stock_litre']) && $carburant['stock_litre'] > 0;
+            }
+        } catch (\RuntimeException $e) {
+            $dbError = true;
+            $carburants = [];
+            $electricites = [];
+            $idCarburant = null;
+            $idElectricite = null;
+            $electricite = [
+                'type_charge' => 'Aucune sélection',
+                'prix_kwh' => 0,
+                'id_energie' => 0,
+            ];
+            $carburant = [
+                'libelle' => 'Aucune sélection',
+                'prix_litre' => 0,
+                'stock_litre' => 0,
+                'id_energie' => 0,
+            ];
+            $prixDisponible = false;
+            $stockDisponible = false;
         }
 
         $energieLabel = $energieType === 'electricite'
@@ -155,7 +177,8 @@ class TransactionController extends Controller
             'pistolet_decroche' => $pistoletDecroche,
             'energie_type' => $energieType,
             'energie_label' => $energieLabel,
-            'electricite' => $electricite
+            'electricite' => $electricite,
+            'db_error' => $dbError,
         ];
 
         extract($data, EXTR_SKIP);
