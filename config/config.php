@@ -1,7 +1,7 @@
 <?php
 /**
  * Configuration générale de l'application
- * SAE R409 - Projet 4E
+ * SAE R409 - Projet 4ERP
  */
 
 // Environnement
