@@ -71,6 +71,7 @@ const RECEIPT_WANTED_KEY = "transaction_receipt_wanted";
 const btnPaiement = document.getElementById("btn-paiement");
 const btnDelivrance = document.getElementById("btn-delivrance");
 const btnDecrocher = document.getElementById("btn-decrocher");
+const btnRaccrocher = document.querySelector("[data-action=\"raccrocher\"]");
 const modeToggle = document.getElementById("mode-toggle");
 const statusText = document.getElementById("status-text");
 const quantiteValue = document.getElementById("quantite-value");
@@ -758,7 +759,17 @@ function updatePistoletIndicator() {
     pistoletDot.classList.remove("active");
     pistoletText.textContent = "Pistolet raccroché";
   }
+  updatePistoletButtons();
   updateTimeControlVisibility();
+}
+
+function updatePistoletButtons() {
+  if (btnDecrocher) {
+    btnDecrocher.disabled = pistoletDecroche;
+  }
+  if (btnRaccrocher) {
+    btnRaccrocher.disabled = !pistoletDecroche;
+  }
 }
 
 function updateDelivranceAvailability() {

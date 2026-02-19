@@ -753,6 +753,12 @@ body {
   color: #ffffff;
 }
 
+.action-btn:disabled {
+  background: #cbd5e1;
+  color: #64748b;
+  cursor: not-allowed;
+}
+
 .action-btn.hold {
   background: #f59e0b;
   color: #111827;
