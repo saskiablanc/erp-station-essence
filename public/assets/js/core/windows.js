@@ -65,7 +65,7 @@ const WM = (() => {
         ${def.sprint > 2 ? `<span class="win-sprint">S${def.sprint}</span>` : '<span class="win-sprint done">S2</span>'}
         <div class="win-controls">
           <button class="wc min"   onclick="WM.minimize('${id}')" title="Réduire">—</button>
-          <button class="wc close" onclick="WM.close('${id}')"    title="Fermer">✕</button>
+          <button class="wc close" onclick="WM.close('${id}')"    title="Fermer">X</button>
         </div>
       </div>
       <div class="win-body" id="wb-${id}">${def.buildHTML()}</div>
@@ -185,7 +185,7 @@ const WM = (() => {
       });
     });
     localStorage.setItem('caisse_layout_' + hand, JSON.stringify(items));
-    Toast.ok('Disposition sauvegardée ✓');
+    Toast.ok('Disposition sauvegardée');
   }
 
   function resetLayout() {

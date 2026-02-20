@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Hôte : localhost
--- Généré le : jeu. 19 fév. 2026 à 17:33
+-- Généré le : mer. 11 fév. 2026 à 10:34
 -- Version du serveur : 11.8.3-MariaDB-0+deb13u1 from Debian
 -- Version de PHP : 8.4.16
 
@@ -32,19 +32,6 @@ CREATE TABLE `Article` (
   `type_article` varchar(30) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
 
---
--- Déchargement des données de la table `Article`
---
-
-INSERT INTO `Article` (`id_article`, `type_article`) VALUES
-(1, 'Carburant'),
-(2, 'Carburant'),
-(3, 'Carburant'),
-(4, 'Carburant'),
-(5, 'Carburant'),
-(6, 'energie'),
-(7, 'energie');
-
 -- --------------------------------------------------------
 
 --
@@ -58,17 +45,6 @@ CREATE TABLE `Carburant` (
   `stock_litre` decimal(10,3) NOT NULL,
   `libelle` varchar(50) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
-
---
--- Déchargement des données de la table `Carburant`
---
-
-INSERT INTO `Carburant` (`id_carburant`, `id_energie`, `prix_litre`, `stock_litre`, `libelle`) VALUES
-(1, 1, 1.799, 4990.500, 'SP95'),
-(2, 2, 1.899, 2991.900, 'SP98'),
-(3, 3, 1.699, 6912.350, 'GAZOLE'),
-(4, 4, 1.759, 4473.600, 'E10'),
-(5, 5, 0.999, 1978.750, 'E85');
 
 -- --------------------------------------------------------
 
@@ -85,15 +61,6 @@ CREATE TABLE `CarteCE` (
   `montant_dernier_apport` int(11) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
 
---
--- Déchargement des données de la table `CarteCE`
---
-
-INSERT INTO `CarteCE` (`id_carte_CE`, `id_client`, `code_secret`, `solde_client`, `date_dernier_apport`, `montant_dernier_apport`) VALUES
-(1, 1, 1234, 150.000, '2026-02-01', 100),
-(2, 2, 5678, 50.000, '2026-02-05', 50),
-(3, 3, 9999, 500.000, '2026-01-15', 200);
-
 -- --------------------------------------------------------
 
 --
@@ -108,36 +75,6 @@ CREATE TABLE `Client` (
   `num_tel` varchar(20) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
 
---
--- Déchargement des données de la table `Client`
---
-
-INSERT INTO `Client` (`id_client`, `nom`, `prenom`, `email`, `num_tel`) VALUES
-(1, 'Dupont', 'Jean', 'jean.dupont@email.com', '601020304'),
-(2, 'Martin', 'Sophie', 'sophie.martin@email.com', '612345678'),
-(3, 'Durand', 'Pierre', 'pierre.durand@email.com', '698765432');
-
--- --------------------------------------------------------
-
---
--- Structure de la table `Connexion`
---
-
-CREATE TABLE `Connexion` (
-  `id_connexion` int(10) UNSIGNED NOT NULL,
-  `identifiant` varchar(100) NOT NULL,
-  `mdp` varchar(255) NOT NULL,
-  `role` enum('employe','gerant') NOT NULL DEFAULT 'employe'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
---
--- Déchargement des données de la table `Connexion`
---
-
-INSERT INTO `Connexion` (`id_connexion`, `identifiant`, `mdp`, `role`) VALUES
-(1, 'employe1', '$2y$10$vKjY.kqXjfN.kal2IVzIv.oPzPG6yIE6vSXqsWgvds0hwW5L2j5qm', 'employe'),
-(2, 'gerant1', '$2y$10$WtArQLuo/xfRF/T.flSXjOI5PoMNhsajid2huRpv692Q8OglkzUG.', 'gerant');
-
 -- --------------------------------------------------------
 
 --
@@ -151,14 +88,6 @@ CREATE TABLE `Electricite` (
   `type_charge` enum('rapide','lente') NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
 
---
--- Déchargement des données de la table `Electricite`
---
-
-INSERT INTO `Electricite` (`id_electricite`, `id_energie`, `prix_kwh`, `type_charge`) VALUES
-(1, 6, 0.650, 'rapide'),
-(2, 7, 0.300, 'lente');
-
 -- --------------------------------------------------------
 
 --
@@ -170,19 +99,6 @@ CREATE TABLE `Energie` (
   `id_article` bigint(20) UNSIGNED NOT NULL,
   `type_energie` enum('carburant','electricite') NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
-
---
--- Déchargement des données de la table `Energie`
---
-
-INSERT INTO `Energie` (`id_energie`, `id_article`, `type_energie`) VALUES
-(1, 1, 'carburant'),
-(2, 2, 'carburant'),
-(3, 3, 'carburant'),
-(4, 4, 'carburant'),
-(5, 5, 'carburant'),
-(6, 6, 'electricite'),
-(7, 7, 'electricite');
 
 -- --------------------------------------------------------
 
@@ -243,7 +159,7 @@ CREATE TABLE `Transaction` (
 --
 
 CREATE TABLE `TransactionEnergie` (
-  ` id_transaction_energie` bigint(20) UNSIGNED NOT NULL,
+  `id_transaction_energie` bigint(20) UNSIGNED NOT NULL,
   `id_transaction` bigint(20) UNSIGNED NOT NULL,
   `id_energie` bigint(20) UNSIGNED NOT NULL,
   `quantite_delivree` decimal(10,3) NOT NULL,
@@ -258,7 +174,7 @@ CREATE TABLE `TransactionEnergie` (
 
 CREATE TABLE `TransactionProduit` (
   `id_transaction_produit` bigint(20) UNSIGNED NOT NULL,
-  ` id_transaction` bigint(20) UNSIGNED NOT NULL,
+  `id_transaction` bigint(20) UNSIGNED NOT NULL,
   `code_barres` bigint(20) UNSIGNED NOT NULL,
   `quantite_produit_totale` int(10) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
@@ -296,13 +212,6 @@ ALTER TABLE `CarteCE`
 ALTER TABLE `Client`
   ADD PRIMARY KEY (`id_client`),
   ADD UNIQUE KEY `id_client` (`id_client`);
-
---
--- Index pour la table `Connexion`
---
-ALTER TABLE `Connexion`
-  ADD PRIMARY KEY (`id_connexion`),
-  ADD UNIQUE KEY `identifiant` (`identifiant`);
 
 --
 -- Index pour la table `Electricite`
@@ -355,8 +264,8 @@ ALTER TABLE `Transaction`
 -- Index pour la table `TransactionEnergie`
 --
 ALTER TABLE `TransactionEnergie`
-  ADD PRIMARY KEY (` id_transaction_energie`),
-  ADD UNIQUE KEY ` id_transaction_energie` (` id_transaction_energie`),
+  ADD PRIMARY KEY (`id_transaction_energie`),
+  ADD UNIQUE KEY `id_transaction_energie` (`id_transaction_energie`),
   ADD KEY `id_transaction` (`id_transaction`),
   ADD KEY `id_energie` (`id_energie`);
 
@@ -366,7 +275,7 @@ ALTER TABLE `TransactionEnergie`
 ALTER TABLE `TransactionProduit`
   ADD PRIMARY KEY (`id_transaction_produit`),
   ADD UNIQUE KEY `id_transaction_produit` (`id_transaction_produit`),
-  ADD KEY ` id_transaction` (` id_transaction`),
+  ADD KEY `id_transaction` (`id_transaction`),
   ADD KEY `code_barres` (`code_barres`);
 
 --
@@ -377,43 +286,37 @@ ALTER TABLE `TransactionProduit`
 -- AUTO_INCREMENT pour la table `Article`
 --
 ALTER TABLE `Article`
-  MODIFY `id_article` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
+  MODIFY `id_article` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT pour la table `Carburant`
 --
 ALTER TABLE `Carburant`
-  MODIFY `id_carburant` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
+  MODIFY `id_carburant` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT pour la table `CarteCE`
 --
 ALTER TABLE `CarteCE`
-  MODIFY `id_carte_CE` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+  MODIFY `id_carte_CE` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT pour la table `Client`
 --
 ALTER TABLE `Client`
-  MODIFY `id_client` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
-
---
--- AUTO_INCREMENT pour la table `Connexion`
---
-ALTER TABLE `Connexion`
-  MODIFY `id_connexion` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+  MODIFY `id_client` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT pour la table `Electricite`
 --
 ALTER TABLE `Electricite`
-  MODIFY `id_electricite` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+  MODIFY `id_electricite` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT pour la table `Energie`
 --
 ALTER TABLE `Energie`
-  MODIFY `id_energie` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
+  MODIFY `id_energie` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT pour la table `Produit`
@@ -425,7 +328,7 @@ ALTER TABLE `Produit`
 -- AUTO_INCREMENT pour la table `Recu`
 --
 ALTER TABLE `Recu`
-  MODIFY `id_recu` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
+  MODIFY `id_recu` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT pour la table `Stock`
@@ -437,13 +340,13 @@ ALTER TABLE `Stock`
 -- AUTO_INCREMENT pour la table `Transaction`
 --
 ALTER TABLE `Transaction`
-  MODIFY `id_transaction` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=12;
+  MODIFY `id_transaction` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT pour la table `TransactionEnergie`
 --
 ALTER TABLE `TransactionEnergie`
-  MODIFY ` id_transaction_energie` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=12;
+  MODIFY `id_transaction_energie` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT pour la table `TransactionProduit`
@@ -509,7 +412,8 @@ ALTER TABLE `TransactionEnergie`
 --
 ALTER TABLE `TransactionProduit`
   ADD CONSTRAINT `fk_tp_produit` FOREIGN KEY (`code_barres`) REFERENCES `Produit` (`code_barres`),
-  ADD CONSTRAINT `fk_tp_transaction` FOREIGN KEY (` id_transaction`) REFERENCES `Transaction` (`id_transaction`);
+  ADD CONSTRAINT `fk_tp_transaction` FOREIGN KEY (`id_transaction`) REFERENCES `Transaction` (`id_transaction`);
+
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;

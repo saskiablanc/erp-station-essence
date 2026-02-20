@@ -8,23 +8,23 @@
 /* ── Variables ────────────────────────────────────────────── */
 :root {
   /* Couleurs */
-  --bg: #0f1117;
-  --bg2: #161820;
-  --surface: #1c1f2b;
-  --surface2: #22263a;
-  --border: rgba(255, 255, 255, 0.07);
-  --border-active: rgba(255, 255, 255, 0.18);
-  --accent: #3b82f6;
-  --accent-dim: rgba(59, 130, 246, 0.15);
-  --green: #22c55e;
-  --green-dim: rgba(34, 197, 94, 0.12);
-  --warn: #f59e0b;
-  --warn-dim: rgba(245, 158, 11, 0.12);
-  --danger: #ef4444;
-  --danger-dim: rgba(239, 68, 68, 0.12);
-  --text: #e8eaf0;
-  --text-mid: #8b8fa8;
-  --text-dim: #4a4d62;
+  --bg: #f4f5f7;
+  --bg2: #e7e9ee;
+  --surface: #ffffff;
+  --surface2: #f1f3f7;
+  --border: rgba(15, 23, 42, 0.12);
+  --border-active: rgba(15, 23, 42, 0.24);
+  --accent: #2563eb;
+  --accent-dim: rgba(37, 99, 235, 0.12);
+  --green: #16a34a;
+  --green-dim: rgba(22, 163, 74, 0.12);
+  --warn: #d97706;
+  --warn-dim: rgba(217, 119, 6, 0.12);
+  --danger: #dc2626;
+  --danger-dim: rgba(220, 38, 38, 0.12);
+  --text: #111827;
+  --text-mid: #4b5563;
+  --text-dim: #6b7280;
 
   /* Typo */
   --mono: "DM Mono", monospace;
@@ -60,8 +60,8 @@ body {
 /* Grille de fond subtile */
 body {
   background-image:
-    linear-gradient(rgba(255, 255, 255, 0.025) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.025) 1px, transparent 1px);
+    linear-gradient(rgba(0, 0, 0, 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 0, 0, 0.035) 1px, transparent 1px);
   background-size: 32px 32px;
 }
 
@@ -246,7 +246,7 @@ input {
   top: var(--topbar-h);
   left: 0;
   right: 0;
-  bottom: var(--taskbar-h);
+  bottom: 0;
   z-index: 1;
 }
 
@@ -854,18 +854,7 @@ input {
 
 /* ── TASKBAR ──────────────────────────────────────────────── */
 #taskbar {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  height: var(--taskbar-h);
-  background: var(--bg2);
-  border-top: 1px solid var(--border);
-  display: flex;
-  align-items: center;
-  padding: 0 12px;
-  gap: 8px;
-  z-index: 9000;
+  display: none;
 }
 .taskbar-label {
   font-size: 9px;
@@ -1269,4 +1258,70 @@ input {
   color: var(--text);
   letter-spacing: -1px;
   padding: 0 16px;
+}
+
+/* ── TOPBAR : placement façon "template header" ───────────── */
+#topbar {
+  padding: 0;
+  gap: 0;
+  align-items: stretch;
+}
+
+#topbar .tb-brand,
+#topbar .tb-session,
+#topbar #clock,
+#topbar .tb-controls {
+  height: 100%;
+  display: flex;
+  align-items: center;
+  padding: 0 12px;
+  border-right: 1px solid var(--border);
+}
+
+#topbar .tb-sep {
+  display: none;
+}
+
+#topbar .tb-session {
+  background: transparent;
+  border: 0;
+  border-right: 1px solid var(--border);
+  border-radius: 0;
+  padding: 0 12px;
+}
+
+#topbar .tb-controls {
+  border-right: 0;
+  padding: 0;
+  gap: 0;
+}
+
+#topbar .tb-controls > * {
+  height: 100%;
+  display: flex;
+  align-items: center;
+  border-left: 1px solid var(--border);
+}
+
+#topbar .tb-controls > *:first-child {
+  border-left: 0;
+}
+
+#topbar .hand-toggle {
+  border: 0;
+  border-radius: 0;
+  padding: 0 6px;
+  gap: 0;
+}
+
+#topbar .hand-btn {
+  height: 100%;
+  border-radius: 0;
+  padding: 0 12px;
+}
+
+#topbar .tb-btn {
+  height: 100%;
+  border-radius: 0;
+  padding: 0 12px;
 }

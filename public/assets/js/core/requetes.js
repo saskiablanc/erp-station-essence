@@ -5,6 +5,13 @@
  * Le préfixe /json/ correspond aux routes définies dans index.php
  */
 const Requetes = (() => {
+  const BASE = (typeof window !== 'undefined' && window.APP_BASE_URL) ? window.APP_BASE_URL : '';
+
+  function withBase(route) {
+    if (!BASE) return route;
+    if (route.startsWith('/')) return `${BASE}${route}`;
+    return `${BASE}/${route}`;
+  }
 
   async function appel(methode, route, corps = null) {
     const options = {
@@ -13,7 +20,7 @@ const Requetes = (() => {
     };
     if (corps) options.body = JSON.stringify(corps);
 
-    const reponse = await fetch(route, options);
+    const reponse = await fetch(withBase(route), options);
     const data    = await reponse.json();
 
     if (!reponse.ok) {

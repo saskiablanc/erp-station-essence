@@ -7,7 +7,14 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Familjen+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/interact.js/1.10.27/interact.min.js"></script>
-  <link rel="stylesheet" href="/assets/css/caisse.css">
+  <?php
+  $baseUrl = rtrim(dirname($_SERVER['SCRIPT_NAME'] ?? ''), '/');
+  if ($baseUrl === '/' || $baseUrl === '\\') {
+    $baseUrl = '';
+  }
+  $assetsUrl = $baseUrl . '/assets';
+  ?>
+  <link rel="stylesheet" href="<?= $assetsUrl ?>/css/caisse.css">
 
   <?php
   // SESSION injectée par PHP
@@ -17,6 +24,7 @@
   $id        = (int) ($employe['id_connexion']           ?? 0);
   ?>
   <script>
+    const APP_BASE_URL = '<?= $baseUrl ?>';
     const SESSION = {
       id:          <?= $id ?>,
       identifiant: '<?= $identifiant ?>',
@@ -28,7 +36,7 @@
 
 <!-- ═══════════════════════════════════════════════════
      TOPBAR — basé sur la maquette fil de fer
-     UNICA Station | Caisse - Nom | HH:MM:SS | ◀ Gaucher Droitier ▶ | Layout 💾 | Gérant ⚙ | ⏻
+     UNICA Station | Caisse - Nom | HH:MM:SS | ◀ Gaucher Droitier ▶ | Layout | Gérant | Déconnexion
 ════════════════════════════════════════════════════ -->
 <header id="topbar">
   <div class="tb-brand">
@@ -55,17 +63,17 @@
     </div>
 
     <button class="tb-btn save" onclick="App.saveLayout()" title="Sauvegarder la disposition">
-      Layout 💾
+      Layout
     </button>
 
     <button class="tb-btn gerant" id="btn-gerant"
             style="<?= $role === 'gerant' ? '' : 'display:none' ?>"
             onclick="App.openGerant()">
-      Gérant ⚙
+      Gérant
     </button>
 
     <button class="tb-btn deconnexion" onclick="App.deconnexion()" title="Déconnexion">
-      ⏻
+      Déconnexion
     </button>
   </div>
 </header>
@@ -104,29 +112,29 @@
 <!-- ═══════════════════════════════════════════════════
      SCRIPTS — ordre strict
 ════════════════════════════════════════════════════ -->
-<script src="/assets/js/core/state.js"></script>
-<script src="/assets/js/core/requetes.js"></script>
-<script src="/assets/js/core/toast.js"></script>
-<script src="/assets/js/core/windows.js"></script>
+<script src="<?= $assetsUrl ?>/js/core/state.js"></script>
+<script src="<?= $assetsUrl ?>/js/core/requetes.js"></script>
+<script src="<?= $assetsUrl ?>/js/core/toast.js"></script>
+<script src="<?= $assetsUrl ?>/js/core/windows.js"></script>
 
 <!-- Panels (tous "À VENIR" pour l'instant) -->
-<script src="/assets/js/panels/ticket.js"></script>
-<script src="/assets/js/panels/clavier.js"></script>
-<script src="/assets/js/panels/paiement.js"></script>
-<script src="/assets/js/panels/transactions.js"></script>
-<script src="/assets/js/panels/pompes.js"></script>
-<script src="/assets/js/panels/stock.js"></script>
-<script src="/assets/js/panels/alertes.js"></script>
-<script src="/assets/js/panels/cce.js"></script>
+<script src="<?= $assetsUrl ?>/js/panels/ticket.js"></script>
+<script src="<?= $assetsUrl ?>/js/panels/clavier.js"></script>
+<script src="<?= $assetsUrl ?>/js/panels/paiement.js"></script>
+<script src="<?= $assetsUrl ?>/js/panels/transactions.js"></script>
+<script src="<?= $assetsUrl ?>/js/panels/pompes.js"></script>
+<script src="<?= $assetsUrl ?>/js/panels/stock.js"></script>
+<script src="<?= $assetsUrl ?>/js/panels/alertes.js"></script>
+<script src="<?= $assetsUrl ?>/js/panels/cce.js"></script>
 
 <!-- Panels gérant -->
-<script src="/assets/js/panels/gerant/reappro.js"></script>
-<script src="/assets/js/panels/gerant/prix.js"></script>
-<script src="/assets/js/panels/gerant/incidents.js"></script>
-<script src="/assets/js/panels/gerant/cce_params.js"></script>
-<script src="/assets/js/panels/gerant/horaires.js"></script>
+<script src="<?= $assetsUrl ?>/js/panels/gerant/reappro.js"></script>
+<script src="<?= $assetsUrl ?>/js/panels/gerant/prix.js"></script>
+<script src="<?= $assetsUrl ?>/js/panels/gerant/incidents.js"></script>
+<script src="<?= $assetsUrl ?>/js/panels/gerant/cce_params.js"></script>
+<script src="<?= $assetsUrl ?>/js/panels/gerant/horaires.js"></script>
 
-<script src="/assets/js/app.js"></script>
+<script src="<?= $assetsUrl ?>/js/app.js"></script>
 
 </body>
 </html>
