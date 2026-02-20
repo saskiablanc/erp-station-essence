@@ -3,9 +3,10 @@
  * Pas de modules ES6 → fonctionne en file:// et sur linserv
  */
 const State = (() => {
+  const HAND_STORAGE_KEY = 'caisse_hand_v2';
   const s = {
     employe:       null,   // { id, nom, prenom, role }
-    hand:          localStorage.getItem('caisse_hand') || 'right',
+    hand:          localStorage.getItem(HAND_STORAGE_KEY) || 'right',
     numBuffer:     '',
     panier:        [],     // [{ id_article, code_barres, libelle, quantite, prix_unitaire }]
     panierActif:   false,  // une transaction est-elle en cours ?

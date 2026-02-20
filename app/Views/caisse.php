@@ -40,7 +40,6 @@
 ════════════════════════════════════════════════════ -->
 <header id="topbar">
   <div class="tb-brand">
-    <span class="tb-logo"></span>
     <span class="tb-name">UNICA Station</span>
   </div>
 
@@ -58,12 +57,16 @@
 
   <div class="tb-controls">
     <div class="hand-toggle">
-      <button class="hand-btn" data-hand="left"  onclick="App.setHand('left')">◀ Gaucher</button>
-      <button class="hand-btn active" data-hand="right" onclick="App.setHand('right')">Droitier ▶</button>
+      <button class="hand-btn" data-hand="left"  onclick="App.setHand('left')">Gaucher</button>
+      <button class="hand-btn active" data-hand="right" onclick="App.setHand('right')">Droitier</button>
     </div>
 
     <button class="tb-btn save" onclick="App.saveLayout()" title="Sauvegarder la disposition">
-      Layout
+      Sauvegarder
+    </button>
+
+    <button class="tb-btn reset" onclick="App.resetLayout()" title="Réinitialiser la disposition">
+      Réinitialiser
     </button>
 
     <button class="tb-btn gerant" id="btn-gerant"
@@ -89,9 +92,6 @@
 <footer id="taskbar">
   <span class="taskbar-label">FENÊTRES</span>
   <div id="taskbar-chips"></div>
-  <div class="taskbar-right">
-    <button id="btn-reset-layout" onclick="App.resetLayout()" title="Réinitialiser">↺</button>
-  </div>
 </footer>
 
 <!-- DIALOG DÉCONNEXION -->

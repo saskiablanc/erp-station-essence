@@ -24,6 +24,18 @@ const App = (() => {
     if (SESSION.role === 'gerant') {
       WM.ajouterPanelsGerant();
     }
+
+    // Recalage du layout par défaut sur redimensionnement
+    let resizeTimer = null;
+    window.addEventListener('resize', () => {
+      if (resizeTimer) clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(() => {
+        const currentHand = State.get('hand');
+        if (!WM.hasSavedLayout(currentHand)) {
+          WM.applyLayout(currentHand);
+        }
+      }, 120);
+    });
   }
 
   function updateClock() {

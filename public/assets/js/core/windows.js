@@ -6,10 +6,21 @@ const WM = (() => {
 
   const PANELS = {};
 
+  const LAYOUT_VERSION = 'v4';
+  const HAND_STORAGE_KEY = 'caisse_hand_v2';
+
+  // Ajuste ces ratios pour coller exactement à la maquette
+  const LAYOUT_METRICS = {
+    margin: 6,
+    gap: 6,
+    colLeftPct: 0.66, // largeur colonne gauche
+    rowTopPct: 0.56,  // hauteur ligne du haut
+  };
+
   // ── Layout maquette (positions fixes initiales) ──────
   // Maquette : Panier grand gauche | Stocks haut droit
   //            Pompes bas gauche large | CCE bas droit
-  const LAYOUTS = {
+  const BASE_LAYOUTS = {
     right: {
       ticket:       { x: 10,  y: 10,  w: 580, h: 420 },  // Panier — grand, gauche haut
       stock:        { x: 600, y: 10,  w: 370, h: 420 },  // Stocks — haut droit
@@ -33,6 +44,56 @@ const WM = (() => {
     },
   };
 
+  function mirrorLayout(layout, leftBound, rightBound) {
+    const width = rightBound - leftBound;
+    const mirrored = {};
+    Object.keys(layout).forEach(id => {
+      const pos = layout[id];
+      mirrored[id] = {
+        ...pos,
+        x: Math.round(leftBound + (width - (pos.x - leftBound) - pos.w)),
+      };
+    });
+    return mirrored;
+  }
+
+  function computeLayout(hand) {
+    const canvas = document.getElementById('canvas');
+    if (!canvas) return BASE_LAYOUTS[hand];
+
+    const rect = canvas.getBoundingClientRect();
+    if (!rect.width || !rect.height) return BASE_LAYOUTS[hand];
+
+    const { margin, gap, colLeftPct, rowTopPct } = LAYOUT_METRICS;
+
+    const availW = Math.max(640, rect.width - margin * 2);
+    const availH = Math.max(480, rect.height - margin * 2);
+
+    const colLeft = Math.round((availW - gap) * colLeftPct);
+    const colRight = availW - gap - colLeft;
+    const rowTop = Math.round((availH - gap) * rowTopPct);
+    const rowBottom = availH - gap - rowTop;
+
+    const leftX = margin;
+    const rightX = margin + colLeft + gap;
+    const topY = margin;
+    const bottomY = margin + rowTop + gap;
+
+    const right = {
+      ticket: { x: leftX,  y: topY,    w: colLeft,  h: rowTop },
+      stock:  { x: rightX, y: topY,    w: colRight, h: rowTop },
+      pompes: { x: leftX,  y: bottomY, w: colLeft,  h: rowBottom },
+      cce:    { x: rightX, y: bottomY, w: colRight, h: rowBottom },
+    };
+
+    const computed = hand === 'left'
+      ? mirrorLayout(right, leftX, leftX + availW)
+      : right;
+
+    const base = BASE_LAYOUTS[hand] || {};
+    return { ...base, ...computed };
+  }
+
   // Panels affichés par défaut sur le canvas (ordre maquette)
   const DEFAULT_VISIBLE = ['ticket', 'stock', 'pompes', 'cce'];
 
@@ -44,7 +105,7 @@ const WM = (() => {
     const def  = PANELS[id];
     if (!def) return;
     const hand = State.get('hand');
-    const pos  = LAYOUTS[hand]?.[id] ?? { x: 20, y: 20, w: 320, h: 280 };
+    const pos  = computeLayout(hand)?.[id] ?? { x: 20, y: 20, w: 320, h: 280 };
 
     const el = document.createElement('div');
     el.className  = 'win';
@@ -146,7 +207,7 @@ const WM = (() => {
 
   function applyLayout(hand) {
     State.set('hand', hand);
-    localStorage.setItem('caisse_hand', hand);
+    localStorage.setItem(HAND_STORAGE_KEY, hand);
 
     document.querySelectorAll('.hand-btn').forEach(b => {
       b.classList.toggle('active', b.dataset.hand === hand);
@@ -157,7 +218,7 @@ const WM = (() => {
     State.all().windows = {};
 
     // Charger disposition sauvegardée ou défaut
-    const saved = JSON.parse(localStorage.getItem('caisse_layout_' + hand) || 'null');
+    const saved = JSON.parse(localStorage.getItem('caisse_layout_' + LAYOUT_VERSION + '_' + hand) || 'null');
 
     if (saved) {
       saved.forEach(item => {
@@ -184,14 +245,18 @@ const WM = (() => {
         dy:    w.dataset.y || 0,
       });
     });
-    localStorage.setItem('caisse_layout_' + hand, JSON.stringify(items));
+    localStorage.setItem('caisse_layout_' + LAYOUT_VERSION + '_' + hand, JSON.stringify(items));
     Toast.ok('Disposition sauvegardée');
   }
 
   function resetLayout() {
-    localStorage.removeItem('caisse_layout_' + State.get('hand'));
+    localStorage.removeItem('caisse_layout_' + LAYOUT_VERSION + '_' + State.get('hand'));
     applyLayout(State.get('hand'));
     Toast.ok('Disposition réinitialisée');
+  }
+
+  function hasSavedLayout(hand) {
+    return !!localStorage.getItem('caisse_layout_' + LAYOUT_VERSION + '_' + hand);
   }
 
   function updateTaskbar() {
@@ -216,5 +281,5 @@ const WM = (() => {
       .forEach(id => { if (PANELS[id]) open(id); });
   }
 
-  return { register, open, close, minimize, focus, applyLayout, saveLayout, resetLayout, updateTaskbar, ajouterPanelsGerant };
+  return { register, open, close, minimize, focus, applyLayout, saveLayout, resetLayout, hasSavedLayout, updateTaskbar, ajouterPanelsGerant };
 })();
