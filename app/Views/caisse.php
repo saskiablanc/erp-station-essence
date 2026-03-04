@@ -40,46 +40,58 @@
      UNICA Station | Caisse - Nom | HH:MM:SS | ◀ Gaucher Droitier ▶ | Layout | Gérant | Déconnexion
 ════════════════════════════════════════════════════ -->
 <header id="topbar">
-  <div class="tb-brand">
-    <img class="tb-logo-img" src="<?= $assetsUrl ?>/img/logo_unica.png" alt="UNICA Station">
-  </div>
 
-  <div class="tb-sep"></div>
+  <div class="tb-brand">
+    <img src="/assets/img/logo_unica.png" alt="UNICA" class="tb-logo-img">
+    <span class="tb-name">UNICA Station</span>
+  </div>
 
   <div class="tb-session">
-    <span class="live-dot"></span>
-    <span>Caisse — <strong id="tb-nom"><?= $identifiant ?></strong></span>
-    <span class="tb-role" id="tb-role"><?= $role === 'gerant' ? 'Gérant' : 'Employé' ?></span>
+    Caisse — <strong><?= htmlspecialchars($_SESSION['employe']['identifiant'] ?? 'Employé') ?></strong>
   </div>
-
-  <div class="tb-clock" id="clock">--:--:--</div>
 
   <div class="tb-spacer"></div>
 
+  <div id="clock" class="tb-clock">00:00:00</div>
+
+  <div class="tb-spacer"></div>  
+
   <div class="tb-controls">
-    <div class="hand-toggle">
-      <button class="hand-btn" data-hand="left"  onclick="App.setHand('left')">Gaucher</button>
-      <button class="hand-btn active" data-hand="right" onclick="App.setHand('right')">Droitier</button>
-    </div>
+    <span class="tb-label">Layout :</span>
 
-    <button class="tb-btn save" onclick="App.saveLayout()" title="Sauvegarder la disposition">
-      Sauvegarder
+    <button class="hand-btn tb-icon-btn" data-hand="left"
+            onclick="App.setHand('left')" title="Main gauche">
+      <img src="/assets/img/left.png" alt="◄">
     </button>
 
-    <button class="tb-btn reset" onclick="App.resetLayout()" title="Réinitialiser la disposition">
-      Réinitialiser
+    <button class="hand-btn tb-icon-btn" data-hand="right"
+            onclick="App.setHand('right')" title="Main droite">
+      <img src="/assets/img/right.png" alt="►">
     </button>
 
-    <button class="tb-btn gerant" id="btn-gerant"
-            style="<?= $role === 'gerant' ? '' : 'display:none' ?>"
-            onclick="App.openGerant()">
-      Gérant
+    <button class="tb-icon-btn" onclick="App.saveLayout()" title="Sauvegarder">
+      <img src="/assets/img/save.png" alt="Sauvegarder">
     </button>
 
-    <button class="tb-btn deconnexion" onclick="App.deconnexion()" title="Déconnexion">
-      Déconnexion
+    <button class="tb-icon-btn" onclick="App.resetLayout()" title="Réinitialiser">
+      <img src="/assets/img/reset.png" alt="Réinitialiser">
+    </button>
+
+    <?php if (($_SESSION['employe']['role'] ?? '') === 'gerant'): ?>
+    <span class="tb-vsep"></span>
+    <button class="tb-icon-btn" onclick="App.openGerant()" title="Espace gérant">
+      <img src="/assets/img/setting.png" alt="Gérant">
+    </button>
+    <?php endif; ?>
+
+    <span class="tb-vsep"></span>
+
+    <button class="tb-icon-btn tb-icon-btn--danger"
+            onclick="App.deconnexion()" title="Déconnexion">
+      <img src="/assets/img/exit.png" alt="Déconnexion">
     </button>
   </div>
+
 </header>
 
 <!-- ═══════════════════════════════════════════════════
