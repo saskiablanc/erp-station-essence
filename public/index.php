@@ -4,6 +4,7 @@ declare(strict_types=1);
 use App\Core\Router;
 use App\Controllers\AuthController;
 use App\Controllers\CaisseController;
+use App\Controllers\PompeController;
 
 if (session_status() === PHP_SESSION_NONE) {
     session_name('sae_r409_4e');
@@ -13,7 +14,7 @@ if (session_status() === PHP_SESSION_NONE) {
 define('ROOT_PATH',    dirname(__DIR__));
 define('APP_PATH',     ROOT_PATH . '/app');
 define('CONFIG_PATH',  ROOT_PATH . '/config');
-define('VIEW_PATH',    APP_PATH  . '/Views');   
+define('VIEW_PATH',    APP_PATH  . '/Views');
 define('STORAGE_PATH', ROOT_PATH . '/storage');
 
 // ── .env ─────────────────────────────────────────────────
@@ -54,10 +55,7 @@ $router->get('connexion',   [new AuthController(),   'showLogin']);
 $router->post('connexion',  [new AuthController(),   'login']);
 $router->post('deconnexion',[new AuthController(),   'logout']);
 
-// ── Caisse : accessible sans auth en dev (employe fictif injecté)
-// ── En prod : décommenter requireAuth() dans CaisseController::index()
 $router->get('caisse', function () {
-    // Mode démo : si pas de session, on injecte un employé fictif
     if (empty($_SESSION['employe'])) {
         $_SESSION['employe'] = [
             'id_connexion' => 0,
@@ -69,33 +67,25 @@ $router->get('caisse', function () {
 });
 
 // ════════════════════════════════════════════════════════
-//  Routes JSON (appelées par le JS via fetch)
+//  Routes JSON
 // ════════════════════════════════════════════════════════
+
+// ── Auth ─────────────────────────────────────────────────
 $router->get( 'json/auth/session',              [new AuthController(),   'jsonSession']);
 $router->post('json/auth/logout',               [new AuthController(),   'jsonLogout']);
 
+// ── Articles ─────────────────────────────────────────────
 $router->get( 'json/articles/{code}',           [new CaisseController(), 'getArticle']);
 
+// ── Transactions produits ─────────────────────────────────
 $router->post('json/transactions',              [new CaisseController(), 'creerTransaction']);
 $router->get( 'json/transactions',              [new CaisseController(), 'getTransactions']);
 $router->get( 'json/transactions/{id}',         [new CaisseController(), 'getTransaction']);
 $router->post('json/transactions/{id}/annuler', [new CaisseController(), 'annulerTransaction']);
 
-// ── Sprint 3+ (décommenter quand prêt) ──────────────────
-// $router->get( 'json/pompes',                    [new PompeController(),  'getAll']);
-// $router->post('json/pompes/{id}/activer',        [new PompeController(),  'activer']);
-// $router->get( 'json/stock',                     [new StockController(),  'getAll']);
-// $router->get( 'json/cce/{id}',                  [new CCEController(),    'get']);
-// $router->post('json/cce',                       [new CCEController(),    'creer']);
-// $router->post('json/cce/{id}/recharger',        [new CCEController(),    'recharger']);
-
-// ── Sprint 4-6 Gérant ────────────────────────────────────
-// $router->get( 'json/reappros',                  [new ReapproController(),'getAll']);
-// $router->post('json/reappros',                  [new ReapproController(),'creer']);
-// $router->get( 'json/carburants/prix',           [new GerantController(), 'getPrix']);
-// $router->post('json/carburants/prix',           [new GerantController(), 'modifierPrix']);
-// $router->get( 'json/incidents',                 [new GerantController(), 'getIncidents']);
-// $router->post('json/incidents',                 [new GerantController(), 'creerIncident']);
+// Pompes ────────────────────────────────────
+$router->get( 'json/pompes',                    [new PompeController(),  'getAll']);
+$router->post('json/pompes/{id}/activer',       [new PompeController(),  'activer']);
 
 // ════════════════════════════════════════════════════════
 //  Dispatch
