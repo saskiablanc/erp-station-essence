@@ -8,6 +8,7 @@ const WM = (() => {
 
   const LAYOUT_VERSION = 'v4';
   const HAND_STORAGE_KEY = 'caisse_hand_v2';
+  const flipHand = (hand) => (hand === 'left' ? 'right' : 'left');
 
   // Ajuste ces ratios pour coller exactement à la maquette
   const LAYOUT_METRICS = {
@@ -104,7 +105,7 @@ const WM = (() => {
   function create(id) {
     const def  = PANELS[id];
     if (!def) return;
-    const hand = State.get('hand');
+    const hand = flipHand(State.get('hand'));
     const pos  = computeLayout(hand)?.[id] ?? { x: 20, y: 20, w: 320, h: 280 };
 
     const el = document.createElement('div');
@@ -203,7 +204,8 @@ const WM = (() => {
     State.all().windows = {};
 
     // Charger disposition sauvegardée ou défaut
-    const saved = JSON.parse(localStorage.getItem('caisse_layout_' + LAYOUT_VERSION + '_' + hand) || 'null');
+    const layoutHand = flipHand(hand);
+    const saved = JSON.parse(localStorage.getItem('caisse_layout_' + LAYOUT_VERSION + '_' + layoutHand) || 'null');
 
     if (saved) {
       saved.forEach(item => {
@@ -220,7 +222,7 @@ const WM = (() => {
   }
 
   function saveLayout() {
-    const hand  = State.get('hand');
+    const hand  = flipHand(State.get('hand'));
     const items = [];
     document.querySelectorAll('.win').forEach(w => {
       items.push({
@@ -235,13 +237,14 @@ const WM = (() => {
   }
 
   function resetLayout() {
-    localStorage.removeItem('caisse_layout_' + LAYOUT_VERSION + '_' + State.get('hand'));
-    applyLayout(State.get('hand'));
+    const hand = State.get('hand');
+    localStorage.removeItem('caisse_layout_' + LAYOUT_VERSION + '_' + flipHand(hand));
+    applyLayout(hand);
     Toast.ok('Disposition réinitialisée');
   }
 
   function hasSavedLayout(hand) {
-    return !!localStorage.getItem('caisse_layout_' + LAYOUT_VERSION + '_' + hand);
+    return !!localStorage.getItem('caisse_layout_' + LAYOUT_VERSION + '_' + flipHand(hand));
   }
 
   function updateTaskbar() {

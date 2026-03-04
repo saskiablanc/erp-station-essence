@@ -14,7 +14,14 @@ declare(strict_types=1);
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Familjen+Grotesk:wght@400;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/assets/css/connexion.css">
+  <?php
+  $baseUrl = rtrim(dirname($_SERVER['SCRIPT_NAME'] ?? ''), '/');
+  if ($baseUrl === '/' || $baseUrl === '\\') {
+      $baseUrl = '';
+  }
+  $assetsUrl = $baseUrl . '/assets';
+  ?>
+  <link rel="stylesheet" href="<?= $assetsUrl ?>/css/connexion.css">
 </head>
 <body>
 
@@ -25,7 +32,7 @@ declare(strict_types=1);
 
     <!-- Logo UNICA -->
     <div class="logo-wrap">
-      <img src="/assets/img/logo_unica.png" alt="UNICA Station"
+      <img src="<?= $assetsUrl ?>/img/logo_unica.png" alt="UNICA Station"
            onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'">
       <div class="logo-fallback">
         <span class="logo-fallback-text">UNICA <span>Station</span></span>
@@ -36,7 +43,7 @@ declare(strict_types=1);
       <h1>Connexion</h1>
     </div>
 
-    <form class="login-form" method="POST" action="/connexion" novalidate>
+    <form class="login-form" method="POST" action="<?= $baseUrl ?>/connexion" novalidate>
 
       <?php if (!empty($error)): ?>
         <div class="error-box" role="alert">

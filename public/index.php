@@ -74,6 +74,7 @@ $router->get('caisse', function () {
 $router->get( 'json/auth/session',              [new AuthController(),   'jsonSession']);
 $router->post('json/auth/logout',               [new AuthController(),   'jsonLogout']);
 
+$router->get( 'json/articles/random',           [new CaisseController(), 'getRandomArticle']);
 $router->get( 'json/articles/{code}',           [new CaisseController(), 'getArticle']);
 
 $router->post('json/transactions',              [new CaisseController(), 'creerTransaction']);

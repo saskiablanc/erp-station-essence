@@ -1,0 +1,8 @@
+<IfModule mod_rewrite.c>
+RewriteEngine On
+
+# Redirige les routes "racine" vers /public quand l'app est dans /public
+RewriteRule ^connexion/?$ /public/connexion [L,R=302]
+RewriteRule ^deconnexion/?$ /public/deconnexion [L,R=302]
+RewriteRule ^$ /public/ [L,R=302]
+</IfModule>
