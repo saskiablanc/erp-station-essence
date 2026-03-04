@@ -25,7 +25,7 @@ declare(strict_types=1);
 
     <!-- Logo UNICA -->
     <div class="logo-wrap">
-      <img src="/assets/img/logo-unica.png" alt="UNICA Station"
+      <img src="/assets/img/logo_unica.png" alt="UNICA Station"
            onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'">
       <div class="logo-fallback">
         <span class="logo-fallback-text">UNICA <span>Station</span></span>
