@@ -36,6 +36,7 @@ const Requetes = (() => {
 
     // ── Articles ──────────────────────────────────────────
     getArticle: (code) => appel('GET', `/json/articles/${code}`),
+    randomArticle: () => appel('GET', '/json/articles/random'),
 
     // ── Transactions ──────────────────────────────────────
     creerTransaction:   (data) => appel('POST', '/json/transactions',           data),

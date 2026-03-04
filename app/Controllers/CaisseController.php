@@ -27,6 +27,18 @@ class CaisseController extends Controller
         $this->json($article);
     }
 
+    public function getRandomArticle(): void
+    {
+        $this->requireAuth();
+        $model   = new Article();
+        $article = $model->findRandomProduit();
+
+        if (!$article) {
+            $this->jsonError('Aucun produit disponible', 404);
+        }
+        $this->json($article);
+    }
+
     public function creerTransaction(): void
     {
         $employe = $this->requireAuth();

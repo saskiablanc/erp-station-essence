@@ -1,6 +1,6 @@
 <IfModule mod_rewrite.c>
 RewriteEngine On
-RewriteBase /public/
+RewriteBase /
 
 # Laisse passer les fichiers/dossiers existants (assets, images, etc.)
 RewriteCond %{REQUEST_FILENAME} -f [OR]
