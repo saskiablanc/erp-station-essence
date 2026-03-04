@@ -11,6 +11,5 @@
 Thumbs.db
 
 # logs
-database.log
-/storage/logs/database.log
+/storage
 
