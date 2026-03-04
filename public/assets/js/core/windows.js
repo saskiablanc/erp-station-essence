@@ -124,10 +124,7 @@ const WM = (() => {
         <span class="win-icon">${def.icon}</span>
         <span class="win-label">${def.label}</span>
         ${def.sprint > 2 ? `<span class="win-sprint">S${def.sprint}</span>` : '<span class="win-sprint done">S2</span>'}
-        <div class="win-controls">
-          <button class="wc min"   onclick="WM.minimize('${id}')" title="Réduire">—</button>
-          <button class="wc close" onclick="WM.close('${id}')"    title="Fermer">X</button>
-        </div>
+        <div class="win-controls"></div>
       </div>
       <div class="win-body" id="wb-${id}">${def.buildHTML()}</div>
       <div class="win-resize"></div>
@@ -175,23 +172,11 @@ const WM = (() => {
   }
 
   function close(id) {
-    const el = document.getElementById('win-' + id);
-    if (el) {
-      el.style.animation = 'winOut .15s forwards';
-      el.addEventListener('animationend', () => el.remove(), { once: true });
-    }
-    State.all().windows[id] = { minimized: false, visible: false };
-    updateTaskbar();
+    return;
   }
 
   function minimize(id) {
-    const el = document.getElementById('win-' + id);
-    if (!el) return;
-    const w = State.all().windows[id] ?? {};
-    w.minimized = !w.minimized;
-    el.classList.toggle('minimized', w.minimized);
-    State.all().windows[id] = w;
-    updateTaskbar();
+    return;
   }
 
   function open(id) {
