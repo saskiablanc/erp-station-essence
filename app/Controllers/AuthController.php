@@ -15,18 +15,14 @@ class AuthController extends Controller
         $this->model = new Connexion();
     }
 
-    // GET connexion
+    // GET /connexion
     public function showLogin(): void
     {
-        // TODO Critère 3 : quand le menu sera implémenté, décommenter ce bloc
-        // pour ne pas redemander la connexion si déjà connecté.
-        // if (!empty($_SESSION['employe'])) {
-        //     $this->redirect('');
-        //     return;
-        // }
-
-        // Pour l'instant on déconnecte à chaque affichage du formulaire
-        unset($_SESSION['employe']);
+        // Si déjà connecté : on envoie directement à la caisse
+        if (!empty($_SESSION['employe'])) {
+            $this->redirect('caisse');
+            return;
+        }
 
         $error = $_SESSION['login_error'] ?? null;
         unset($_SESSION['login_error']);
@@ -34,7 +30,7 @@ class AuthController extends Controller
         $this->render('connexion', ['error' => $error]);
     }
 
-    // POST connexion
+    // POST /connexion
     public function login(): void
     {
         $identifiant = trim($_POST['identifiant'] ?? '');
@@ -43,7 +39,7 @@ class AuthController extends Controller
         $employe = $this->model->authenticate($identifiant, $mdp);
 
         if ($employe === null) {
-            // Critère 2 : message d'erreur exact défini dans l'US
+            // Critère 2 : message d'erreur défini dans l'US
             $_SESSION['login_error'] = 'Erreur : Identifiant ou mot de passe incorrect';
             $this->redirect('connexion');
             return;
@@ -53,11 +49,11 @@ class AuthController extends Controller
         session_regenerate_id(true);
         $_SESSION['employe'] = $employe;
 
-        // TODO Critère 3 : remplacer 'connexion' par '' (ou 'menu') quand le menu sera implémenté
-        $this->redirect('connexion');
+        // Critère 3 : redirection vers la caisse (interface principale)
+        $this->redirect('caisse');
     }
 
-    // POST deconnexion
+    // POST /deconnexion
     public function logout(): void
     {
         if (empty($_SESSION['employe'])) {
@@ -69,26 +65,41 @@ class AuthController extends Controller
         $_SESSION = [];
         if (ini_get('session.use_cookies')) {
             $p = session_get_cookie_params();
-            setcookie(session_name(), '', time() - 3600, $p['path'], $p['domain'], $p['secure'], $p['httponly']);
+            setcookie(
+                session_name(), '',
+                time() - 3600,
+                $p['path'], $p['domain'],
+                $p['secure'], $p['httponly']
+            );
         }
         session_destroy();
 
         $this->redirect('connexion');
     }
-    
-    // GET json/auth/session
+
+    // GET /json/auth/session
     public function jsonSession(): void
     {
         if (empty($_SESSION['employe'])) {
             $this->jsonError('Non authentifié', 401);
+            return;
         }
         $this->json(['employe' => $_SESSION['employe']]);
     }
 
-    // POST json/auth/logout
+    // POST /json/auth/logout
     public function jsonLogout(): void
     {
         $_SESSION = [];
+        if (ini_get('session.use_cookies')) {
+            $p = session_get_cookie_params();
+            setcookie(
+                session_name(), '',
+                time() - 3600,
+                $p['path'], $p['domain'],
+                $p['secure'], $p['httponly']
+            );
+        }
         session_destroy();
         $this->json(['success' => true]);
     }
