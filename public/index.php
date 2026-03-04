@@ -74,11 +74,8 @@ $router->get('caisse', function () {
 $router->get( 'json/auth/session',              [new AuthController(),   'jsonSession']);
 $router->post('json/auth/logout',               [new AuthController(),   'jsonLogout']);
 
-<<<<<<< HEAD
 // ── Articles ─────────────────────────────────────────────
-=======
 $router->get( 'json/articles/random',           [new CaisseController(), 'getRandomArticle']);
->>>>>>> e69ea6b757f6ddb7c4bfb9894d91dea960e38596
 $router->get( 'json/articles/{code}',           [new CaisseController(), 'getArticle']);
 
 // ── Transactions produits ─────────────────────────────────
