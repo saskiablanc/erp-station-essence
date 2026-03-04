@@ -15,6 +15,7 @@
   $assetsUrl = $baseUrl . '/assets';
   ?>
   <link rel="stylesheet" href="<?= $assetsUrl ?>/css/caisse.css">
+  <link rel="stylesheet" href="/assets/css/pompes.css">
 
   <?php
   // SESSION injectée par PHP
@@ -122,6 +123,8 @@
 <script src="<?= $assetsUrl ?>/js/panels/clavier.js"></script>
 <script src="<?= $assetsUrl ?>/js/panels/paiement.js"></script>
 <script src="<?= $assetsUrl ?>/js/panels/transactions.js"></script>
+<script src="<?= $assetsUrl ?>/js/panels/carburant.js"></script>
+<script src="<?= $assetsUrl ?>/js/panels/electricite.js"></script>
 <script src="<?= $assetsUrl ?>/js/panels/pompes.js"></script>
 <script src="<?= $assetsUrl ?>/js/panels/stock.js"></script>
 <script src="<?= $assetsUrl ?>/js/panels/alertes.js"></script>
