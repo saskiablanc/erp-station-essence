@@ -40,7 +40,7 @@
 ════════════════════════════════════════════════════ -->
 <header id="topbar">
   <div class="tb-brand">
-    <span class="tb-name">UNICA Station</span>
+    <img class="tb-logo-img" src="<?= $assetsUrl ?>/img/logo_unica.png" alt="UNICA Station">
   </div>
 
   <div class="tb-sep"></div>
