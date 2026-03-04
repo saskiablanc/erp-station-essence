@@ -26,8 +26,13 @@
   --text: #1f2937;
   --text-mid: #4b5563;
   --text-dim: #6b7280;
-  --bg-grad: linear-gradient(135deg, #cfe3ff 0%, #f4f2fe 50.48%, #d1fae5 100%), #fff;
-  --btn-grad: linear-gradient(90deg, rgba(129, 140, 248, 0.41) 0%, rgba(99, 102, 241, 0.41) 100%);
+  --bg-grad:
+    linear-gradient(135deg, #cfe3ff 0%, #f4f2fe 50.48%, #d1fae5 100%), #fff;
+  --btn-grad: linear-gradient(
+    90deg,
+    rgba(129, 140, 248, 0.41) 0%,
+    rgba(99, 102, 241, 0.41) 100%
+  );
   --shadow-soft: 0 4px 4px rgba(0, 0, 0, 0.25);
 
   /* Typo */
@@ -80,7 +85,11 @@ body::before {
   top: -60px;
   left: 160px;
   opacity: 0.3;
-  background: radial-gradient(70.71% 70.71% at 50% 50%, #a5b4fc 0%, rgba(0, 0, 0, 0) 100%);
+  background: radial-gradient(
+    70.71% 70.71% at 50% 50%,
+    #a5b4fc 0%,
+    rgba(0, 0, 0, 0) 100%
+  );
 }
 body::after {
   width: 260px;
@@ -88,7 +97,11 @@ body::after {
   right: 120px;
   bottom: -40px;
   opacity: 0.3;
-  background: radial-gradient(70.71% 70.71% at 50% 50%, #6ee7b7 0%, rgba(0, 0, 0, 0) 100%);
+  background: radial-gradient(
+    70.71% 70.71% at 50% 50%,
+    #6ee7b7 0%,
+    rgba(0, 0, 0, 0) 100%
+  );
 }
 
 button {
@@ -127,8 +140,8 @@ input[type="email"] {
   gap: 16px;
   z-index: 9000;
   box-shadow: 0 4px 14px rgba(99, 102, 241, 0.12);
-  backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
 }
 
 .tb-brand {
@@ -371,8 +384,8 @@ input[type="email"] {
   border-bottom: 1px solid var(--border);
   cursor: grab;
   flex-shrink: 0;
-  user-select: none;
   -webkit-user-select: none;
+  user-select: none;
   border-radius: var(--win-radius) var(--win-radius) 0 0;
 }
 .win-title:active {
@@ -734,8 +747,8 @@ input[type="email"] {
   align-items: center;
   justify-content: center;
   background: rgba(15, 23, 42, 0.25);
-  backdrop-filter: blur(6px);
   -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
   z-index: 10000;
 }
 .ticket-modal.open {
@@ -794,7 +807,6 @@ input[type="email"] {
   background: var(--btn-grad);
   color: var(--accent);
 }
-
 
 /* ── PANEL : CLAVIER ──────────────────────────────────────── */
 .numpad-display {
@@ -1111,8 +1123,8 @@ input[type="email"] {
   position: fixed;
   inset: 0;
   background: rgba(0, 0, 0, 0.65);
-  backdrop-filter: blur(6px);
   -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
   z-index: 9500;
   display: flex;
   align-items: center;
