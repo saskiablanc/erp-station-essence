@@ -83,7 +83,7 @@ const PompeElectricite = (() => {
           ${_ledHTML(p.statut)}
         </div>
         <div class="pe-card-date">${date}</div>
-        <div class="pe-card-row"><span class="pe-row-label">Quantite (H)</span><span class="pe-row-val">${kwh}</span></div>
+        <div class="pe-card-row"><span class="pe-row-label">Quantité (H)</span><span class="pe-row-val">${kwh}</span></div>
         <div class="pe-card-row pe-row-total"><span class="pe-row-label">Total (€)</span><span class="pe-row-val pe-row-val--total">${total}</span></div>
         <div class="pe-card-action">${actionBtn}</div>
       </div>
@@ -99,7 +99,7 @@ const PompeElectricite = (() => {
           <span class="pe-led" style="background:var(--border);"></span>
         </div>
         <div class="pe-card-date" style="opacity:.4;">Chargement...</div>
-        <div class="pe-card-row"><span class="pe-row-label">Quantite (H)</span><span class="pe-row-val">\u2014</span></div>
+        <div class="pe-card-row"><span class="pe-row-label">Quantité (H)</span><span class="pe-row-val">\u2014</span></div>
         <div class="pe-card-row"><span class="pe-row-label">Total (€)</span><span class="pe-row-val">\u2014</span></div>
         <div class="pe-card-action"><span class="pe-carte-label">CARTES</span></div>
       </div>

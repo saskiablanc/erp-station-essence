@@ -18,7 +18,7 @@ WM.register('ticket', {
     panel.querySelector('[data-action="random"]').addEventListener('click', async () => {
       const confirm = await Swal.fire({
         title: 'Ajouter un produit',
-        text: 'Ajouter un produit aleatoire du stock ?',
+        text: 'Ajouter un produit aléatoire du stock ?',
         showCancelButton: true,
         confirmButtonText: 'Ajouter',
         cancelButtonText: 'Annuler',
@@ -54,8 +54,8 @@ WM.register('ticket', {
         render();
         await Swal.fire({
           icon: 'success',
-          title: 'Produit ajoute',
-          text: `${article.libelle ?? article.libelle_produit ?? 'Produit'} ajoute au panier.`,
+          title: 'Produit ajouté',
+          text: `${article.libelle ?? article.libelle_produit ?? 'Produit'} ajouté au panier.`,
           timer: 1200,
           showConfirmButton: false,
           customClass: {
@@ -82,7 +82,7 @@ WM.register('ticket', {
 
     panel.querySelector('[data-action="barcode"]').addEventListener('click', async () => {
       const inputPopup = await Swal.fire({
-        title: 'Inserer un code-barres',
+        title: 'Insérer un code-barres',
         input: 'text',
         inputPlaceholder: 'Ex: 1234567890123',
         showCancelButton: true,
@@ -118,8 +118,8 @@ WM.register('ticket', {
         render();
         await Swal.fire({
           icon: 'success',
-          title: 'Article ajoute',
-          text: 'Le produit a ete ajoute au panier.',
+          title: 'Article ajouté',
+          text: 'Le produit a été ajouté au panier.',
           timer: 1000,
           showConfirmButton: false,
           customClass: {
@@ -173,7 +173,7 @@ WM.register('ticket', {
 
       const confirmDelete = await Swal.fire({
         title: 'Retirer ce produit ?',
-        text: 'La ligne sera supprimee du panier.',
+        text: 'La ligne sera supprimée du panier.',
         showCancelButton: true,
         confirmButtonText: 'Supprimer',
         cancelButtonText: 'Annuler',

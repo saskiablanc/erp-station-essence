@@ -7,10 +7,10 @@ window.TicketView = (() => {
       <div class="ticket-panel">
         <div class="ticket-body">
           <div class="ticket-columns">
-            <div class="col-num">Numero</div>
+            <div class="col-num">Numéro</div>
             <div class="col-nom">Nom</div>
             <div class="col-code">Code-barres</div>
-            <div class="col-qty">Quantite</div>
+            <div class="col-qty">Quantité</div>
             <div class="col-prix">Prix</div>
             <div class="col-del"></div>
           </div>
@@ -20,7 +20,7 @@ window.TicketView = (() => {
           <div class="ticket-footer-left">
             <div class="ticket-actions">
               <button class="ticket-action-btn" data-action="random" type="button">Scanner article</button>
-              <button class="ticket-action-btn" data-action="barcode" type="button">Inserer code-barres</button>
+              <button class="ticket-action-btn" data-action="barcode" type="button">Insérer code-barres</button>
             </div>
           </div>
           <div class="ticket-footer-right">

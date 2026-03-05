@@ -111,7 +111,7 @@ const PompeCarburant = (() => {
         </div>
         <div class="pc-card-date">${date}</div>
         <div class="pc-card-row"><span class="pc-row-label">Type</span><span class="pc-row-val">${carbBadge}</span></div>
-        <div class="pc-card-row"><span class="pc-row-label">Quantite (L)</span><span class="pc-row-val">${qte}</span></div>
+        <div class="pc-card-row"><span class="pc-row-label">Quantité (L)</span><span class="pc-row-val">${qte}</span></div>
         <div class="pc-card-row pc-row-total"><span class="pc-row-label">Total (€)</span><span class="pc-row-val pc-row-val--total">${total}</span></div>
         <div class="pc-card-action">${actionBtn}</div>
       </div>
@@ -130,7 +130,7 @@ const PompeCarburant = (() => {
         </div>
         <div class="pc-card-date" style="opacity:.4;">Chargement...</div>
         <div class="pc-card-row"><span class="pc-row-label">Type</span><span class="pc-row-val">\u2014</span></div>
-        <div class="pc-card-row"><span class="pc-row-label">Quantite (L)</span><span class="pc-row-val">\u2014</span></div>
+        <div class="pc-card-row"><span class="pc-row-label">Quantité (L)</span><span class="pc-row-val">\u2014</span></div>
         <div class="pc-card-row"><span class="pc-row-label">Total (€)</span><span class="pc-row-val">\u2014</span></div>
         <div class="pc-card-action"><button class="pc-btn" disabled style="opacity:.3;">\u2014</button></div>
       </div>
