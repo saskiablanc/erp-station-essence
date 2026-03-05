@@ -13,6 +13,8 @@ use RuntimeException;
  * Routes :
  *   GET  /json/pompes              → getAll()    — liste toutes les pompes + transaction en cours
  *   POST /json/pompes/{id}/activer → activer($id) — activation manuelle par l'employé
+ *   POST /json/pompes/{id}/demarrer → demarrer($id) — simulation de démarrage d'une livraison
+ *   POST /json/pompes/{id}/terminer → terminer($id) — simulation de fin de livraison
  *
  * Toutes les routes nécessitent une session authentifiée (requireAuth).
  */
@@ -101,6 +103,119 @@ final class PompeController extends Controller
         } catch (RuntimeException $e) {
             // Le code est encodé dans le message via convention (404, 409…)
             $code = $this->_parseErrorCode($e->getMessage());
+            $this->jsonError($e->getMessage(), $code);
+        }
+    }
+
+    // ──────────────────────────────────────────────────────────
+    //  POST /json/pompes/{id}/demarrer
+    // ──────────────────────────────────────────────────────────
+
+    public function demarrer(string $id): void
+    {
+        $this->requireAuth();
+
+        $idPompe = (int) $id;
+        if ($idPompe <= 0) {
+            $this->jsonError('Identifiant de pompe invalide.', 400);
+        }
+
+        $body = $this->body();
+        $idEnergie = (int) ($body['id_energie'] ?? 0);
+        $quantiteDelivree = (float) ($body['quantite_delivree'] ?? 0);
+        $tempsCharge = (string) ($body['temps_charge'] ?? '00:00:00');
+
+        try {
+            if ($idEnergie <= 0) {
+                $idEnergie = $this->model->getRandomEnergieIdForPompe($idPompe);
+            }
+            if ($quantiteDelivree <= 0) {
+                $quantiteDelivree = round(mt_rand(5, 450) / 10, 3);
+            }
+
+            $idTransactionEnergie = $this->model->demarrerTransactionEnergie(
+                $idPompe,
+                $idEnergie,
+                $quantiteDelivree,
+                $tempsCharge
+            );
+
+            $this->json([
+                'success' => true,
+                'id_pompe' => $idPompe,
+                'id_transaction_energie' => $idTransactionEnergie,
+                'statut' => 'en_cours',
+            ], 201);
+        } catch (RuntimeException $e) {
+            $code = $e->getCode();
+            if ($code < 400 || $code > 599) {
+                $code = 400;
+            }
+            $this->jsonError($e->getMessage(), $code);
+        }
+    }
+
+    // ──────────────────────────────────────────────────────────
+    //  POST /json/pompes/{id}/terminer
+    // ──────────────────────────────────────────────────────────
+
+    public function terminer(string $id): void
+    {
+        $this->requireAuth();
+
+        $idPompe = (int) $id;
+        if ($idPompe <= 0) {
+            $this->jsonError('Identifiant de pompe invalide.', 400);
+        }
+
+        try {
+            $this->model->terminerLivraison($idPompe);
+            $this->json([
+                'success' => true,
+                'id_pompe' => $idPompe,
+                'statut' => 'desactivee',
+            ]);
+        } catch (RuntimeException $e) {
+            $code = $e->getCode();
+            if ($code < 400 || $code > 599) {
+                $code = 400;
+            }
+            $this->jsonError($e->getMessage(), $code);
+        }
+    }
+
+    // ──────────────────────────────────────────────────────────
+    //  POST /json/pompes/{id}/encaisser
+    // ──────────────────────────────────────────────────────────
+
+    public function encaisser(string $id): void
+    {
+        $this->requireAuth();
+
+        $idPompe = (int) $id;
+        if ($idPompe <= 0) {
+            $this->jsonError('Identifiant de pompe invalide.', 400);
+        }
+
+        $body = $this->body();
+        $idTransactionEnergie = (int) ($body['id_transaction_energie'] ?? 0);
+        if ($idTransactionEnergie <= 0) {
+            $this->jsonError('Identifiant de transaction énergie invalide.', 400);
+        }
+
+        try {
+            $this->model->validerPaiement($idPompe, $idTransactionEnergie);
+            $this->json([
+                'success' => true,
+                'id_pompe' => $idPompe,
+                'id_transaction_energie' => $idTransactionEnergie,
+                'statut' => 'payee',
+            ]);
+        } catch (RuntimeException $e) {
+            $code = $e->getCode();
+            if ($code < 400 || $code > 599) {
+                $code = 400;
+            }
             $this->jsonError($e->getMessage(), $code);
         }
     }

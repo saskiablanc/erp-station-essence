@@ -3,7 +3,7 @@
  * IIFE globale PompeCarburant
  * Rendu de la section CARBURANTS dans le panel pompes.
  *
- * Pompes 1 & 2 : MANUEL  — bouton Encaisser, envoie au panier
+ * Pompes 1 & 2 : MANUEL  — simulation démarrage/fin + encaissement en caisse
  * Pompes 3 & 4 : AUTO    — affichage + bouton Activer si désactivée
  */
 
@@ -79,17 +79,20 @@ const PompeCarburant = (() => {
       : `<span class="pc-mode-badge pc-mode-badge--auto">CARTES</span>`;
 
     const qte = tx ? `${_fmt(tx.quantite_delivree, 2)} L` : "\u2014";
-    const prix = tx ? `${_fmt(tx.prix_litre, 3)} \u20ac/L` : "\u2014";
     const total = tx ? `${_fmt(tx.prix_total, 2)} \u20ac` : "\u2014";
     const date = _formatDate(p.date_debut);
 
     let actionBtn = "";
-    if (isManuel && isDesact && tx) {
+    if (isManuel && isActive && !tx) {
+      actionBtn = `<button class="pc-btn pc-btn--demarrer" onclick="PompeCarburant.demarrer(${p.id_pompe})">Démarrer livraison</button>`;
+    } else if (isManuel && isEnCours && tx) {
+      actionBtn = `<button class="pc-btn pc-btn--terminer" onclick="PompeCarburant.terminer(${p.id_pompe})">Terminer livraison</button>`;
+    } else if (isManuel && isDesact && tx) {
       actionBtn = `<button class="pc-btn pc-btn--encaisser" onclick="PompeCarburant.encaisser(${p.id_pompe})">Encaisser</button>`;
     } else if (isDesact) {
       actionBtn = `<button class="pc-btn pc-btn--activer" onclick="PompeCarburant.activer(${p.id_pompe})">Activer</button>`;
     } else if (isManuel) {
-      actionBtn = `<button class="pc-btn pc-btn--encaisser" disabled style="opacity:.35;cursor:default;">Encaisser</button>`;
+      actionBtn = `<button class="pc-btn pc-btn--disabled" disabled>Action indisponible</button>`;
     } else {
       actionBtn = `${modeBadge}`;
     }
@@ -156,20 +159,28 @@ const PompeCarburant = (() => {
     const p = _pompes.find((x) => x.id_pompe == idPompe);
     const tx = p && p.transaction;
     if (!p || !tx) {
-      Toast.warn("Donnees de pompe introuvables");
+      Toast.warn("Données de pompe introuvables");
       return;
     }
 
-    State.addLigne({
-      code_barres: `POMPE-${idPompe}`,
+    if (!window.Achats || typeof window.Achats.ajouterArticle !== "function") {
+      Toast.err("Le panel Achats n'est pas disponible");
+      return;
+    }
+
+    window.Achats.ajouterArticle({
+      code_barres: `TE-${tx.id_transaction_energie}`,
+      code_affiche: "-",
       libelle: `Carburant ${tx.libelle || "?"} - Pompe ${p.numero} (${_fmt(tx.quantite_delivree, 2)} L)`,
-      prix_unitaire: parseFloat(tx.prix_total) || 0,
+      prix: parseFloat(tx.prix_total) || 0,
+      qty: 1,
+      source: "energie",
       id_pompe: idPompe,
-      type: "energie",
+      id_transaction_energie: tx.id_transaction_energie,
+      type_article: "carburant",
     });
 
-    Toast.ok(`Pompe ${p.numero} → Panier (${_fmt(tx.prix_total, 2)} €)`);
-    WM.open("ticket");
+    Toast.ok(`Pompe ${p.numero} -> Achats (${_fmt(tx.prix_total, 2)} €)`);
 
     const card = document.getElementById(`pc-card-${idPompe}`);
     if (card) {
@@ -182,6 +193,45 @@ const PompeCarburant = (() => {
     }
   }
 
+  async function demarrer(idPompe) {
+    const btn = document.querySelector(`#pc-card-${idPompe} .pc-btn--demarrer`);
+    if (btn) {
+      btn.disabled = true;
+      btn.textContent = "...";
+    }
+    try {
+      const quantite = Number((5 + Math.random() * 35).toFixed(3));
+      await Requetes.demarrerPompe(idPompe, { quantite_delivree: quantite });
+      Toast.ok(`Pompe ${idPompe} : livraison démarrée`);
+      if (typeof PompesPanelRefresh === "function") PompesPanelRefresh();
+    } catch (e) {
+      Toast.err(`Échec démarrage : ${e.message}`);
+      if (btn) {
+        btn.disabled = false;
+        btn.textContent = "Démarrer livraison";
+      }
+    }
+  }
+
+  async function terminer(idPompe) {
+    const btn = document.querySelector(`#pc-card-${idPompe} .pc-btn--terminer`);
+    if (btn) {
+      btn.disabled = true;
+      btn.textContent = "...";
+    }
+    try {
+      await Requetes.terminerPompe(idPompe);
+      Toast.ok(`Pompe ${idPompe} : livraison terminée, prête à encaisser`);
+      if (typeof PompesPanelRefresh === "function") PompesPanelRefresh();
+    } catch (e) {
+      Toast.err(`Échec fin de livraison : ${e.message}`);
+      if (btn) {
+        btn.disabled = false;
+        btn.textContent = "Terminer livraison";
+      }
+    }
+  }
+
   async function activer(idPompe) {
     const btn = document.querySelector(`#pc-card-${idPompe} .pc-btn--activer`);
     if (btn) {
@@ -190,10 +240,10 @@ const PompeCarburant = (() => {
     }
     try {
       await Requetes.activerPompe(idPompe);
-      Toast.ok(`Pompe ${idPompe} reactivee`);
+      Toast.ok(`Pompe ${idPompe} réactivée`);
       if (typeof PompesPanelRefresh === "function") PompesPanelRefresh();
     } catch (e) {
-      Toast.err(`Echec activation : ${e.message}`);
+      Toast.err(`Échec activation : ${e.message}`);
       if (btn) {
         btn.disabled = false;
         btn.textContent = "Activer";
@@ -201,5 +251,5 @@ const PompeCarburant = (() => {
     }
   }
 
-  return { buildHTML, onData, encaisser, activer };
+  return { buildHTML, onData, demarrer, terminer, encaisser, activer };
 })();

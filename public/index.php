@@ -87,6 +87,9 @@ $router->post('json/transactions/{id}/annuler', [new CaisseController(), 'annule
 // Pompes ────────────────────────────────────
 $router->get( 'json/pompes',                    [new PompeController(),  'getAll']);
 $router->post('json/pompes/{id}/activer',       [new PompeController(),  'activer']);
+$router->post('json/pompes/{id}/demarrer',      [new PompeController(),  'demarrer']);
+$router->post('json/pompes/{id}/terminer',      [new PompeController(),  'terminer']);
+$router->post('json/pompes/{id}/encaisser',     [new PompeController(),  'encaisser']);
 
 // ════════════════════════════════════════════════════════
 //  Dispatch

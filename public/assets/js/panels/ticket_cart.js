@@ -1,10 +1,16 @@
 /* panels/ticket_cart.js - metier panier */
 window.TicketCart = (() => {
   function normalizeArticle(article) {
+    const qty = Number(article.qty ?? article.quantite ?? 1);
     return {
       code: String(article.code_barres ?? article.code ?? ''),
+      codeAffiche: String(article.code_affiche ?? article.codeAffiche ?? article.code_barres ?? article.code ?? ''),
       libelle: article.libelle ?? article.nom ?? article.libelle_produit ?? 'Produit',
-      prix: Number(article.prix ?? 0),
+      prix: Number(article.prix ?? article.prix_unitaire ?? 0),
+      qty: Number.isFinite(qty) && qty > 0 ? Math.trunc(qty) : 1,
+      source: article.source ?? 'produit',
+      idPompe: article.id_pompe ?? null,
+      idTransactionEnergie: article.id_transaction_energie ?? null,
     };
   }
 
@@ -19,9 +25,9 @@ window.TicketCart = (() => {
 
       const existing = items.find((current) => current.code === item.code);
       if (existing) {
-        existing.qty += 1;
+        existing.qty += item.qty;
       } else {
-        items.push({ ...item, qty: 1 });
+        items.push(item);
       }
 
       return { ok: true };
@@ -53,6 +59,25 @@ window.TicketCart = (() => {
       }));
     }
 
+    function getLignesProduits() {
+      return items
+        .filter((item) => item.source === 'produit')
+        .map((item) => ({
+          code_barres: item.code,
+          quantite: item.qty,
+        }));
+    }
+
+    function getLignesEnergie() {
+      return items
+        .filter((item) => item.source === 'energie')
+        .map((item) => ({
+          id_pompe: item.idPompe,
+          id_transaction_energie: item.idTransactionEnergie,
+          quantite: item.qty,
+        }));
+    }
+
     return {
       addArticle,
       removeAt,
@@ -60,6 +85,8 @@ window.TicketCart = (() => {
       getItems,
       getTotal,
       getLignes,
+      getLignesProduits,
+      getLignesEnergie,
     };
   }
 

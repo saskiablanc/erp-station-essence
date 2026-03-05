@@ -9,6 +9,8 @@ use RuntimeException;
 final class Pompe
 {
     private Database $db;
+    private ?string $transactionEnergiePkColumn = null;
+    private ?bool $transactionEnergieTransactionNullable = null;
 
     public function __construct()
     {
@@ -39,51 +41,61 @@ final class Pompe
 
         if (!empty($ids)) {
             $placeholders = implode(',', array_fill(0, count($ids), '?'));
+            $pkColumn = $this->getTransactionEnergiePkColumn();
+            $pkQuoted = sprintf('`%s`', str_replace('`', '``', $pkColumn));
 
             // ── Carburant ────────────────────────────────────
             // Energie.type_energie = 'carburant' → JOIN Carburant
             $carbRows = $this->db->query(
-                "SELECT
-                    te.` id_transaction_energie` AS id_transaction_energie,
+                sprintf(
+                    "SELECT
+                    te.%s AS id_transaction_energie,
                     te.id_energie,
                     te.quantite_delivree,
                     te.temps_charge,
                     te.statut        AS te_statut,
-                    t.prix_total,
+                    COALESCE(t.prix_total, te.quantite_delivree * c.prix_litre) AS prix_total,
                     t.date_heure,
                     c.libelle,
                     c.prix_litre,
                     NULL             AS prix_kwh,
                     NULL             AS type_charge
                  FROM TransactionEnergie te
-                 JOIN `Transaction` t ON t.id_transaction = te.id_transaction
+                 LEFT JOIN `Transaction` t ON t.id_transaction = te.id_transaction
                  JOIN Energie e       ON e.id_energie     = te.id_energie
                  JOIN Carburant c     ON c.id_energie     = e.id_energie
-                 WHERE te.` id_transaction_energie` IN ($placeholders)
+                 WHERE te.%s IN ($placeholders)
                    AND e.type_energie = 'carburant'",
+                    $pkQuoted,
+                    $pkQuoted
+                ),
                 $ids
             )->fetchAll();
 
             // ── Electricité ──────────────────────────────────
             $elecRows = $this->db->query(
-                "SELECT
-                    te.` id_transaction_energie` AS id_transaction_energie,
+                sprintf(
+                    "SELECT
+                    te.%s AS id_transaction_energie,
                     te.id_energie,
                     te.quantite_delivree,
                     te.temps_charge,
                     te.statut        AS te_statut,
-                    t.prix_total,
+                    COALESCE(t.prix_total, te.quantite_delivree * el.prix_kwh) AS prix_total,
                     t.date_heure,
                     NULL             AS libelle,
                     NULL             AS prix_litre,
                     el.prix_kwh,
                     el.type_charge
                  FROM TransactionEnergie te
-                 JOIN `Transaction` t  ON t.id_transaction = te.id_transaction
+                 LEFT JOIN `Transaction` t  ON t.id_transaction = te.id_transaction
                  JOIN Energie e        ON e.id_energie     = te.id_energie
                  JOIN Electricite el   ON el.id_energie    = e.id_energie
-                 WHERE te.` id_transaction_energie` IN ($placeholders)
+                 WHERE te.%s IN ($placeholders)
                    AND e.type_energie = 'electricite'",
+                    $pkQuoted,
+                    $pkQuoted
+                ),
                 $ids
             )->fetchAll();
 
@@ -193,14 +205,142 @@ final class Pompe
     }
 
     /**
+     * Démarrage d'une livraison:
+     * - crée une TransactionEnergie en statut en_cours
+     * - lie la pompe à cette transaction énergie
+     * - NE crée PAS de Transaction (créée au moment du paiement)
+     */
+    public function demarrerTransactionEnergie(
+        int $idPompe,
+        int $idEnergie,
+        float $quantiteDelivree,
+        string $tempsCharge = '00:00:00'
+    ): int {
+        $pompe = $this->findById($idPompe);
+        if (!$pompe) {
+            throw new RuntimeException("Pompe $idPompe introuvable.", 404);
+        }
+        if (($pompe['statut'] ?? '') === 'en_cours') {
+            throw new RuntimeException("La pompe {$pompe['numero']} est déjà en cours de livraison.", 409);
+        }
+        if (!empty($pompe['id_transaction_energie'])) {
+            throw new RuntimeException(
+                "La pompe {$pompe['numero']} a déjà une transaction en attente d'encaissement.",
+                409
+            );
+        }
+        if (!$this->isTransactionEnergieTransactionNullable()) {
+            throw new RuntimeException(
+                "La colonne TransactionEnergie.id_transaction doit accepter NULL pour créer la transaction au paiement.",
+                500
+            );
+        }
+        if ($quantiteDelivree <= 0) {
+            throw new RuntimeException('La quantité livrée doit être strictement positive.', 400);
+        }
+        $this->assertEnergieCompatibleAvecPompe($idPompe, $idEnergie);
+
+        $this->db->beginTransaction();
+        try {
+            $this->db->execute(
+                "INSERT INTO TransactionEnergie
+                 (`id_transaction`, id_energie, quantite_delivree, temps_charge, statut, id_pompe)
+                 VALUES (NULL, ?, ?, ?, 'en_cours', ?)",
+                [$idEnergie, $quantiteDelivree, $tempsCharge, $idPompe]
+            );
+
+            $idTe = (int) $this->db->lastInsertId();
+            if ($idTe <= 0) {
+                $pk = $this->getTransactionEnergiePkColumn();
+                $row = $this->db->query(
+                    sprintf(
+                        "SELECT `%s` AS id_te
+                         FROM TransactionEnergie
+                         WHERE id_pompe = ?
+                         ORDER BY `%s` DESC
+                         LIMIT 1",
+                        str_replace('`', '``', $pk),
+                        str_replace('`', '``', $pk)
+                    ),
+                    [$idPompe]
+                )->fetch();
+                $idTe = (int) ($row['id_te'] ?? 0);
+            }
+            if ($idTe <= 0) {
+                throw new RuntimeException("Impossible de créer la transaction énergie.", 500);
+            }
+
+            $this->db->execute(
+                "UPDATE Pompe
+                 SET statut = 'en_cours', date_debut = NOW(), id_transaction_energie = ?
+                 WHERE id_pompe = ?",
+                [$idTe, $idPompe]
+            );
+
+            $this->db->commit();
+            return $idTe;
+        } catch (\Throwable $e) {
+            $this->db->rollBack();
+            throw $e;
+        }
+    }
+
+    /**
      * Fin de livraison (avant paiement) : en_cours → desactivee
      */
     public function terminerLivraison(int $idPompe): void
     {
+        $pompe = $this->findById($idPompe);
+        if (!$pompe) {
+            throw new RuntimeException("Pompe $idPompe introuvable.", 404);
+        }
+        if (($pompe['statut'] ?? '') !== 'en_cours') {
+            throw new RuntimeException("La pompe {$pompe['numero']} n'est pas en cours de livraison.", 409);
+        }
+        if (empty($pompe['id_transaction_energie'])) {
+            throw new RuntimeException("Aucune transaction énergie en cours pour la pompe {$pompe['numero']}.", 409);
+        }
+
         $this->db->execute(
             "UPDATE Pompe SET statut = 'desactivee' WHERE id_pompe = ?",
             [$idPompe]
         );
+    }
+
+    public function getRandomEnergieIdForPompe(int $idPompe): int
+    {
+        $pompe = $this->findById($idPompe);
+        if (!$pompe) {
+            throw new RuntimeException("Pompe $idPompe introuvable.", 404);
+        }
+
+        if (($pompe['type_pompe'] ?? '') === 'carburant') {
+            $row = $this->db->query(
+                "SELECT e.id_energie
+                 FROM Energie e
+                 WHERE e.type_energie = 'carburant'
+                 ORDER BY RAND()
+                 LIMIT 1"
+            )->fetch();
+        } else {
+            $row = $this->db->query(
+                "SELECT e.id_energie
+                 FROM Energie e
+                 JOIN Electricite el ON el.id_energie = e.id_energie
+                 WHERE e.type_energie = 'electricite'
+                   AND el.type_charge = ?
+                 ORDER BY RAND()
+                 LIMIT 1",
+                [($pompe['sous_type'] ?? 'lente')]
+            )->fetch();
+        }
+
+        $idEnergie = (int) ($row['id_energie'] ?? 0);
+        if ($idEnergie <= 0) {
+            throw new RuntimeException("Aucune énergie disponible pour la pompe {$pompe['numero']}.", 404);
+        }
+
+        return $idEnergie;
     }
 
     /**
@@ -209,12 +349,119 @@ final class Pompe
      */
     public function validerPaiement(int $idPompe, int $idTransactionEnergie): void
     {
+        $pompe = $this->findById($idPompe);
+        if (!$pompe) {
+            throw new RuntimeException("Pompe $idPompe introuvable.", 404);
+        }
+
+        $idTePompe = isset($pompe['id_transaction_energie']) && $pompe['id_transaction_energie'] !== ''
+            ? (int) $pompe['id_transaction_energie']
+            : 0;
+        if ($idTePompe !== $idTransactionEnergie) {
+            throw new RuntimeException(
+                "La transaction énergie $idTransactionEnergie n'est pas associée à la pompe {$pompe['numero']}.",
+                409
+            );
+        }
+
+        $pkColumn = $this->getTransactionEnergiePkColumn();
+        $pkQuoted = sprintf('`%s`', str_replace('`', '``', $pkColumn));
+
+        $te = $this->db->query(
+            sprintf(
+                "SELECT statut, id_pompe, id_energie, quantite_delivree, id_transaction
+                 FROM TransactionEnergie
+                 WHERE %s = ?
+                 LIMIT 1",
+                $pkQuoted
+            ),
+            [$idTransactionEnergie]
+        )->fetch();
+
+        if (!$te) {
+            throw new RuntimeException("Transaction énergie $idTransactionEnergie introuvable.", 404);
+        }
+        if ((int) ($te['id_pompe'] ?? 0) !== $idPompe) {
+            throw new RuntimeException('Transaction énergie incohérente avec la pompe.', 409);
+        }
+        if (($te['statut'] ?? '') === 'payee') {
+            throw new RuntimeException('Cette transaction énergie est déjà payée.', 409);
+        }
+
         $this->db->beginTransaction();
         try {
+            $prixUnitaire = $this->db->query(
+                "SELECT e.type_energie, c.prix_litre, c.stock_litre, el.prix_kwh
+                 FROM Energie e
+                 LEFT JOIN Carburant c ON c.id_energie = e.id_energie
+                 LEFT JOIN Electricite el ON el.id_energie = e.id_energie
+                 WHERE e.id_energie = ?
+                 LIMIT 1",
+                [(int) $te['id_energie']]
+            )->fetch();
+            if (!$prixUnitaire) {
+                throw new RuntimeException('Énergie introuvable.', 404);
+            }
+
+            $qte = (float) $te['quantite_delivree'];
+            $prix = ($prixUnitaire['type_energie'] === 'carburant')
+                ? (float) ($prixUnitaire['prix_litre'] ?? 0)
+                : (float) ($prixUnitaire['prix_kwh'] ?? 0);
+            $total = round($qte * $prix, 3);
+
+            if ($prixUnitaire['type_energie'] === 'carburant') {
+                $stockLitre = (float) ($prixUnitaire['stock_litre'] ?? 0);
+                if ($stockLitre < $qte) {
+                    throw new RuntimeException('Stock carburant insuffisant pour valider le paiement.', 409);
+                }
+            }
+
+            $idTransaction = (int) ($te['id_transaction'] ?? 0);
+            if ($idTransaction <= 0) {
+                $this->db->execute(
+                    "INSERT INTO `Transaction` (prix_total, date_heure)
+                     VALUES (?, NOW())",
+                    [$total]
+                );
+                $idTransaction = (int) $this->db->lastInsertId();
+                if ($idTransaction <= 0) {
+                    throw new RuntimeException('Impossible de créer la transaction.', 500);
+                }
+            } else {
+                $this->db->execute(
+                    "UPDATE `Transaction`
+                     SET prix_total = ?, date_heure = NOW()
+                     WHERE id_transaction = ?",
+                    [$total, $idTransaction]
+                );
+            }
+
             $this->db->execute(
-                "UPDATE TransactionEnergie SET statut = 'payee'
-                 WHERE ` id_transaction_energie` = ?",
-                [$idTransactionEnergie]
+                sprintf(
+                    "UPDATE TransactionEnergie
+                     SET id_transaction = ?, statut = 'payee'
+                     WHERE %s = ?",
+                    $pkQuoted
+                ),
+                [$idTransaction, $idTransactionEnergie]
+            );
+
+            if ($prixUnitaire['type_energie'] === 'carburant') {
+                $this->db->execute(
+                    "UPDATE Carburant
+                     SET stock_litre = stock_litre - ?
+                     WHERE id_energie = ?",
+                    [$qte, (int) $te['id_energie']]
+                );
+            }
+
+            $this->db->execute(
+                "UPDATE Stock s
+                 JOIN Energie e ON e.id_article = s.id_article
+                 SET s.quantite_stock = GREATEST(s.quantite_stock - ?, 0)
+                 WHERE e.id_energie = ?
+                   AND s.type_quantite = 'litre'",
+                [(int) floor($qte), (int) $te['id_energie']]
             );
             $this->db->execute(
                 "UPDATE Pompe
@@ -226,6 +473,78 @@ final class Pompe
         } catch (\Throwable $e) {
             $this->db->rollBack();
             throw $e;
+        }
+    }
+
+    private function getTransactionEnergiePkColumn(): string
+    {
+        if ($this->transactionEnergiePkColumn !== null) {
+            return $this->transactionEnergiePkColumn;
+        }
+
+        $stmt = $this->db->query('SHOW COLUMNS FROM `TransactionEnergie`');
+        $columns = $stmt->fetchAll();
+        foreach ($columns as $column) {
+            $field = (string) ($column['Field'] ?? '');
+            if (trim($field) === 'id_transaction_energie') {
+                $this->transactionEnergiePkColumn = $field;
+                return $field;
+            }
+        }
+
+        throw new RuntimeException('Colonne id_transaction_energie introuvable dans TransactionEnergie', 500);
+    }
+
+    private function isTransactionEnergieTransactionNullable(): bool
+    {
+        if ($this->transactionEnergieTransactionNullable !== null) {
+            return $this->transactionEnergieTransactionNullable;
+        }
+
+        $stmt = $this->db->query('SHOW COLUMNS FROM `TransactionEnergie`');
+        $columns = $stmt->fetchAll();
+        foreach ($columns as $column) {
+            $field = (string) ($column['Field'] ?? '');
+            if (trim($field) === 'id_transaction') {
+                $this->transactionEnergieTransactionNullable =
+                    strtoupper((string) ($column['Null'] ?? 'NO')) === 'YES';
+                return $this->transactionEnergieTransactionNullable;
+            }
+        }
+
+        throw new RuntimeException('Colonne id_transaction introuvable dans TransactionEnergie', 500);
+    }
+
+    private function assertEnergieCompatibleAvecPompe(int $idPompe, int $idEnergie): void
+    {
+        $pompe = $this->findById($idPompe);
+        if (!$pompe) {
+            throw new RuntimeException("Pompe $idPompe introuvable.", 404);
+        }
+
+        $energie = $this->db->query(
+            "SELECT e.type_energie, el.type_charge
+             FROM Energie e
+             LEFT JOIN Electricite el ON el.id_energie = e.id_energie
+             WHERE e.id_energie = ?
+             LIMIT 1",
+            [$idEnergie]
+        )->fetch();
+
+        if (!$energie) {
+            throw new RuntimeException("Énergie $idEnergie introuvable.", 404);
+        }
+
+        if (($pompe['type_pompe'] ?? '') !== ($energie['type_energie'] ?? '')) {
+            throw new RuntimeException('Énergie incompatible avec le type de pompe.', 409);
+        }
+
+        if (($pompe['type_pompe'] ?? '') === 'electricite') {
+            $pompeSousType = (string) ($pompe['sous_type'] ?? '');
+            $energieSousType = (string) ($energie['type_charge'] ?? '');
+            if ($pompeSousType !== '' && $energieSousType !== '' && $pompeSousType !== $energieSousType) {
+                throw new RuntimeException('Énergie incompatible avec le sous-type de borne.', 409);
+            }
         }
     }
 }

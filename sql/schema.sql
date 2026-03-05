@@ -340,7 +340,7 @@ INSERT INTO `Transaction` (`id_transaction`, `prix_total`, `date_heure`) VALUES
 
 CREATE TABLE `TransactionEnergie` (
   ` id_transaction_energie` bigint(20) UNSIGNED NOT NULL,
-  `id_transaction` bigint(20) UNSIGNED NOT NULL,
+  `id_transaction` bigint(20) UNSIGNED DEFAULT NULL COMMENT 'Renseigné uniquement au paiement',
   `id_energie` bigint(20) UNSIGNED NOT NULL,
   `quantite_delivree` decimal(10,3) NOT NULL,
   `temps_charge` time NOT NULL,
@@ -353,7 +353,7 @@ CREATE TABLE `TransactionEnergie` (
 --
 
 INSERT INTO `TransactionEnergie` (` id_transaction_energie`, `id_transaction`, `id_energie`, `quantite_delivree`, `temps_charge`, `statut`, `id_pompe`) VALUES
-(12, 12, 3, 16.340, '00:00:00', 'en_cours', 1);
+(12, NULL, 3, 16.340, '00:00:00', 'en_cours', 1);
 
 -- --------------------------------------------------------
 

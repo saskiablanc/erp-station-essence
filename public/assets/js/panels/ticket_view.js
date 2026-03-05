@@ -52,7 +52,7 @@ window.TicketView = (() => {
       row.innerHTML = `
         <div class="cell num">${index + 1}</div>
         <div class="cell nom">${item.libelle}</div>
-        <div class="cell code">${item.code}</div>
+        <div class="cell code">${item.codeAffiche || item.code}</div>
         <div class="cell qty">${item.qty}</div>
         <div class="cell prix">${formatEuro(item.prix * item.qty)}</div>
         <div class="cell del"><button class="ticket-del" type="button" aria-label="Supprimer">X</button></div>

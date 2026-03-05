@@ -39,7 +39,7 @@ window.TicketPayment = (() => {
     return result.isDenied ? 'cce' : 'cb';
   }
 
-  async function process(lignes, total) {
+  async function process(items, total) {
     const method = await chooseMethod(total);
     if (!method) {
       return { status: 'cancel' };
@@ -58,10 +58,43 @@ window.TicketPayment = (() => {
     await wait(delay);
 
     try {
-      const response = await Requetes.creerTransaction({
-        mode_paiement: method,
-        lignes,
-      });
+      const lignesProduits = items
+        .filter((item) => item.source === 'produit')
+        .map((item) => ({
+          code_barres: item.code,
+          quantite: item.qty,
+        }));
+
+      const lignesEnergie = items
+        .filter((item) => item.source === 'energie')
+        .map((item) => ({
+          id_pompe: item.idPompe,
+          id_transaction_energie: item.idTransactionEnergie,
+          quantite: item.qty,
+        }));
+
+      const responses = [];
+      if (lignesProduits.length > 0) {
+        responses.push(await Requetes.creerTransaction({
+          mode_paiement: method,
+          lignes: lignesProduits,
+        }));
+      }
+
+      for (const ligne of lignesEnergie) {
+        if (!ligne.id_pompe || !ligne.id_transaction_energie) {
+          throw new Error('Ligne énergie invalide');
+        }
+        responses.push(await Requetes.encaisserPompe(ligne.id_pompe, {
+          id_transaction_energie: ligne.id_transaction_energie,
+          mode_paiement: method,
+        }));
+      }
+
+      if (lignesEnergie.length > 0 && typeof window.PompesPanelRefresh === 'function') {
+        window.PompesPanelRefresh();
+      }
+
       await Swal.fire({
         ...swalBase,
         icon: 'success',
@@ -70,7 +103,7 @@ window.TicketPayment = (() => {
         confirmButtonText: 'Fermer',
         allowOutsideClick: false,
       });
-      return { status: 'success', response };
+      return { status: 'success', responses };
     } catch (err) {
       await Swal.fire({
         ...swalBase,
