@@ -1,0 +1,74 @@
+/* panels/ticket_view.js - vue achats */
+window.TicketView = (() => {
+  const MIN_ROWS = 8;
+
+  function buildHTML() {
+    return `
+      <div class="ticket-panel">
+        <div class="ticket-body">
+          <div class="ticket-columns">
+            <div class="col-num">Numero</div>
+            <div class="col-nom">Nom</div>
+            <div class="col-code">Code-barres</div>
+            <div class="col-qty">Quantite</div>
+            <div class="col-prix">Prix</div>
+            <div class="col-del"></div>
+          </div>
+          <div class="ticket-rows"></div>
+        </div>
+        <div class="ticket-footer">
+          <div class="ticket-footer-left">
+            <div class="ticket-actions">
+              <button class="ticket-action-btn" data-action="random" type="button">Scanner article</button>
+              <button class="ticket-action-btn" data-action="barcode" type="button">Inserer code-barres</button>
+            </div>
+          </div>
+          <div class="ticket-footer-right">
+            <div class="ticket-total-label">TOTAL :</div>
+            <div class="ticket-total-box">
+              <span class="ticket-total-value">XX.XX EUR</span>
+            </div>
+            <button class="ticket-encaisser" type="button">Encaisser</button>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  function formatEuro(value) {
+    return `${value.toFixed(2)} EUR`;
+  }
+
+  function renderRows(panel, cart) {
+    const rowsEl = panel.querySelector('.ticket-rows');
+    const totalEl = panel.querySelector('.ticket-total-value');
+    const items = cart.getItems();
+
+    rowsEl.innerHTML = '';
+    items.forEach((item, index) => {
+      const row = document.createElement('div');
+      row.className = 'ticket-row filled';
+      row.dataset.index = String(index);
+      row.innerHTML = `
+        <div class="cell num">${index + 1}</div>
+        <div class="cell nom">${item.libelle}</div>
+        <div class="cell code">${item.code}</div>
+        <div class="cell qty">${item.qty}</div>
+        <div class="cell prix">${formatEuro(item.prix * item.qty)}</div>
+        <div class="cell del"><button class="ticket-del" type="button" aria-label="Supprimer">X</button></div>
+      `;
+      rowsEl.appendChild(row);
+    });
+
+    for (let i = items.length; i < MIN_ROWS; i += 1) {
+      const empty = document.createElement('div');
+      empty.className = 'ticket-row';
+      empty.innerHTML = '<div></div><div></div><div></div><div></div><div></div><div></div>';
+      rowsEl.appendChild(empty);
+    }
+
+    totalEl.textContent = formatEuro(cart.getTotal());
+  }
+
+  return { buildHTML, renderRows };
+})();

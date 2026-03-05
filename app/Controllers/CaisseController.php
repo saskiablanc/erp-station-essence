@@ -41,7 +41,7 @@ class CaisseController extends Controller
 
     public function creerTransaction(): void
     {
-        $employe = $this->requireAuth();
+        $this->requireAuth();
         $body    = $this->body();
         $mode    = $body['mode_paiement'] ?? null;
         $lignes  = $body['lignes']        ?? [];
@@ -51,12 +51,14 @@ class CaisseController extends Controller
         }
 
         $model = new Transaction();
-        $id    = $model->creer([
-            'id_employe'    => $employe['id'],
-            'mode_paiement' => $mode,
-            'montant_remis' => $body['montant_remis'] ?? null,
-            'lignes'        => $lignes,
-        ]);
+        try {
+            $id = $model->creer([
+                'mode_paiement' => $mode,
+                'lignes'        => $lignes,
+            ]);
+        } catch (\Throwable $e) {
+            $this->jsonError($e->getMessage(), 400);
+        }
 
         $this->json(['success' => true, 'id_transaction' => $id], 201);
     }

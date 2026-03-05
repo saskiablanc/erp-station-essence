@@ -1,177 +1,200 @@
-/** panels/ticket.js */
+/* panels/ticket.js - orchestration panel achats */
 WM.register('ticket', {
-  label: 'Achats', icon: 'ACH', sprint: 2,
+  label: 'Achats',
+  icon: 'ACH',
+  sprint: 2,
   buildHTML() {
-    return `
-      <div class="ticket-panel">
-        <div class="ticket-actions">
-          <button class="ticket-action-btn" data-action="random" type="button">Ajouter produit</button>
-          <button class="ticket-action-btn" data-action="barcode" type="button">Insérer code-barres</button>
-        </div>
-        <div class="ticket-body">
-          <div class="ticket-columns">
-            <div class="col-num">Numéro</div>
-            <div class="col-nom">Nom</div>
-            <div class="col-code">Code-barres</div>
-            <div class="col-qty">Quantité</div>
-            <div class="col-prix">Prix</div>
-            <div class="col-del"></div>
-          </div>
-          <div class="ticket-rows"></div>
-        </div>
-        <div class="ticket-footer">
-          <div class="ticket-total-label">TOTAL :</div>
-          <div class="ticket-total-box">
-            <span class="ticket-total-value">XX.XX €</span>
-          </div>
-          <button class="ticket-encaisser" type="button">Encaisser</button>
-        </div>
-
-        <div class="ticket-modal" data-modal="barcode" aria-hidden="true">
-          <div class="ticket-modal-card" role="dialog" aria-modal="true" aria-labelledby="barcode-title">
-            <div class="ticket-modal-title" id="barcode-title">Insérer un code-barres</div>
-            <div class="ticket-modal-body">
-              <label class="ticket-modal-label" for="barcode-input">Code-barres</label>
-              <input id="barcode-input" class="ticket-modal-input" type="text" inputmode="numeric" autocomplete="off" placeholder="Ex: 1234567890123">
-            </div>
-            <div class="ticket-modal-actions">
-              <button class="ticket-modal-btn secondary" data-action="cancel" type="button">Annuler</button>
-              <button class="ticket-modal-btn primary" data-action="submit" type="button">Ajouter</button>
-            </div>
-          </div>
-        </div>
-      </div>
-    `;
+    return TicketView.buildHTML();
   },
   onMount(id) {
     const root = document.getElementById('win-' + id);
     if (!root) return;
 
     const panel = root.querySelector('.ticket-panel');
-    const rowsEl = panel.querySelector('.ticket-rows');
-    const totalEl = panel.querySelector('.ticket-total-value');
-    const modal = panel.querySelector('.ticket-modal');
-    const barcodeInput = panel.querySelector('#barcode-input');
+    const cart = TicketCart.create();
 
-    const MIN_ROWS = 8;
-    const items = [];
-
-    const formatEuro = (value) => `${value.toFixed(2)} €`;
-
-    const renderRows = () => {
-      rowsEl.innerHTML = '';
-      items.forEach((item, index) => {
-        const row = document.createElement('div');
-        row.className = 'ticket-row filled';
-        row.dataset.index = String(index);
-        row.innerHTML = `
-          <div class="cell num">${index + 1}</div>
-          <div class="cell nom">${item.libelle}</div>
-          <div class="cell code">${item.code}</div>
-          <div class="cell qty">${item.qty}</div>
-          <div class="cell prix">${formatEuro(item.prix * item.qty)}</div>
-          <div class="cell del">
-            <button class="ticket-del" type="button" aria-label="Supprimer">X</button>
-          </div>
-        `;
-        rowsEl.appendChild(row);
-      });
-
-      for (let i = items.length; i < MIN_ROWS; i += 1) {
-        const empty = document.createElement('div');
-        empty.className = 'ticket-row';
-        empty.innerHTML = '<div></div><div></div><div></div><div></div><div></div><div></div>';
-        rowsEl.appendChild(empty);
-      }
-
-      const total = items.reduce((sum, item) => sum + item.prix * item.qty, 0);
-      totalEl.textContent = formatEuro(total);
-    };
-
-    const normalizeArticle = (article) => ({
-      code: String(article.code_barres ?? article.code ?? ''),
-      libelle: article.libelle ?? article.nom ?? article.libelle_produit ?? 'Produit',
-      prix: Number(article.prix ?? 0),
-    });
-
-    const addArticle = (article) => {
-      const item = normalizeArticle(article);
-      if (!item.code || Number.isNaN(item.prix)) {
-        Toast.err('Produit invalide');
-        return;
-      }
-      const existing = items.find(i => i.code === item.code);
-      if (existing) {
-        existing.qty += 1;
-      } else {
-        items.push({ ...item, qty: 1 });
-      }
-      renderRows();
-    };
-
-    const openModal = () => {
-      modal.classList.add('open');
-      modal.setAttribute('aria-hidden', 'false');
-      barcodeInput.value = '';
-      setTimeout(() => barcodeInput.focus(), 30);
-    };
-
-    const closeModal = () => {
-      modal.classList.remove('open');
-      modal.setAttribute('aria-hidden', 'true');
-    };
+    const render = () => TicketView.renderRows(panel, cart);
 
     panel.querySelector('[data-action="random"]').addEventListener('click', async () => {
+      const confirm = await Swal.fire({
+        title: 'Ajouter un produit',
+        text: 'Ajouter un produit aleatoire du stock ?',
+        showCancelButton: true,
+        confirmButtonText: 'Ajouter',
+        cancelButtonText: 'Annuler',
+        customClass: {
+          popup: 'ticket-swal-popup',
+          title: 'ticket-swal-title',
+          htmlContainer: 'ticket-swal-text',
+          confirmButton: 'ticket-swal-btn',
+          cancelButton: 'ticket-swal-btn ticket-swal-btn-secondary',
+        },
+        buttonsStyling: false,
+      });
+      if (!confirm.isConfirmed) return;
+
       try {
         const article = await Requetes.randomArticle();
-        addArticle(article);
+        const result = cart.addArticle(article);
+        if (!result.ok) {
+          await Swal.fire({
+            icon: 'error',
+            title: 'Erreur',
+            text: result.error,
+            customClass: {
+              popup: 'ticket-swal-popup',
+              title: 'ticket-swal-title',
+              htmlContainer: 'ticket-swal-text',
+              confirmButton: 'ticket-swal-btn',
+            },
+            buttonsStyling: false,
+          });
+          return;
+        }
+        render();
+        await Swal.fire({
+          icon: 'success',
+          title: 'Produit ajoute',
+          text: `${article.libelle ?? article.libelle_produit ?? 'Produit'} ajoute au panier.`,
+          timer: 1200,
+          showConfirmButton: false,
+          customClass: {
+            popup: 'ticket-swal-popup',
+            title: 'ticket-swal-title',
+            htmlContainer: 'ticket-swal-text',
+          },
+        });
       } catch (err) {
-        Toast.err(err.message || 'Impossible de charger un produit');
+        await Swal.fire({
+          icon: 'error',
+          title: 'Erreur produit',
+          text: err.message || 'Impossible de charger un produit',
+          customClass: {
+            popup: 'ticket-swal-popup',
+            title: 'ticket-swal-title',
+            htmlContainer: 'ticket-swal-text',
+            confirmButton: 'ticket-swal-btn',
+          },
+          buttonsStyling: false,
+        });
       }
     });
 
-    panel.querySelector('[data-action="barcode"]').addEventListener('click', () => {
-      openModal();
+    panel.querySelector('[data-action="barcode"]').addEventListener('click', async () => {
+      const inputPopup = await Swal.fire({
+        title: 'Inserer un code-barres',
+        input: 'text',
+        inputPlaceholder: 'Ex: 1234567890123',
+        showCancelButton: true,
+        confirmButtonText: 'Ajouter',
+        cancelButtonText: 'Annuler',
+        customClass: {
+          popup: 'ticket-swal-popup',
+          title: 'ticket-swal-title',
+          htmlContainer: 'ticket-swal-text',
+          confirmButton: 'ticket-swal-btn',
+          cancelButton: 'ticket-swal-btn ticket-swal-btn-secondary',
+          input: 'ticket-swal-input',
+        },
+        buttonsStyling: false,
+        preConfirm: (value) => {
+          const code = String(value ?? '').trim();
+          if (!code) {
+            Swal.showValidationMessage('Code-barres requis');
+            return null;
+          }
+          return code;
+        },
+      });
+
+      if (!inputPopup.isConfirmed) return;
+
+      try {
+        const article = await Requetes.getArticle(inputPopup.value);
+        const result = cart.addArticle(article);
+        if (!result.ok) {
+          throw new Error(result.error);
+        }
+        render();
+        await Swal.fire({
+          icon: 'success',
+          title: 'Article ajoute',
+          text: 'Le produit a ete ajoute au panier.',
+          timer: 1000,
+          showConfirmButton: false,
+          customClass: {
+            popup: 'ticket-swal-popup',
+            title: 'ticket-swal-title',
+            htmlContainer: 'ticket-swal-text',
+          },
+        });
+      } catch (err) {
+        await Swal.fire({
+          icon: 'error',
+          title: 'Code-barres invalide',
+          text: err.message || 'Produit introuvable',
+          customClass: {
+            popup: 'ticket-swal-popup',
+            title: 'ticket-swal-title',
+            htmlContainer: 'ticket-swal-text',
+            confirmButton: 'ticket-swal-btn',
+          },
+          buttonsStyling: false,
+        });
+      }
     });
 
-    modal.addEventListener('click', (event) => {
-      if (event.target === modal) closeModal();
-    });
-
-    modal.querySelector('[data-action="cancel"]').addEventListener('click', closeModal);
-    modal.querySelector('[data-action="submit"]').addEventListener('click', async () => {
-      const code = barcodeInput.value.trim();
-      if (!code) {
-        Toast.warn('Saisis un code-barres');
+    panel.querySelector('.ticket-encaisser').addEventListener('click', async () => {
+      if (cart.getItems().length === 0) {
+        await Swal.fire({
+          icon: 'warning',
+          title: 'Panier vide',
+          text: 'Ajoute au moins un produit avant encaissement.',
+          customClass: {
+            popup: 'ticket-swal-popup',
+            title: 'ticket-swal-title',
+            htmlContainer: 'ticket-swal-text',
+            confirmButton: 'ticket-swal-btn',
+          },
+          buttonsStyling: false,
+        });
         return;
       }
-      try {
-        const article = await Requetes.getArticle(code);
-        addArticle(article);
-        closeModal();
-      } catch (err) {
-        Toast.err(err.message || 'Code-barres introuvable');
+      const paymentResult = await TicketPayment.process(cart.getLignes(), cart.getTotal());
+      if (paymentResult.status === 'success') {
+        cart.clear();
+        render();
       }
     });
 
-    barcodeInput.addEventListener('keydown', async (event) => {
-      if (event.key !== 'Enter') return;
-      event.preventDefault();
-      modal.querySelector('[data-action="submit"]').click();
-    });
-
-    rowsEl.addEventListener('click', (event) => {
+    panel.querySelector('.ticket-rows').addEventListener('click', async (event) => {
       const btn = event.target.closest('.ticket-del');
       if (!btn) return;
+
+      const confirmDelete = await Swal.fire({
+        title: 'Retirer ce produit ?',
+        text: 'La ligne sera supprimee du panier.',
+        showCancelButton: true,
+        confirmButtonText: 'Supprimer',
+        cancelButtonText: 'Annuler',
+        customClass: {
+          popup: 'ticket-swal-popup',
+          title: 'ticket-swal-title',
+          htmlContainer: 'ticket-swal-text',
+          confirmButton: 'ticket-swal-btn',
+          cancelButton: 'ticket-swal-btn ticket-swal-btn-secondary',
+        },
+        buttonsStyling: false,
+      });
+      if (!confirmDelete.isConfirmed) return;
+
       const row = btn.closest('.ticket-row');
       if (!row) return;
       const index = Number(row.dataset.index);
-      if (Number.isInteger(index)) {
-        items.splice(index, 1);
-        renderRows();
-      }
+      cart.removeAt(index);
+      render();
     });
 
-    renderRows();
+    render();
   },
 });

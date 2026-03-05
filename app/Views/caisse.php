@@ -7,6 +7,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Familjen+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/interact.js/1.10.27/interact.min.js"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.all.min.js"></script>
   <?php
   $baseUrl = rtrim(dirname($_SERVER['SCRIPT_NAME'] ?? ''), '/');
   if ($baseUrl === '/' || $baseUrl === '\\') {
@@ -15,7 +17,8 @@
   $assetsUrl = $baseUrl . '/assets';
   ?>
   <link rel="stylesheet" href="<?= $assetsUrl ?>/css/caisse.css">
-  <link rel="stylesheet" href="/assets/css/pompes.css">
+  <link rel="stylesheet" href="<?= $assetsUrl ?>/css/pompes.css">
+  <link rel="stylesheet" href="<?= $assetsUrl ?>/css/panels/ticket.css">
 
   <?php
   // SESSION injectée par PHP
@@ -42,7 +45,7 @@
 <header id="topbar">
 
   <div class="tb-brand">
-    <img src="/assets/img/logo_unica.png" alt="UNICA" class="tb-logo-img">
+    <img src="<?= $assetsUrl ?>/img/logo_unica.png" alt="UNICA" class="tb-logo-img">
     <span class="tb-name">UNICA Station</span>
   </div>
 
@@ -61,26 +64,26 @@
 
     <button class="hand-btn tb-icon-btn" data-hand="left"
             onclick="App.setHand('left')" title="Main gauche">
-      <img src="/assets/img/left.png" alt="◄">
+      <img src="<?= $assetsUrl ?>/img/left.png" alt="◄">
     </button>
 
     <button class="hand-btn tb-icon-btn" data-hand="right"
             onclick="App.setHand('right')" title="Main droite">
-      <img src="/assets/img/right.png" alt="►">
+      <img src="<?= $assetsUrl ?>/img/right.png" alt="►">
     </button>
 
     <button class="tb-icon-btn" onclick="App.saveLayout()" title="Sauvegarder">
-      <img src="/assets/img/save.png" alt="Sauvegarder">
+      <img src="<?= $assetsUrl ?>/img/save.png" alt="Sauvegarder">
     </button>
 
     <button class="tb-icon-btn" onclick="App.resetLayout()" title="Réinitialiser">
-      <img src="/assets/img/reset.png" alt="Réinitialiser">
+      <img src="<?= $assetsUrl ?>/img/reset.png" alt="Réinitialiser">
     </button>
 
     <?php if (($_SESSION['employe']['role'] ?? '') === 'gerant'): ?>
     <span class="tb-vsep"></span>
     <button class="tb-icon-btn" onclick="App.openGerant()" title="Espace gérant">
-      <img src="/assets/img/setting.png" alt="Gérant">
+      <img src="<?= $assetsUrl ?>/img/setting.png" alt="Gérant">
     </button>
     <?php endif; ?>
 
@@ -88,7 +91,7 @@
 
     <button class="tb-icon-btn tb-icon-btn--danger"
             onclick="App.deconnexion()" title="Déconnexion">
-      <img src="/assets/img/exit.png" alt="Déconnexion">
+      <img src="<?= $assetsUrl ?>/img/exit.png" alt="Déconnexion">
     </button>
   </div>
 
@@ -131,6 +134,9 @@
 <script src="<?= $assetsUrl ?>/js/core/windows.js"></script>
 
 <!-- Panels (tous "À VENIR" pour l'instant) -->
+<script src="<?= $assetsUrl ?>/js/panels/ticket_cart.js"></script>
+<script src="<?= $assetsUrl ?>/js/panels/ticket_view.js"></script>
+<script src="<?= $assetsUrl ?>/js/panels/ticket_payment.js"></script>
 <script src="<?= $assetsUrl ?>/js/panels/ticket.js"></script>
 <script src="<?= $assetsUrl ?>/js/panels/clavier.js"></script>
 <script src="<?= $assetsUrl ?>/js/panels/paiement.js"></script>
