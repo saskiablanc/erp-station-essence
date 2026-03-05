@@ -1,7 +1,15 @@
 /**
  * panels/pompes.js
  * WM.register('pompes')
- * *
+ *
+ * Layout : carburants (2/5) | electricite (3/5) — tout horizontal, sans scroll
+ *
+ * Dépendances (ordre <script> dans caisse.php) :
+ *   core/state.js → core/requetes.js → core/toast.js → core/windows.js
+ *   panels/carburant.js   → PompeCarburant  (IIFE globale)
+ *   panels/electricite.js → PompeElectricite (IIFE globale)
+ *   panels/pompes.js
+ *
  * CSS : assets/css/pompes.css (chargé dans caisse.php via <link>)
  */
 

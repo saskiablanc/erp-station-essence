@@ -1,0 +1,426 @@
+/* ═══════════════════════════════════════════════════════════
+   pompes.css — Panel Pompes & Bornes électriques
+═══════════════════════════════════════════════════════════ */
+
+/* ══ PANEL PRINCIPAL ══════════════════════════════════════ */
+
+.pompes-panel {
+  height: calc(100% + 24px);
+  margin: -12px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.pompes-body {
+  flex: 1;
+  display: flex;
+  flex-direction: row;
+  overflow: hidden;
+  min-height: 0;
+}
+
+/* ══ STATUSBAR ════════════════════════════════════════════ */
+
+.pompes-statusbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 3px 10px;
+  background: rgba(255, 255, 255, 0.6);
+  border-top: 1px solid var(--border);
+  flex-shrink: 0;
+  font-size: 10px;
+  color: var(--text-dim);
+}
+.pompes-statusbar-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--green);
+  flex-shrink: 0;
+  transition: background 0.2s;
+}
+.pompes-statusbar-dot.loading {
+  background: var(--warn);
+  animation: pulse 1s infinite;
+}
+.pompes-statusbar-dot.error {
+  background: var(--danger);
+  animation: none;
+}
+.pompes-statusbar-refresh {
+  margin-left: auto;
+  height: 18px;
+  padding: 0 8px;
+  border-radius: 4px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-dim);
+  font-size: 10px;
+  cursor: pointer;
+  transition: all 0.12s;
+}
+.pompes-statusbar-refresh:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.pompes-desact-badge {
+  font-size: 9px;
+  padding: 1px 6px;
+  border-radius: 8px;
+  background: var(--danger);
+  color: #fff;
+  font-family: var(--mono);
+  font-weight: 700;
+  display: none;
+}
+.pompes-desact-badge.visible {
+  display: inline-flex;
+}
+
+/* ══ SECTION LABEL ════════════════════════════════════════ */
+
+.pompes-section-label {
+  font-family: var(--display);
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--text-mid);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 4px;
+  padding-bottom: 3px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* ══ COLONNE CARBURANTS (2/5) ════════════════════════════ */
+
+.pompes-col-carburant {
+  flex: 2;
+  display: flex;
+  flex-direction: column;
+  padding: 6px;
+  border-right: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.3);
+  min-width: 0;
+  overflow: hidden;
+}
+
+/* Grille carburant 2×2 — miroir exact de pe-grid-rapides (4×2) */
+.pc-grid-2x2 {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: 1fr 1fr;
+  gap: 4px;
+  min-height: 0;
+}
+
+/* ══ COLONNE ELECTRICITE (3/5) ═══════════════════════════ */
+
+.pompes-col-electricite {
+  flex: 3;
+  display: flex;
+  flex-direction: column;
+  padding: 6px;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.pe-wrap {
+  flex: 1;
+  display: flex;
+  flex-direction: row;
+  gap: 6px;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.pe-col-rapides {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+}
+
+.pe-col-sep {
+  width: 1px;
+  background: var(--border);
+  flex-shrink: 0;
+}
+
+.pe-col-lents {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+}
+
+.pe-subsection-label {
+  font-family: var(--display);
+  font-size: 8px;
+  font-weight: 700;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  margin-bottom: 4px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* Grille 4×2 rapides — remplit toute la hauteur disponible */
+.pe-grid-rapides {
+  flex: 1;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  grid-template-rows: 1fr 1fr;
+  gap: 4px;
+  min-height: 0;
+}
+
+/* Grille 1×2 lents */
+.pe-grid-lents {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 1fr;
+  grid-template-rows: 1fr 1fr;
+  gap: 4px;
+  min-height: 0;
+}
+
+/* ══ CARTES — TAILLE UNIFORME ════════════════════════════ */
+/*
+  Toutes les cartes (carburant + élec) remplissent leur cellule de grille.
+  La grille distribue l'espace disponible en parts égales (1fr).
+  Résultat : toutes les cartes ont la même hauteur calculée dynamiquement.
+*/
+
+.pc-card,
+.pe-card {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 4px 5px;
+  background: rgba(255, 255, 255, 0.82);
+  border: 1.5px solid var(--border);
+  border-radius: 6px;
+  min-width: 0;
+  overflow: hidden;
+  box-sizing: border-box;
+  transition: border-color 0.15s;
+  width: 100%;
+  height: 100%;
+}
+.pc-card:hover,
+.pe-card:hover {
+  border-color: var(--border-active);
+}
+
+/* ══ HEADER : icone | num | label | LED ══════════════════ */
+
+.pc-card-top,
+.pe-card-top {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  padding-bottom: 3px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.pc-icon,
+.pe-icon {
+  width: 12px;
+  height: 12px;
+  object-fit: contain;
+  flex-shrink: 0;
+  opacity: 0.65;
+}
+
+.pc-card-num,
+.pe-card-num {
+  font-family: var(--display);
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--text);
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.pc-card-mode-label,
+.pe-card-type {
+  font-size: 7px;
+  font-weight: 700;
+  color: var(--text-dim);
+  letter-spacing: 0.2px;
+  white-space: nowrap;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.pc-card-mode-label.auto {
+  color: var(--accent);
+}
+.pc-card-status-wrap {
+  display: none;
+}
+
+.pc-led,
+.pe-led {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  margin-left: auto;
+}
+
+/* ══ DATE ════════════════════════════════════════════════ */
+
+.pc-card-date,
+.pe-card-date {
+  font-size: 7px;
+  color: var(--text-dim);
+  font-family: var(--mono);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex-shrink: 0;
+}
+
+/* ══ LIGNES DE DONNÉES ═══════════════════════════════════ */
+
+.pc-card-row,
+.pe-card-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 4px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  min-width: 0;
+  flex-shrink: 0;
+  min-height: 16px;
+}
+
+.pc-row-label,
+.pe-row-label {
+  font-size: 7px;
+  color: var(--text-dim);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.pc-row-val,
+.pe-row-val {
+  font-family: var(--mono);
+  font-size: 7px;
+  font-weight: 600;
+  color: var(--text-mid);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-align: right;
+  max-width: 60%;
+}
+.pc-row-val--total,
+.pe-row-val--total {
+  color: var(--text);
+  font-weight: 700;
+}
+
+/* ══ BADGE CARBURANT (dans header) ══════════════════════ */
+
+.pc-carb-badge {
+  font-size: 7px;
+  padding: 1px 3px;
+  border-radius: 3px;
+  border: 1px solid;
+  font-weight: 700;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.pc-carb-badge--vide {
+  background: rgba(107, 114, 128, 0.08);
+  border-color: rgba(107, 114, 128, 0.2);
+  color: var(--text-dim);
+}
+
+/* ══ BOUTON ACTION (collé en bas) ════════════════════════ */
+
+.pc-card-action,
+.pe-card-action {
+  margin-top: auto;
+  flex-shrink: 0;
+}
+
+.pc-btn,
+.pe-btn {
+  width: 100%;
+  height: 17px;
+  border-radius: 3px;
+  font-family: var(--mono);
+  font-size: 7px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+}
+
+.pc-btn {
+  border: 1.5px solid var(--border);
+  background: transparent;
+}
+.pc-btn--encaisser {
+  background: var(--btn-grad);
+  border-color: var(--border-active);
+  color: var(--accent);
+  box-shadow: var(--shadow-soft);
+}
+.pc-btn--encaisser:hover:not(:disabled) {
+  opacity: 0.85;
+}
+.pc-btn--activer,
+.pe-btn--activer {
+  background: rgba(245, 158, 11, 0.12);
+  border: 1px solid rgba(245, 158, 11, 0.35);
+  color: var(--warn);
+}
+.pc-btn--activer:hover:not(:disabled),
+.pe-btn--activer:hover:not(:disabled) {
+  background: rgba(245, 158, 11, 0.22);
+}
+.pc-btn:disabled,
+.pe-btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.pc-mode-badge,
+.pe-carte-label {
+  width: 100%;
+  height: 17px;
+  border-radius: 3px;
+  border: 1px solid var(--border);
+  background: var(--surface2);
+  font-family: var(--mono);
+  font-size: 7px;
+  font-weight: 700;
+  color: var(--text-dim);
+  letter-spacing: 0.5px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}

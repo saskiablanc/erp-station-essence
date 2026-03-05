@@ -1,14 +1,12 @@
 /**
  * panels/electricite.js
  * IIFE globale PompeElectricite
- * Rendu de la section ELECTRICITE dans le panel pompes.
- *
- * Super-chargeurs rapides : 8 bornes (2 rangees × 4)
- * Chargeurs lents         : 2 bornes (1 colonne de 2)
- * Tous en mode AUTO — pas d'encaissement caisse
+ * Icone : /assets/img/mdi_electric-charger.png
  */
 
 const PompeElectricite = (() => {
+  const ICON = "/assets/img/mdi_electric-charger.png";
+
   let _pompes = [];
 
   function _fmt(n, dec) {
@@ -41,10 +39,9 @@ const PompeElectricite = (() => {
           ? "var(--warn)"
           : "var(--danger)";
     const anim = statut === "en_cours" ? "animation:pulse 1.2s infinite;" : "";
-    return `<span class="pe-led" style="background:${color};box-shadow:0 0 5px ${color};${anim}"></span>`;
+    return `<span class="pe-led" style="background:${color};box-shadow:0 0 4px ${color};${anim}"></span>`;
   }
 
-  // numero affiché : rapides 1-8, lents réindexés 1-2
   function _numAff(p) {
     return p.sous_type === "lente" ? p.numero - 8 : p.numero;
   }
@@ -55,9 +52,8 @@ const PompeElectricite = (() => {
     const isEnCours = p.statut === "en_cours";
     const isRapide = p.sous_type === "rapide";
 
-    const kwh = tx ? `${_fmt(tx.quantite_delivree, 2)}` : "\u2014";
+    const kwh = tx ? `${_fmt(tx.quantite_delivree, 2)} kWh` : "\u2014";
     const total = tx ? `${_fmt(tx.prix_total, 2)} \u20ac` : "\u2014";
-    const temps = _formatTemps(tx ? tx.temps_charge : null);
     const date = _formatDate(p.date_debut);
     const num = _numAff(p);
     const typeLabel = isRapide ? "Rapide" : "Lent";
@@ -78,12 +74,13 @@ const PompeElectricite = (() => {
     return `
       <div class="pe-card" id="pe-card-${p.id_pompe}" style="border-color:${borderColor}">
         <div class="pe-card-top">
+          <img src="${ICON}" class="pe-icon" alt="">
           <span class="pe-card-num">${num}</span>
           <span class="pe-card-type">${typeLabel}</span>
           ${_ledHTML(p.statut)}
         </div>
         <div class="pe-card-date">${date}</div>
-        <div class="pe-card-row"><span class="pe-row-label">Quantité (H)</span><span class="pe-row-val">${kwh}</span></div>
+        <div class="pe-card-row"><span class="pe-row-label">Qte (H)</span><span class="pe-row-val">${kwh}</span></div>
         <div class="pe-card-row pe-row-total"><span class="pe-row-label">Total (€)</span><span class="pe-row-val pe-row-val--total">${total}</span></div>
         <div class="pe-card-action">${actionBtn}</div>
       </div>
@@ -94,12 +91,13 @@ const PompeElectricite = (() => {
     return `
       <div class="pe-card">
         <div class="pe-card-top">
+          <img src="${ICON}" class="pe-icon" alt="">
           <span class="pe-card-num">${n}</span>
           <span class="pe-card-type">${typeLabel}</span>
           <span class="pe-led" style="background:var(--border);"></span>
         </div>
         <div class="pe-card-date" style="opacity:.4;">Chargement...</div>
-        <div class="pe-card-row"><span class="pe-row-label">Quantité (H)</span><span class="pe-row-val">\u2014</span></div>
+        <div class="pe-card-row"><span class="pe-row-label">Qte (H)</span><span class="pe-row-val">\u2014</span></div>
         <div class="pe-card-row"><span class="pe-row-label">Total (€)</span><span class="pe-row-val">\u2014</span></div>
         <div class="pe-card-action"><span class="pe-carte-label">CARTES</span></div>
       </div>
@@ -128,10 +126,8 @@ const PompeElectricite = (() => {
 
   function onData(pompesElec) {
     _pompes = pompesElec;
-
     const rapides = pompesElec.filter((p) => p.sous_type === "rapide");
     const lents = pompesElec.filter((p) => p.sous_type === "lente");
-
     const gr = document.getElementById("pe-grid-rapides");
     const gl = document.getElementById("pe-grid-lents");
     if (gr) gr.innerHTML = rapides.map(_cardHTML).join("");

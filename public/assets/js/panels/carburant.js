@@ -1,10 +1,8 @@
 /**
  * panels/carburant.js
  * IIFE globale PompeCarburant
- * Rendu de la section CARBURANTS dans le panel pompes.
- *
- * Pompes 1 & 2 : MANUEL  — bouton Encaisser, envoie au panier
- * Pompes 3 & 4 : AUTO    — affichage + bouton Activer si désactivée
+ * Layout : 2 groupes (MANUEL / AUTO) × 2 pompes côte à côte
+ * Icone : /assets/img/tabler_gas-station-filled.png
  */
 
 const PompeCarburant = (() => {
@@ -36,6 +34,8 @@ const PompeCarburant = (() => {
     },
   };
 
+  const ICON = "/assets/img/tabler_gas-station-filled.png";
+
   let _pompes = [];
 
   function _fmt(n, dec) {
@@ -58,7 +58,7 @@ const PompeCarburant = (() => {
           ? "var(--warn)"
           : "var(--danger)";
     const anim = statut === "en_cours" ? "animation:pulse 1.2s infinite;" : "";
-    return `<span class="pc-led" style="background:${color};box-shadow:0 0 5px ${color};${anim}"></span>`;
+    return `<span class="pc-led" style="background:${color};box-shadow:0 0 4px ${color};${anim}"></span>`;
   }
 
   function _cardHTML(p) {
@@ -68,18 +68,12 @@ const PompeCarburant = (() => {
     const isManuel = p.mode === "manuel";
     const isDesact = p.statut === "desactivee";
     const isEnCours = p.statut === "en_cours";
-    const isActive = p.statut === "active";
 
     const carbBadge = carb
       ? `<span class="pc-carb-badge" style="background:${colors.bg};border-color:${colors.border};color:${colors.text};">${carb}</span>`
       : `<span class="pc-carb-badge pc-carb-badge--vide">\u2014</span>`;
 
-    const modeBadge = isManuel
-      ? `<span class="pc-mode-badge">MANUEL</span>`
-      : `<span class="pc-mode-badge pc-mode-badge--auto">CARTES</span>`;
-
     const qte = tx ? `${_fmt(tx.quantite_delivree, 2)} L` : "\u2014";
-    const prix = tx ? `${_fmt(tx.prix_litre, 3)} \u20ac/L` : "\u2014";
     const total = tx ? `${_fmt(tx.prix_total, 2)} \u20ac` : "\u2014";
     const date = _formatDate(p.date_debut);
 
@@ -91,7 +85,7 @@ const PompeCarburant = (() => {
     } else if (isManuel) {
       actionBtn = `<button class="pc-btn pc-btn--encaisser" disabled style="opacity:.35;cursor:default;">Encaisser</button>`;
     } else {
-      actionBtn = `${modeBadge}`;
+      actionBtn = `<span class="pc-mode-badge">CARTES</span>`;
     }
 
     const borderColor = isEnCours
@@ -103,34 +97,31 @@ const PompeCarburant = (() => {
     return `
       <div class="pc-card" id="pc-card-${p.id_pompe}" style="border-color:${borderColor}">
         <div class="pc-card-top">
-          <div class="pc-card-num-wrap">
-            <span class="pc-card-num">${p.numero}</span>
-            <span class="pc-card-mode-label${!isManuel ? " auto" : ""}">${isManuel ? "MANUEL" : "AUTO"}</span>
-          </div>
+          <img src="${ICON}" class="pc-icon" alt="">
+          <span class="pc-card-num">${p.numero}</span>
+          <span class="pc-card-mode-label${!isManuel ? " auto" : ""}">${isManuel ? "Manuel" : "Auto"}</span>
+          ${carbBadge}
           ${_ledHTML(p.statut)}
         </div>
         <div class="pc-card-date">${date}</div>
-        <div class="pc-card-row"><span class="pc-row-label">Type</span><span class="pc-row-val">${carbBadge}</span></div>
-        <div class="pc-card-row"><span class="pc-row-label">Quantité (L)</span><span class="pc-row-val">${qte}</span></div>
-        <div class="pc-card-row pc-row-total"><span class="pc-row-label">Total (€)</span><span class="pc-row-val pc-row-val--total">${total}</span></div>
+        <div class="pc-card-row"><span class="pc-row-label">Qte (L)</span><span class="pc-row-val">${qte}</span></div>
+        <div class="pc-card-row"><span class="pc-row-label">Total (€)</span><span class="pc-row-val pc-row-val--total">${total}</span></div>
         <div class="pc-card-action">${actionBtn}</div>
       </div>
     `;
   }
 
-  function _placeholderCard(n) {
+  function _placeholderCard(n, isManuel) {
     return `
       <div class="pc-card" id="pc-card-ph-${n}">
         <div class="pc-card-top">
-          <div class="pc-card-num-wrap">
-            <span class="pc-card-num">${n}</span>
-            <span class="pc-card-mode-label">${n <= 2 ? "MANUEL" : "AUTO"}</span>
-          </div>
+          <img src="${ICON}" class="pc-icon" alt="">
+          <span class="pc-card-num">${n}</span>
+          <span class="pc-card-mode-label${!isManuel ? " auto" : ""}">${isManuel ? "Manuel" : "Auto"}</span>
           <span class="pc-led" style="background:var(--border);"></span>
         </div>
         <div class="pc-card-date" style="opacity:.4;">Chargement...</div>
-        <div class="pc-card-row"><span class="pc-row-label">Type</span><span class="pc-row-val">\u2014</span></div>
-        <div class="pc-card-row"><span class="pc-row-label">Quantité (L)</span><span class="pc-row-val">\u2014</span></div>
+        <div class="pc-card-row"><span class="pc-row-label">Qte (L)</span><span class="pc-row-val">\u2014</span></div>
         <div class="pc-card-row"><span class="pc-row-label">Total (€)</span><span class="pc-row-val">\u2014</span></div>
         <div class="pc-card-action"><button class="pc-btn" disabled style="opacity:.3;">\u2014</button></div>
       </div>
@@ -139,8 +130,11 @@ const PompeCarburant = (() => {
 
   function buildHTML() {
     return `
-      <div class="pc-grid" id="pc-grid-carburant">
-        ${[1, 2, 3, 4].map(_placeholderCard).join("")}
+      <div class="pc-grid-2x2" id="pc-grid-carburant">
+        ${_placeholderCard(1, true)}
+        ${_placeholderCard(2, true)}
+        ${_placeholderCard(3, false)}
+        ${_placeholderCard(4, false)}
       </div>
     `;
   }
@@ -149,7 +143,11 @@ const PompeCarburant = (() => {
     _pompes = pompesCarburant;
     const grid = document.getElementById("pc-grid-carburant");
     if (!grid) return;
-    grid.innerHTML = pompesCarburant.map(_cardHTML).join("");
+    // Trier : manuels en haut (1,2), autos en bas (3,4)
+    const sorted = pompesCarburant.slice().sort(function (a, b) {
+      return a.numero - b.numero;
+    });
+    grid.innerHTML = sorted.map(_cardHTML).join("");
   }
 
   function encaisser(idPompe) {
@@ -159,25 +157,23 @@ const PompeCarburant = (() => {
       Toast.warn("Donnees de pompe introuvables");
       return;
     }
-
     State.addLigne({
       code_barres: `POMPE-${idPompe}`,
-      libelle: `Carburant ${tx.libelle || "?"} - Pompe ${p.numero} (${_fmt(tx.quantite_delivree, 2)} L)`,
+      libelle: `Carburant ${tx.libelle || "?"} - Pompe ${p.numero} (${parseFloat(tx.quantite_delivree).toFixed(2)} L)`,
       prix_unitaire: parseFloat(tx.prix_total) || 0,
       id_pompe: idPompe,
       type: "energie",
     });
-
-    Toast.ok(`Pompe ${p.numero} → Panier (${_fmt(tx.prix_total, 2)} €)`);
+    Toast.ok(
+      `Pompe ${p.numero} -> Panier (${parseFloat(tx.prix_total).toFixed(2)} \u20ac)`,
+    );
     WM.open("ticket");
-
     const card = document.getElementById(`pc-card-${idPompe}`);
     if (card) {
       const btn = card.querySelector(".pc-btn--encaisser");
       if (btn) {
         btn.disabled = true;
         btn.textContent = "En caisse...";
-        btn.classList.add("pc-btn--disabled");
       }
     }
   }
