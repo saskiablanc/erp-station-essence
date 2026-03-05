@@ -58,7 +58,7 @@ WM.register("pompes", {
         <div class="pompes-statusbar">
           <span class="pompes-statusbar-dot" id="pompes-dot"></span>
           <span id="pompes-statusbar-txt">Initialisation...</span>
-          <button class="pompes-statusbar-refresh" onclick="PompesPanelRefresh()">Rafraichir</button>
+          <button class="pompes-statusbar-refresh" onclick="PompesPanelRefresh()">Rafraîchir</button>
         </div>
 
       </div>
@@ -101,7 +101,7 @@ function _majBadges(nbCarb, nbElec) {
 async function _fetchEtMajAffichage() {
   if (_pollingRunning) return;
   _pollingRunning = true;
-  _setStatus("loading", "Mise a jour...");
+  _setStatus("loading", "Mise à jour...");
   try {
     var data = await Requetes.getPompes();
     var carburant = data.filter(function (p) {
@@ -130,9 +130,9 @@ async function _fetchEtMajAffichage() {
         return String(v).padStart(2, "0");
       })
       .join(":");
-    _setStatus("ok", "Mis a jour a " + hms);
+    _setStatus("ok", "Mis à jour à " + hms);
   } catch (e) {
-    _setStatus("error", "Erreur reseau - " + e.message);
+    _setStatus("error", "Erreur réseau - " + e.message);
   } finally {
     _pollingRunning = false;
   }
