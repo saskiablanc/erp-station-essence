@@ -17,7 +17,7 @@
   $assetsUrl = $baseUrl . '/assets';
   ?>
   <link rel="stylesheet" href="<?= $assetsUrl ?>/css/caisse.css">
-  <link rel="stylesheet" href="<?= $assetsUrl ?>/css/pompes.css">
+  <link rel="stylesheet" href="<?= $assetsUrl ?>/css/panels/pompes.css">
   <link rel="stylesheet" href="<?= $assetsUrl ?>/css/panels/ticket.css">
 
   <?php
