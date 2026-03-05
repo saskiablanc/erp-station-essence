@@ -1,0 +1,10 @@
+/* ── CANVAS ───────────────────────────────────────────────── */
+#canvas {
+  position: fixed;
+  top: var(--topbar-h);
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 1;
+}
+

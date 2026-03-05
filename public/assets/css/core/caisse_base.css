@@ -1,0 +1,120 @@
+/* ═══════════════════════════════════════════════════════════
+   StationPRO — Caisse Employé
+   caisse.css
+════════════════════════════════════════════════════════════ */
+
+/* ── Variables ────────────────────────────────────────────── */
+:root {
+  --bg: #f4f2fe;
+  --bg2: rgba(255, 255, 255, 0.7);
+  --surface: rgba(255, 255, 255, 0.82);
+  --surface2: rgba(255, 255, 255, 0.65);
+  --border: #ddd6fe;
+  --border-active: #c7bdfb;
+  --accent: #6366f1;
+  --accent-2: #818cf8;
+  --accent-dim: rgba(129, 140, 248, 0.2);
+  --green: #10b981;
+  --green-dim: rgba(110, 231, 183, 0.25);
+  --warn: #f59e0b;
+  --warn-dim: rgba(245, 158, 11, 0.18);
+  --danger: #ef4444;
+  --danger-dim: rgba(239, 68, 68, 0.16);
+  --text: #1f2937;
+  --text-mid: #4b5563;
+  --text-dim: #6b7280;
+  --bg-grad:
+    linear-gradient(135deg, #cfe3ff 0%, #f4f2fe 50.48%, #d1fae5 100%), #fff;
+  --btn-grad: linear-gradient(
+    90deg,
+    rgba(129, 140, 248, 0.41) 0%,
+    rgba(99, 102, 241, 0.41) 100%
+  );
+  --shadow-soft: 0 4px 4px rgba(0, 0, 0, 0.25);
+  --mono: "DM Mono", monospace;
+  --display: "Familjen Grotesk", sans-serif;
+  --topbar-h: 50px;
+  --taskbar-h: 38px;
+  --win-radius: 10px;
+  --title-h: 38px;
+}
+
+/* ── Reset ────────────────────────────────────────────────── */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html,
+body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--mono);
+  font-size: 13px;
+}
+
+body {
+  position: relative;
+  background: var(--bg-grad);
+  isolation: isolate;
+}
+body::before,
+body::after {
+  content: "";
+  position: fixed;
+  border-radius: 9999px;
+  pointer-events: none;
+  z-index: 0;
+}
+body::before {
+  width: 320px;
+  height: 320px;
+  top: -60px;
+  left: 160px;
+  opacity: 0.3;
+  background: radial-gradient(
+    70.71% 70.71% at 50% 50%,
+    #a5b4fc 0%,
+    rgba(0, 0, 0, 0) 100%
+  );
+}
+body::after {
+  width: 260px;
+  height: 260px;
+  right: 120px;
+  bottom: -40px;
+  opacity: 0.3;
+  background: radial-gradient(
+    70.71% 70.71% at 50% 50%,
+    #6ee7b7 0%,
+    rgba(0, 0, 0, 0) 100%
+  );
+}
+
+button {
+  font-family: var(--mono);
+  cursor: pointer;
+}
+input {
+  font-family: var(--mono);
+}
+input[type="text"],
+input[type="number"],
+input[type="search"],
+input[type="password"],
+input[type="email"] {
+  border-radius: 999px;
+  border: 2px solid var(--border);
+  background: #fff;
+  box-shadow: var(--shadow-soft);
+  padding: 0 16px;
+  height: 42px;
+  color: var(--text);
+}
+

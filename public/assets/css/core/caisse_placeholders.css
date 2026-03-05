@@ -1,0 +1,35 @@
+/* ── COMING SOON ──────────────────────────────────────────── */
+.coming-soon-body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  gap: 8px;
+  padding: 20px;
+  text-align: center;
+}
+.cs-icon {
+  font-size: 32px;
+  opacity: 0.3;
+}
+.cs-label {
+  font-family: var(--display);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-dim);
+}
+.cs-sprint {
+  font-size: 10px;
+  padding: 3px 10px;
+  border-radius: 4px;
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+  background: var(--surface2);
+}
+.cs-us {
+  font-size: 10px;
+  color: var(--text-dim);
+  opacity: 0.6;
+}
+
