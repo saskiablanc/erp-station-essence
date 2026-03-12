@@ -130,12 +130,19 @@
 <script src="<?= $assetsUrl ?>/js/core/toast.js"></script>
 <script src="<?= $assetsUrl ?>/js/core/windows.js"></script>
 
-<!-- Panels gérant uniquement -->
+<!-- Panels gérant — 12 fenêtres maquette -->
 <script src="<?= $assetsUrl ?>/js/panels/gerant/reappro.js"></script>
-<script src="<?= $assetsUrl ?>/js/panels/gerant/prix.js"></script>
+<script src="<?= $assetsUrl ?>/js/panels/gerant/reappro_defauts.js"></script>
+<script src="<?= $assetsUrl ?>/js/panels/gerant/reappro_manuel.js"></script>
 <script src="<?= $assetsUrl ?>/js/panels/gerant/incidents.js"></script>
+<script src="<?= $assetsUrl ?>/js/panels/gerant/prix.js"></script>
 <script src="<?= $assetsUrl ?>/js/panels/gerant/cce_params.js"></script>
+<script src="<?= $assetsUrl ?>/js/panels/gerant/validation.js"></script>
+<script src="<?= $assetsUrl ?>/js/panels/gerant/docs_gestion.js"></script>
+<script src="<?= $assetsUrl ?>/js/panels/gerant/directives.js"></script>
+<script src="<?= $assetsUrl ?>/js/panels/gerant/fermetures.js"></script>
 <script src="<?= $assetsUrl ?>/js/panels/gerant/horaires.js"></script>
+<script src="<?= $assetsUrl ?>/js/panels/gerant/bdd.js"></script>
 
 <script src="<?= $assetsUrl ?>/js/app.js"></script>
 

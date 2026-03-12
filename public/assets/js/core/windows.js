@@ -5,9 +5,9 @@
 const WM = (() => {
   const PANELS = {};
 
-  const LAYOUT_VERSION = 'v6';
-  const HAND_STORAGE_KEY = 'caisse_hand_v2';
-  const flipHand = (hand) => (hand === 'left' ? 'right' : 'left');
+  const LAYOUT_VERSION = "v6";
+  const HAND_STORAGE_KEY = "caisse_hand_v2";
+  const flipHand = (hand) => (hand === "left" ? "right" : "left");
 
   // Ajuste ces ratios pour coller exactement à la maquette
   const LAYOUT_METRICS = {
@@ -15,7 +15,7 @@ const WM = (() => {
     gap: 6,
     mainAreaPct: 0.86, // largeur du bloc gauche+centre (hors colonne CCE)
     topSplitPct: 0.66, // répartition haut : ticket vs stock dans le bloc principal
-    rowTopPct: 0.56,   // hauteur ligne du haut
+    rowTopPct: 0.56, // hauteur ligne du haut
   };
 
   // ── Layout maquette (positions fixes initiales) ──────
@@ -23,11 +23,11 @@ const WM = (() => {
   //            Pompes bas gauche+centre | CCE consultation bas droit
   const BASE_LAYOUTS = {
     right: {
-      ticket:       { x: 10,  y: 10,  w: 520, h: 420 },  // Panier — haut gauche
-      stock:        { x: 536, y: 10,  w: 268, h: 420 },  // Stocks — haut centre
-      pompes:       { x: 10,  y: 440, w: 794, h: 320 },  // Pompes — bas gauche+centre
-      cce_create:   { x: 810, y: 10,  w: 160, h: 420 },  // Créer CCE — haut droite
-      cce_consult:  { x: 810, y: 440, w: 160, h: 320 },  // Consulter CCE — bas droite
+      ticket: { x: 10, y: 10, w: 520, h: 420 }, // Panier — haut gauche
+      stock: { x: 536, y: 10, w: 268, h: 420 }, // Stocks — haut centre
+      pompes: { x: 10, y: 440, w: 794, h: 320 }, // Pompes — bas gauche+centre
+      cce_create: { x: 810, y: 10, w: 160, h: 420 }, // Créer CCE — haut droite
+      cce_consult: { x: 810, y: 440, w: 160, h: 320 }, // Consulter CCE — bas droite
       // Panels secondaires (taskbar, pas sur canvas par défaut)
       clavier: { x: 620, y: 10, w: 260, h: 310 },
       paiement: { x: 620, y: 330, w: 260, h: 280 },
@@ -35,15 +35,15 @@ const WM = (() => {
       alertes: { x: 900, y: 400, w: 280, h: 200 },
     },
     left: {
-      ticket:       { x: 450, y: 10,  w: 520, h: 420 },
-      stock:        { x: 176, y: 10,  w: 268, h: 420 },
-      pompes:       { x: 176, y: 440, w: 794, h: 320 },
-      cce_create:   { x: 10,  y: 10,  w: 160, h: 420 },
-      cce_consult:  { x: 10,  y: 440, w: 160, h: 320 },
-      clavier:      { x: 100, y: 10,  w: 260, h: 310 },
-      paiement:     { x: 100, y: 330, w: 260, h: 280 },
-      transactions: { x: 10,  y: 10,  w: 280, h: 380 },
-      alertes:      { x: 10,  y: 400, w: 280, h: 200 },
+      ticket: { x: 450, y: 10, w: 520, h: 420 },
+      stock: { x: 176, y: 10, w: 268, h: 420 },
+      pompes: { x: 176, y: 440, w: 794, h: 320 },
+      cce_create: { x: 10, y: 10, w: 160, h: 420 },
+      cce_consult: { x: 10, y: 440, w: 160, h: 320 },
+      clavier: { x: 100, y: 10, w: 260, h: 310 },
+      paiement: { x: 100, y: 330, w: 260, h: 280 },
+      transactions: { x: 10, y: 10, w: 280, h: 380 },
+      alertes: { x: 10, y: 400, w: 280, h: 200 },
     },
   };
 
@@ -61,6 +61,111 @@ const WM = (() => {
   }
 
   function computeLayout(hand) {
+    if (typeof CAISSE_MODE !== "undefined" && CAISSE_MODE === "gerant") {
+      return computeLayoutGerant();
+    }
+    return computeLayoutEmploye(hand);
+  }
+
+  // ── Compute layout dynamique gérant (12 panels, maquette) ──
+  function computeLayoutGerant() {
+    const canvas = document.getElementById("canvas");
+    if (!canvas) return {};
+
+    const rect = canvas.getBoundingClientRect();
+    const W = Math.max(900, rect.width);
+    const H = Math.max(600, rect.height);
+
+    const m = 6;
+    const g = 5;
+
+    // Colonnes : zone gauche (73%) + colonne droite (27%)
+    const rightColW = Math.round(W * 0.27);
+    const leftZoneW = W - m * 2 - g - rightColW;
+
+    // 3 rangées : 40% / 33% / 27%
+    const totalH = H - m * 2 - g * 2;
+    const row1H = Math.round(totalH * 0.4);
+    const row2H = Math.round(totalH * 0.33);
+    const row3H = totalH - row1H - row2H;
+
+    const x0 = m;
+    const xR = m + leftZoneW + g;
+    const y0 = m;
+    const y1 = y0 + row1H + g;
+    const y2 = y1 + row2H + g;
+
+    // Row 1 : 2 panels dans la zone gauche
+    const r1LeftW = Math.round(leftZoneW * 0.55);
+    const r1RightW = leftZoneW - r1LeftW - g;
+
+    // Row 2 : 3 panels dans la zone gauche
+    const r2ColW = Math.round((leftZoneW - g * 2) / 3);
+    const r2Col3W = leftZoneW - r2ColW * 2 - g * 2;
+
+    // Row 3 : 2 panels dans la zone gauche
+    const r3LeftW = Math.round(leftZoneW * 0.42);
+    const r3RightW = leftZoneW - r3LeftW - g;
+
+    // Colonne droite : incidents (haut 42%), milieu (validation+docs+directives), bdd (bas 15%)
+    const rcIncH = Math.round(totalH * 0.42);
+    const rcBddH = Math.round(totalH * 0.15);
+    const rcMidH = totalH - rcIncH - rcBddH - g * 2;
+
+    // Milieu droite : validation (gauche 55%) | docs+directives (droite 45%)
+    const rcMidLeftW = Math.round((rightColW - g) * 0.55);
+    const rcMidRightW = rightColW - rcMidLeftW - g;
+    const rcDocsH = Math.round(rcMidH * 0.45);
+    const rcDirH = rcMidH - rcDocsH - g;
+
+    return {
+      gerant_reappro: { x: x0, y: y0, w: r1LeftW, h: row1H },
+      gerant_reappro_defauts: {
+        x: x0 + r1LeftW + g,
+        y: y0,
+        w: r1RightW,
+        h: row1H,
+      },
+      gerant_prix: { x: x0, y: y1, w: r2ColW, h: row2H },
+      gerant_cce_params: { x: x0 + r2ColW + g, y: y1, w: r2ColW, h: row2H },
+      gerant_reappro_manuel: {
+        x: x0 + r2ColW * 2 + g * 2,
+        y: y1,
+        w: r2Col3W,
+        h: row2H,
+      },
+      gerant_fermetures: { x: x0, y: y2, w: r3LeftW, h: row3H },
+      gerant_horaires: { x: x0 + r3LeftW + g, y: y2, w: r3RightW, h: row3H },
+      gerant_incidents: { x: xR, y: y0, w: rightColW, h: rcIncH },
+      gerant_validation: {
+        x: xR,
+        y: y0 + rcIncH + g,
+        w: rcMidLeftW,
+        h: rcMidH,
+      },
+      gerant_docs_gestion: {
+        x: xR + rcMidLeftW + g,
+        y: y0 + rcIncH + g,
+        w: rcMidRightW,
+        h: rcDocsH,
+      },
+      gerant_directives: {
+        x: xR + rcMidLeftW + g,
+        y: y0 + rcIncH + g + rcDocsH + g,
+        w: rcMidRightW,
+        h: rcDirH,
+      },
+      gerant_bdd: {
+        x: xR,
+        y: y0 + rcIncH + g + rcMidH + g,
+        w: rightColW,
+        h: rcBddH,
+      },
+    };
+  }
+
+  // ── Compute layout dynamique employé ──────────────────
+  function computeLayoutEmploye(hand) {
     const canvas = document.getElementById("canvas");
     if (!canvas) return BASE_LAYOUTS[hand];
 
@@ -85,11 +190,11 @@ const WM = (() => {
     const bottomY = margin + rowTop + gap;
 
     const right = {
-      ticket:      { x: leftX,                    y: topY,    w: topLeftW,   h: rowTop },
-      stock:       { x: leftX + topLeftW + gap,  y: topY,    w: topMiddleW, h: rowTop },
-      pompes:      { x: leftX,                    y: bottomY, w: mainW,       h: rowBottom },
-      cce_create:  { x: sideX,                    y: topY,    w: sideW,       h: rowTop },
-      cce_consult: { x: sideX,                    y: bottomY, w: sideW,       h: rowBottom },
+      ticket: { x: leftX, y: topY, w: topLeftW, h: rowTop },
+      stock: { x: leftX + topLeftW + gap, y: topY, w: topMiddleW, h: rowTop },
+      pompes: { x: leftX, y: bottomY, w: mainW, h: rowBottom },
+      cce_create: { x: sideX, y: topY, w: sideW, h: rowTop },
+      cce_consult: { x: sideX, y: bottomY, w: sideW, h: rowBottom },
     };
 
     const computed =
@@ -101,13 +206,26 @@ const WM = (() => {
 
   // Panels affichés par défaut sur le canvas (ordre maquette)
   // En mode gérant, on n'affiche pas les panels employé par défaut
-  const DEFAULT_VISIBLE_EMPLOYE = ['ticket', 'stock', 'pompes', 'cce_create', 'cce_consult'];
+  const DEFAULT_VISIBLE_EMPLOYE = [
+    "ticket",
+    "stock",
+    "pompes",
+    "cce_create",
+    "cce_consult",
+  ];
   const DEFAULT_VISIBLE_GERANT = [
     "gerant_reappro",
-    "gerant_prix",
+    "gerant_reappro_defauts",
     "gerant_incidents",
+    "gerant_prix",
     "gerant_cce_params",
+    "gerant_reappro_manuel",
+    "gerant_validation",
+    "gerant_docs_gestion",
+    "gerant_directives",
+    "gerant_fermetures",
     "gerant_horaires",
+    "gerant_bdd",
   ];
 
   function getDefaultVisible() {
@@ -379,13 +497,7 @@ const WM = (() => {
   }
 
   function ajouterPanelsGerant() {
-    [
-      "gerant_reappro",
-      "gerant_prix",
-      "gerant_incidents",
-      "gerant_cce_params",
-      "gerant_horaires",
-    ].forEach((id) => {
+    DEFAULT_VISIBLE_GERANT.forEach((id) => {
       if (PANELS[id]) open(id);
     });
   }

@@ -1,15 +1,14 @@
-/** panels/gerant/incidents.js — Fiches incident (US11) */
-WM.register("gerant_incidents", {
-  label: "Fiches Incident",
+/** panels/gerant/docs_gestion.js — Envoyer docs de gestion */
+WM.register("gerant_docs_gestion", {
+  label: "Envoyer docs de gestion",
   icon: "",
   sprint: 6,
   gerantOnly: true,
   buildHTML() {
     return `<div class="placeholder">
       <div class="ph-icon"></div>
-      <div class="ph-label">Fiches Incident</div>
+      <div class="ph-label">Envoyer docs de gestion</div>
       <div class="ph-tag">À VENIR — Sprint 6</div>
-      <div class="ph-us">US11</div>
     </div>`;
   },
 });
