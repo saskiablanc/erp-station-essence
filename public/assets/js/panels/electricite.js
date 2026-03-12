@@ -9,6 +9,12 @@
  */
 
 const PompeElectricite = (() => {
+  const ASSETS_BASE =
+    (typeof window !== "undefined" && window.APP_BASE_URL
+      ? window.APP_BASE_URL
+      : "") + "/assets/img";
+  const ELEC_ICON_SRC = `${ASSETS_BASE}/mdi_electric-charger.png`;
+
   let _pompes = [];
 
   function _fmt(n, dec) {
@@ -78,6 +84,7 @@ const PompeElectricite = (() => {
     return `
       <div class="pe-card" id="pe-card-${p.id_pompe}" style="border-color:${borderColor}">
         <div class="pe-card-top">
+          <img class="pe-card-type-icon" src="${ELEC_ICON_SRC}" alt="" aria-hidden="true">
           <span class="pe-card-num">${num}</span>
           <span class="pe-card-type">${typeLabel}</span>
           ${_ledHTML(p.statut)}
@@ -94,6 +101,7 @@ const PompeElectricite = (() => {
     return `
       <div class="pe-card">
         <div class="pe-card-top">
+          <img class="pe-card-type-icon" src="${ELEC_ICON_SRC}" alt="" aria-hidden="true">
           <span class="pe-card-num">${n}</span>
           <span class="pe-card-type">${typeLabel}</span>
           <span class="pe-led" style="background:var(--border);"></span>

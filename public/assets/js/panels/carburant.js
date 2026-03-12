@@ -8,6 +8,12 @@
  */
 
 const PompeCarburant = (() => {
+  const ASSETS_BASE =
+    (typeof window !== "undefined" && window.APP_BASE_URL
+      ? window.APP_BASE_URL
+      : "") + "/assets/img";
+  const GAS_ICON_SRC = `${ASSETS_BASE}/tabler_gas-station-filled.png`;
+
   const CARBURANT_COLORS = {
     SP95: {
       bg: "rgba(99,102,241,0.10)",
@@ -107,9 +113,11 @@ const PompeCarburant = (() => {
       <div class="pc-card" id="pc-card-${p.id_pompe}" style="border-color:${borderColor}">
         <div class="pc-card-top">
           <div class="pc-card-num-wrap">
+            <img class="pc-card-type-icon" src="${GAS_ICON_SRC}" alt="" aria-hidden="true">
             <span class="pc-card-num">${p.numero}</span>
             <span class="pc-card-mode-label${!isManuel ? " auto" : ""}">${isManuel ? "MANUEL" : "AUTO"}</span>
           </div>
+          <span class="pc-card-mini" aria-hidden="true">\u2212</span>
           ${_ledHTML(p.statut)}
         </div>
         <div class="pc-card-date">${date}</div>
@@ -126,9 +134,11 @@ const PompeCarburant = (() => {
       <div class="pc-card" id="pc-card-ph-${n}">
         <div class="pc-card-top">
           <div class="pc-card-num-wrap">
+            <img class="pc-card-type-icon" src="${GAS_ICON_SRC}" alt="" aria-hidden="true">
             <span class="pc-card-num">${n}</span>
             <span class="pc-card-mode-label">${n <= 2 ? "MANUEL" : "AUTO"}</span>
           </div>
+          <span class="pc-card-mini" aria-hidden="true">\u2212</span>
           <span class="pc-led" style="background:var(--border);"></span>
         </div>
         <div class="pc-card-date" style="opacity:.4;">Chargement...</div>

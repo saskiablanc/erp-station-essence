@@ -159,9 +159,17 @@
 .pc-card-num-wrap {
   display: flex;
   align-items: baseline;
-  gap: 3px;
+  gap: 4px;
   flex: 1;
   min-width: 0;
+}
+.pc-card-type-icon {
+  width: 13px;
+  height: 13px;
+  object-fit: contain;
+  opacity: 0.65;
+  flex-shrink: 0;
+  transform: translateY(0.5px);
 }
 .pc-card-num {
   font-family: var(--display);
@@ -186,6 +194,22 @@
 
 .pc-card-status-wrap {
   display: none;
+}
+.pc-card-mini {
+  width: 18px;
+  height: 18px;
+  border-radius: 5px;
+  border: 1px solid var(--border);
+  background: var(--surface2);
+  color: var(--text-dim);
+  font-family: var(--display);
+  font-size: 11px;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  flex-shrink: 0;
 }
 
 .pc-led {
@@ -445,6 +469,14 @@
   padding-bottom: 2px;
   border-bottom: 1px solid var(--border);
   margin-bottom: 1px;
+}
+.pe-card-type-icon {
+  width: 12px;
+  height: 12px;
+  object-fit: contain;
+  opacity: 0.62;
+  flex-shrink: 0;
+  transform: translateY(0.5px);
 }
 .pe-card-num {
   font-family: var(--display);
