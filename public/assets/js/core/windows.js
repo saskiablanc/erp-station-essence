@@ -139,15 +139,28 @@ const WM = (() => {
       <div class="win-title" id="wt-${id}">
         <span class="win-icon">${def.icon}</span>
         <span class="win-label">${def.label}</span>
-        ${def.sprint > 2 ? `<span class="win-sprint">S${def.sprint}</span>` : '<span class="win-sprint done">S2</span>'}
-        <div class="win-controls"></div>
+        <div class="win-controls">
+          <button class="wc min" type="button" title="Réduire">-</button>
+        </div>
       </div>
       <div class="win-body" id="wb-${id}">${def.buildHTML()}</div>
-      <div class="win-resize"></div>
+      <div class="win-resize-side win-resize-top"></div>
+      <div class="win-resize-side win-resize-right"></div>
+      <div class="win-resize-side win-resize-bottom"></div>
+      <div class="win-resize-side win-resize-left"></div>
+      <div class="win-resize-handle win-resize-tl"></div>
+      <div class="win-resize-handle win-resize-tr"></div>
+      <div class="win-resize-handle win-resize-bl"></div>
+      <div class="win-resize-handle win-resize-br"></div>
     `;
 
     document.getElementById("canvas").appendChild(el);
     el.addEventListener("mousedown", () => focus(id));
+    el.querySelector(".wc.min")?.addEventListener("click", (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      minimize(id);
+    });
 
     interact(el).draggable({
       allowFrom: "#wt-" + id,
@@ -176,14 +189,44 @@ const WM = (() => {
     });
 
     interact(el).resizable({
-      edges: { right: true, bottom: true, bottomRight: ".win-resize" },
+      edges: {
+        top: ".win-resize-top, .win-resize-tl, .win-resize-tr",
+        left: ".win-resize-left, .win-resize-tl, .win-resize-bl",
+        bottom: ".win-resize-bottom, .win-resize-bl, .win-resize-br",
+        right: ".win-resize-right, .win-resize-tr, .win-resize-br",
+      },
       modifiers: [
+        interact.modifiers.restrictEdges({
+          outer: "#canvas",
+          endOnly: true,
+        }),
         interact.modifiers.restrictSize({ min: { width: 220, height: 140 } }),
       ],
       listeners: {
+        start() {
+          const w = State.all().windows[id];
+          if (w?.minimized) {
+            minimize(id);
+          }
+          el.classList.add("resizing");
+          document.body.classList.add("is-resizing");
+          const sel = window.getSelection?.();
+          if (sel && sel.removeAllRanges) sel.removeAllRanges();
+        },
         move(e) {
+          const x = (parseFloat(el.dataset.x) || 0) + e.deltaRect.left;
+          const y = (parseFloat(el.dataset.y) || 0) + e.deltaRect.top;
           el.style.width = e.rect.width + "px";
           el.style.height = e.rect.height + "px";
+          el.style.transform = `translate(${x}px,${y}px)`;
+          el.dataset.x = x;
+          el.dataset.y = y;
+          const sel = window.getSelection?.();
+          if (sel && sel.removeAllRanges) sel.removeAllRanges();
+        },
+        end() {
+          el.classList.remove("resizing");
+          document.body.classList.remove("is-resizing");
         },
       },
     });
@@ -209,7 +252,16 @@ const WM = (() => {
   }
 
   function minimize(id) {
-    return;
+    const el = document.getElementById("win-" + id);
+    if (!el) return;
+
+    const w = State.all().windows[id] || { minimized: false, visible: true };
+    w.minimized = !w.minimized;
+    w.visible = true;
+    State.all().windows[id] = w;
+
+    el.classList.toggle("minimized", w.minimized);
+    updateTaskbar();
   }
 
   function open(id) {

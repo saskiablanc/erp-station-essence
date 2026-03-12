@@ -29,6 +29,10 @@
   box-shadow: 0 26px 64px rgba(99, 102, 241, 0.25);
   cursor: grabbing;
 }
+.win.resizing {
+  opacity: 0.97;
+  box-shadow: 0 26px 64px rgba(99, 102, 241, 0.25);
+}
 .win.minimized {
   height: var(--title-h) !important;
   overflow: hidden;
@@ -147,28 +151,120 @@
   border-radius: 4px;
 }
 
-/* Resize */
-.win-resize {
+/* Resize handles (4 coins) */
+.win-resize-side {
   position: absolute;
+  z-index: 5;
+  background: transparent;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.win-resize-top {
+  top: 0;
+  left: 14px;
+  right: 14px;
+  height: 14px;
+  cursor: ns-resize;
+}
+.win-resize-bottom {
   bottom: 0;
+  left: 14px;
+  right: 14px;
+  height: 14px;
+  cursor: ns-resize;
+}
+.win-resize-left {
+  left: 0;
+  top: 14px;
+  bottom: 14px;
+  width: 14px;
+  cursor: ew-resize;
+}
+.win-resize-right {
   right: 0;
+  top: 14px;
+  bottom: 14px;
+  width: 14px;
+  cursor: ew-resize;
+}
+
+.win-resize-handle {
+  position: absolute;
   width: 14px;
   height: 14px;
-  cursor: nwse-resize;
+  z-index: 6;
+  opacity: 0.25;
+  transition: opacity 0.12s;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
 }
-.win-resize::after {
+.win:hover .win-resize-handle {
+  opacity: 0.7;
+}
+.win-resize-handle::after {
   content: "";
   position: absolute;
-  right: 3px;
-  bottom: 3px;
   width: 7px;
   height: 7px;
-  border-right: 2px solid var(--text-dim);
-  border-bottom: 2px solid var(--text-dim);
-  opacity: 0.3;
+  border-color: var(--text-dim);
+  border-style: solid;
+  border-width: 0;
   border-radius: 1px;
 }
-.win:hover .win-resize::after {
-  opacity: 0.7;
+
+.win-resize-br {
+  right: 0;
+  bottom: 0;
+  cursor: nwse-resize;
+}
+.win-resize-br::after {
+  right: 3px;
+  bottom: 3px;
+  border-right-width: 2px;
+  border-bottom-width: 2px;
+}
+
+.win-resize-tl {
+  left: 0;
+  top: 0;
+  cursor: nwse-resize;
+}
+.win-resize-tl::after {
+  left: 3px;
+  top: 3px;
+  border-left-width: 2px;
+  border-top-width: 2px;
+}
+
+.win-resize-tr {
+  right: 0;
+  top: 0;
+  cursor: nesw-resize;
+}
+.win-resize-tr::after {
+  right: 3px;
+  top: 3px;
+  border-right-width: 2px;
+  border-top-width: 2px;
+}
+
+.win-resize-bl {
+  left: 0;
+  bottom: 0;
+  cursor: nesw-resize;
+}
+.win-resize-bl::after {
+  left: 3px;
+  bottom: 3px;
+  border-left-width: 2px;
+  border-bottom-width: 2px;
+}
+
+body.is-resizing #canvas,
+body.is-resizing #canvas * {
+  user-select: none !important;
+  -webkit-user-select: none !important;
 }
 
