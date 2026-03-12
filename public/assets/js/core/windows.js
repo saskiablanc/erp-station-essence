@@ -6,7 +6,7 @@ const WM = (() => {
 
   const PANELS = {};
 
-  const LAYOUT_VERSION = 'v4';
+  const LAYOUT_VERSION = 'v6';
   const HAND_STORAGE_KEY = 'caisse_hand_v2';
   const flipHand = (hand) => (hand === 'left' ? 'right' : 'left');
 
@@ -14,19 +14,21 @@ const WM = (() => {
   const LAYOUT_METRICS = {
     margin: 6,
     gap: 6,
-    colLeftPct: 0.66, // largeur colonne gauche
-    rowTopPct: 0.56,  // hauteur ligne du haut
+    mainAreaPct: 0.86, // largeur du bloc gauche+centre (hors colonne CCE)
+    topSplitPct: 0.66, // répartition haut : ticket vs stock dans le bloc principal
+    rowTopPct: 0.56,   // hauteur ligne du haut
   };
 
   // ── Layout maquette (positions fixes initiales) ──────
-  // Maquette : Panier grand gauche | Stocks haut droit
-  //            Pompes bas gauche large | CCE bas droit
+  // Maquette : Panier grand gauche | Stocks haut centre | CCE création haut droit
+  //            Pompes bas gauche+centre | CCE consultation bas droit
   const BASE_LAYOUTS = {
     right: {
-      ticket:       { x: 10,  y: 10,  w: 580, h: 420 },  // Panier — grand, gauche haut
-      stock:        { x: 600, y: 10,  w: 370, h: 420 },  // Stocks — haut droit
-      pompes:       { x: 10,  y: 440, w: 580, h: 320 },  // Pompes — bas gauche large
-      cce:          { x: 600, y: 440, w: 370, h: 320 },  // Gestion CCE — bas droit
+      ticket:       { x: 10,  y: 10,  w: 520, h: 420 },  // Panier — haut gauche
+      stock:        { x: 536, y: 10,  w: 268, h: 420 },  // Stocks — haut centre
+      pompes:       { x: 10,  y: 440, w: 794, h: 320 },  // Pompes — bas gauche+centre
+      cce_create:   { x: 810, y: 10,  w: 160, h: 420 },  // Créer CCE — haut droite
+      cce_consult:  { x: 810, y: 440, w: 160, h: 320 },  // Consulter CCE — bas droite
       // Panels secondaires (taskbar, pas sur canvas par défaut)
       clavier:      { x: 620, y: 10,  w: 260, h: 310 },
       paiement:     { x: 620, y: 330, w: 260, h: 280 },
@@ -34,10 +36,11 @@ const WM = (() => {
       alertes:      { x: 900, y: 400, w: 280, h: 200 },
     },
     left: {
-      ticket:       { x: 390, y: 10,  w: 580, h: 420 },
-      stock:        { x: 10,  y: 10,  w: 370, h: 420 },
-      pompes:       { x: 390, y: 440, w: 580, h: 320 },
-      cce:          { x: 10,  y: 440, w: 370, h: 320 },
+      ticket:       { x: 450, y: 10,  w: 520, h: 420 },
+      stock:        { x: 176, y: 10,  w: 268, h: 420 },
+      pompes:       { x: 176, y: 440, w: 794, h: 320 },
+      cce_create:   { x: 10,  y: 10,  w: 160, h: 420 },
+      cce_consult:  { x: 10,  y: 440, w: 160, h: 320 },
       clavier:      { x: 100, y: 10,  w: 260, h: 310 },
       paiement:     { x: 100, y: 330, w: 260, h: 280 },
       transactions: { x: 10,  y: 10,  w: 280, h: 380 },
@@ -65,26 +68,29 @@ const WM = (() => {
     const rect = canvas.getBoundingClientRect();
     if (!rect.width || !rect.height) return BASE_LAYOUTS[hand];
 
-    const { margin, gap, colLeftPct, rowTopPct } = LAYOUT_METRICS;
+    const { margin, gap, mainAreaPct, topSplitPct, rowTopPct } = LAYOUT_METRICS;
 
     const availW = Math.max(640, rect.width - margin * 2);
     const availH = Math.max(480, rect.height - margin * 2);
 
-    const colLeft = Math.round((availW - gap) * colLeftPct);
-    const colRight = availW - gap - colLeft;
+    const mainW = Math.round((availW - gap) * mainAreaPct);
+    const sideW = availW - gap - mainW;
+    const topLeftW = Math.round((mainW - gap) * topSplitPct);
+    const topMiddleW = mainW - gap - topLeftW;
     const rowTop = Math.round((availH - gap) * rowTopPct);
     const rowBottom = availH - gap - rowTop;
 
     const leftX = margin;
-    const rightX = margin + colLeft + gap;
+    const sideX = margin + mainW + gap;
     const topY = margin;
     const bottomY = margin + rowTop + gap;
 
     const right = {
-      ticket: { x: leftX,  y: topY,    w: colLeft,  h: rowTop },
-      stock:  { x: rightX, y: topY,    w: colRight, h: rowTop },
-      pompes: { x: leftX,  y: bottomY, w: colLeft,  h: rowBottom },
-      cce:    { x: rightX, y: bottomY, w: colRight, h: rowBottom },
+      ticket:      { x: leftX,                    y: topY,    w: topLeftW,   h: rowTop },
+      stock:       { x: leftX + topLeftW + gap,  y: topY,    w: topMiddleW, h: rowTop },
+      pompes:      { x: leftX,                    y: bottomY, w: mainW,       h: rowBottom },
+      cce_create:  { x: sideX,                    y: topY,    w: sideW,       h: rowTop },
+      cce_consult: { x: sideX,                    y: bottomY, w: sideW,       h: rowBottom },
     };
 
     const computed = hand === 'left'
@@ -96,7 +102,7 @@ const WM = (() => {
   }
 
   // Panels affichés par défaut sur le canvas (ordre maquette)
-  const DEFAULT_VISIBLE = ['ticket', 'stock', 'pompes', 'cce'];
+  const DEFAULT_VISIBLE = ['ticket', 'stock', 'pompes', 'cce_create', 'cce_consult'];
 
   function register(id, def) {
     PANELS[id] = def;
