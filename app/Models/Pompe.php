@@ -347,7 +347,7 @@ final class Pompe
      * Paiement validé : desactivee → active + TransactionEnergie → payee
      * Transaction atomique.
      */
-    public function validerPaiement(int $idPompe, int $idTransactionEnergie): void
+    public function validerPaiement(int $idPompe, int $idTransactionEnergie): int
     {
         $pompe = $this->findById($idPompe);
         if (!$pompe) {
@@ -470,6 +470,7 @@ final class Pompe
                 [$idPompe]
             );
             $this->db->commit();
+            return $idTransaction;
         } catch (\Throwable $e) {
             $this->db->rollBack();
             throw $e;

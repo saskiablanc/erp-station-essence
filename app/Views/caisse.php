@@ -19,6 +19,7 @@
   <link rel="stylesheet" href="<?= $assetsUrl ?>/css/caisse.css">
   <link rel="stylesheet" href="<?= $assetsUrl ?>/css/panels/pompes.css">
   <link rel="stylesheet" href="<?= $assetsUrl ?>/css/panels/ticket.css">
+  <link rel="stylesheet" href="<?= $assetsUrl ?>/css/panels/ticket_barcode.css">
 
   <?php
   // SESSION injectée par PHP
@@ -139,6 +140,7 @@
 <script src="<?= $assetsUrl ?>/js/panels/ticket_cart.js"></script>
 <script src="<?= $assetsUrl ?>/js/panels/ticket_view.js"></script>
 <script src="<?= $assetsUrl ?>/js/panels/ticket_payment.js"></script>
+<script src="<?= $assetsUrl ?>/js/panels/ticket_barcode.js"></script>
 <script src="<?= $assetsUrl ?>/js/panels/ticket.js"></script>
 <script src="<?= $assetsUrl ?>/js/panels/clavier.js"></script>
 <script src="<?= $assetsUrl ?>/js/panels/paiement.js"></script>

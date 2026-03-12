@@ -204,11 +204,12 @@ final class PompeController extends Controller
         }
 
         try {
-            $this->model->validerPaiement($idPompe, $idTransactionEnergie);
+            $idTransaction = $this->model->validerPaiement($idPompe, $idTransactionEnergie);
             $this->json([
                 'success' => true,
                 'id_pompe' => $idPompe,
                 'id_transaction_energie' => $idTransactionEnergie,
+                'id_transaction' => $idTransaction,
                 'statut' => 'payee',
             ]);
         } catch (RuntimeException $e) {

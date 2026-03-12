@@ -87,6 +87,7 @@ $router->post('json/transactions',              [new CaisseController(), 'creerT
 $router->get( 'json/transactions',              [new CaisseController(), 'getTransactions']);
 $router->get( 'json/transactions/{id}',         [new CaisseController(), 'getTransaction']);
 $router->post('json/transactions/{id}/annuler', [new CaisseController(), 'annulerTransaction']);
+$router->post('json/recus',                     [new CaisseController(), 'creerRecus']);
 
 // Pompes ────────────────────────────────────
 $router->get( 'json/pompes',                    [new PompeController(),  'getAll']);

@@ -39,6 +39,35 @@ window.TicketPayment = (() => {
     return result.isDenied ? 'cce' : 'cb';
   }
 
+  async function chooseReceipt() {
+    const result = await Swal.fire({
+      ...swalBase,
+      title: 'Souhaitez-vous un reçu ?',
+      html: 'Voulez-vous imprimer un reçu de paiement ?',
+      showDenyButton: true,
+      showCancelButton: false,
+      confirmButtonText: 'Oui',
+      denyButtonText: 'Non',
+      allowOutsideClick: false,
+      backdrop: 'rgba(26, 26, 46, 0.45)',
+    });
+
+    if (result.isConfirmed) return true;
+    if (result.isDenied) return false;
+    return false;
+  }
+
+  function collectTransactionIds(responses) {
+    const ids = [];
+    for (const response of responses) {
+      const id = Number(response?.id_transaction ?? 0);
+      if (id > 0) {
+        ids.push(id);
+      }
+    }
+    return [...new Set(ids)];
+  }
+
   async function process(items, total) {
     const method = await chooseMethod(total);
     if (!method) {
@@ -95,11 +124,36 @@ window.TicketPayment = (() => {
         window.PompesPanelRefresh();
       }
 
+      const wantsReceipt = await chooseReceipt();
+      let receiptState = 'none';
+      if (wantsReceipt) {
+        const transactionIds = collectTransactionIds(responses);
+        if (transactionIds.length === 0) {
+          receiptState = 'missing';
+        } else {
+          try {
+            await Requetes.creerRecus({
+              id_transactions: transactionIds,
+              mode_paiement: method,
+            });
+            await wait(800);
+            receiptState = 'printing';
+          } catch (_) {
+            receiptState = 'error';
+          }
+        }
+      }
+
       await Swal.fire({
         ...swalBase,
         icon: 'success',
         title: 'Paiement accepté',
-        html: 'Transaction enregistrée avec succès.',
+        html:
+          receiptState === 'printing'
+            ? 'Impression en cours...'
+            : receiptState === 'error' || receiptState === 'missing'
+              ? 'Transaction enregistrée. Reçu indisponible pour le moment.'
+              : 'Transaction enregistrée avec succès.',
         confirmButtonText: 'Fermer',
         allowOutsideClick: false,
       });

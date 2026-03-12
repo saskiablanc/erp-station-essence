@@ -102,26 +102,9 @@ WM.register('ticket', {
     });
 
     panel.querySelector('[data-action="random"]').addEventListener('click', async () => {
-      const confirm = await Swal.fire({
-        title: 'Ajouter un produit',
-        text: 'Ajouter un produit aléatoire du stock ?',
-        showCancelButton: true,
-        confirmButtonText: 'Ajouter',
-        cancelButtonText: 'Annuler',
-        customClass: {
-          popup: 'ticket-swal-popup',
-          title: 'ticket-swal-title',
-          htmlContainer: 'ticket-swal-text',
-          confirmButton: 'ticket-swal-btn',
-          cancelButton: 'ticket-swal-btn ticket-swal-btn-secondary',
-        },
-        buttonsStyling: false,
-      });
-      if (!confirm.isConfirmed) return;
-
       try {
         const article = await Requetes.randomArticle();
-        await addToCart(article, `${article.libelle ?? article.libelle_produit ?? 'Produit'} ajouté au panier.`);
+        await addToCart(article);
       } catch (err) {
         await Swal.fire({
           icon: 'error',
@@ -139,37 +122,14 @@ WM.register('ticket', {
     });
 
     panel.querySelector('[data-action="barcode"]').addEventListener('click', async () => {
-      const inputPopup = await Swal.fire({
-        title: 'Insérer un code-barres',
-        input: 'text',
-        inputPlaceholder: 'Ex: 1234567890123',
-        showCancelButton: true,
-        confirmButtonText: 'Ajouter',
-        cancelButtonText: 'Annuler',
-        customClass: {
-          popup: 'ticket-swal-popup',
-          title: 'ticket-swal-title',
-          htmlContainer: 'ticket-swal-text',
-          confirmButton: 'ticket-swal-btn',
-          cancelButton: 'ticket-swal-btn ticket-swal-btn-secondary',
-          input: 'ticket-swal-input',
-        },
-        buttonsStyling: false,
-        preConfirm: (value) => {
-          const code = String(value ?? '').trim();
-          if (!code) {
-            Swal.showValidationMessage('Code-barres requis');
-            return null;
-          }
-          return code;
-        },
-      });
-
-      if (!inputPopup.isConfirmed) return;
+      const code = window.TicketBarcode && typeof window.TicketBarcode.prompt === 'function'
+        ? await window.TicketBarcode.prompt()
+        : null;
+      if (!code) return;
 
       try {
-        const article = await Requetes.getArticle(inputPopup.value);
-        const ok = await addToCart(article, 'Le produit a été ajouté au panier.');
+        const article = await Requetes.getArticle(code);
+        const ok = await addToCart(article);
         if (!ok) return;
       } catch (err) {
         await Swal.fire({

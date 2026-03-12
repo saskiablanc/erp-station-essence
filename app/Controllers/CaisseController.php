@@ -5,6 +5,7 @@ namespace App\Controllers;
 
 use App\Core\Controller;
 use App\Models\Article;
+use App\Models\Recu;
 use App\Models\Transaction;
 
 class CaisseController extends Controller
@@ -99,5 +100,30 @@ class CaisseController extends Controller
             $this->jsonError("Impossible d'annuler la transaction #{$id}");
         }
         $this->json(['success' => true]);
+    }
+
+    public function creerRecus(): void
+    {
+        $this->requireAuth();
+        $body = $this->body();
+
+        $ids = $body['id_transactions'] ?? [];
+        if (!is_array($ids)) {
+            $ids = [];
+        }
+
+        $modePaiement = (string) ($body['mode_paiement'] ?? 'cb');
+
+        $model = new Recu();
+        try {
+            $recus = $model->creerPourTransactions($ids, $modePaiement);
+        } catch (\Throwable $e) {
+            $this->jsonError($e->getMessage(), 400);
+        }
+
+        $this->json([
+            'success' => true,
+            'recus' => $recus,
+        ], 201);
     }
 }

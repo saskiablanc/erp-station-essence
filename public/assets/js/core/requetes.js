@@ -43,6 +43,7 @@ const Requetes = (() => {
     getTransactions:    ()     => appel('GET',  '/json/transactions'),
     getTransaction:     (id)   => appel('GET',  `/json/transactions/${id}`),
     annulerTransaction: (id)   => appel('POST', `/json/transactions/${id}/annuler`),
+    creerRecus:         (data) => appel('POST', '/json/recus', data),
 
     // ── Sprint 3 ──────────────────────────────────────────
     getPompes:    ()   => appel('GET',  '/json/pompes'),
