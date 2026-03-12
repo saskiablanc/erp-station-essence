@@ -1,0 +1,354 @@
+/* ═══════════════════════════════════════════════════════════
+   PANELS RÉAPPROVISIONNEMENT — Sprint 4
+   ═══════════════════════════════════════════════════════════ */
+
+/* ── Messages communs ─────────────────────────────────── */
+.ra-msg {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--text-dim);
+  padding: 20px;
+}
+.ra-msg--err {
+  color: var(--danger);
+}
+
+/* ═══════════════════════════════════════════════════════
+   US23 — Consultation réapprovisionnement
+   ═══════════════════════════════════════════════════════ */
+.ra-panel {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.ra-toolbar {
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.ra-select {
+  font-family: var(--mono);
+  font-size: 11px;
+  padding: 4px 8px;
+  border-radius: 5px;
+  border: 1px solid var(--border);
+  background: #fff;
+  color: var(--text);
+}
+.ra-table-wrap {
+  flex: 1;
+  overflow: auto;
+}
+.ra-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: var(--mono);
+  font-size: 11px;
+}
+.ra-table th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  font-size: 9px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  color: var(--text-dim);
+  text-align: left;
+  padding: 6px 6px;
+  background: var(--bg2);
+  border-bottom: 2px solid var(--border);
+}
+.ra-table td {
+  padding: 5px 6px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+  vertical-align: middle;
+}
+.ra-table tbody tr:nth-child(even) {
+  background: rgba(0, 0, 0, 0.02);
+}
+.ra-cell-id {
+  font-weight: 700;
+  color: var(--text);
+}
+.ra-cell-code {
+  font-size: 10px;
+  color: var(--text-dim);
+}
+.ra-cell-qty {
+  text-align: right;
+  font-weight: 500;
+}
+.ra-cell-date {
+  font-size: 10px;
+  color: var(--text-dim);
+  white-space: nowrap;
+}
+
+/* Badges statut */
+.ra-badge {
+  font-size: 9px;
+  font-weight: 600;
+  padding: 2px 7px;
+  border-radius: 4px;
+  white-space: nowrap;
+}
+.ra-badge--encours {
+  background: rgba(59, 130, 246, 0.15);
+  color: #3b82f6;
+}
+.ra-badge--retard {
+  background: var(--warn-dim);
+  color: #d97706;
+}
+.ra-badge--arrive {
+  background: var(--green-dim);
+  color: var(--green);
+}
+.ra-badge--annule {
+  background: var(--danger-dim);
+  color: var(--danger);
+}
+
+/* Croix rouge annuler */
+.ra-del {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--danger);
+  font-size: 16px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 4px;
+  transition: background 0.12s;
+}
+.ra-del:hover {
+  background: var(--danger-dim);
+}
+
+/* Ligne colorée selon statut */
+.ra-row--retard {
+  background: rgba(245, 158, 11, 0.04) !important;
+}
+.ra-row--annule {
+  opacity: 0.55;
+}
+
+/* ═══════════════════════════════════════════════════════
+   US20 — Valeurs défaut
+   ═══════════════════════════════════════════════════════ */
+.vd-panel {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.vd-content {
+  flex: 1;
+  overflow: auto;
+}
+.vd-footer {
+  padding: 6px 8px;
+  border-top: 1px solid var(--border);
+  flex-shrink: 0;
+  text-align: center;
+}
+.vd-btn-confirm {
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 600;
+  padding: 6px 16px;
+  border-radius: 6px;
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  cursor: pointer;
+  transition: opacity 0.12s;
+}
+.vd-btn-confirm:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+.vd-btn-confirm:not(:disabled):hover {
+  opacity: 0.85;
+}
+
+.vd-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: var(--mono);
+  font-size: 11px;
+}
+.vd-table th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  font-size: 9px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  color: var(--text-dim);
+  text-align: left;
+  padding: 6px;
+  background: var(--bg2);
+  border-bottom: 2px solid var(--border);
+}
+.vd-table td {
+  padding: 4px 6px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+/* Ligne type (accordéon) */
+.vd-type-row {
+  cursor: pointer;
+  background: rgba(99, 102, 241, 0.06);
+  user-select: none;
+}
+.vd-type-row:hover {
+  background: rgba(99, 102, 241, 0.1);
+}
+.vd-type-row td {
+  padding: 6px;
+}
+.vd-toggle {
+  text-align: right;
+  font-size: 10px;
+  color: var(--text-dim);
+}
+
+/* Lignes articles */
+.vd-article-row td {
+  padding-left: 16px;
+}
+.vd-hidden {
+  display: none;
+}
+.vd-nom {
+  max-width: 160px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text);
+}
+
+/* Inputs inline */
+.vd-input {
+  font-family: var(--mono);
+  font-size: 11px;
+  width: 68px;
+  padding: 3px 5px;
+  border-radius: 4px;
+  border: 1px solid var(--border);
+  background: #fff;
+  color: var(--text);
+}
+.vd-input--sm {
+  width: 42px;
+}
+.vd-input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.12);
+}
+.vd-sel {
+  font-family: var(--mono);
+  font-size: 10px;
+  padding: 3px 3px;
+  border-radius: 3px;
+  border: 1px solid var(--border);
+  background: #fff;
+  color: var(--text);
+  margin-left: 2px;
+}
+.vd-freq-cell {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+/* ═══════════════════════════════════════════════════════
+   US21 — Formulaire réappro manuel
+   ═══════════════════════════════════════════════════════ */
+.rm-panel {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: auto;
+}
+.rm-form {
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.rm-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.rm-label {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--text-mid);
+  width: 120px;
+  flex-shrink: 0;
+}
+.rm-input {
+  font-family: var(--mono);
+  font-size: 11px;
+  flex: 1;
+  padding: 5px 8px;
+  border-radius: 5px;
+  border: 1px solid var(--border);
+  background: #fff;
+  color: var(--text);
+}
+.rm-input:disabled {
+  background: var(--surface2);
+  color: var(--text-dim);
+}
+.rm-input--select {
+  cursor: pointer;
+}
+.rm-input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.12);
+}
+
+.rm-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  margin-top: 12px;
+}
+.rm-btn {
+  font-family: var(--mono);
+  font-size: 12px;
+  font-weight: 600;
+  padding: 8px 24px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  cursor: pointer;
+  transition: background 0.12s;
+}
+.rm-btn--cancel {
+  background: var(--surface);
+  color: var(--text-mid);
+}
+.rm-btn--cancel:hover {
+  background: rgba(0, 0, 0, 0.06);
+}
+.rm-btn--send {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+}
+.rm-btn--send:hover {
+  opacity: 0.85;
+}

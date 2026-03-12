@@ -8,7 +8,7 @@ WM.register("gerant_directives", {
     return `<div class="placeholder">
       <div class="ph-icon"></div>
       <div class="ph-label">Directives de la Direction</div>
-      <div class="ph-tag">À VENIR — Sprint 6</div>
+      <div class="ph-tag">À VENIR — Sprint 7</div>
     </div>`;
   },
 });

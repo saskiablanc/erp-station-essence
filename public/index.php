@@ -5,6 +5,13 @@ use App\Core\Router;
 use App\Controllers\AuthController;
 use App\Controllers\CaisseController;
 use App\Controllers\PompeController;
+use App\Controllers\ReapproController;
+
+// Désactiver l'affichage d'erreurs PHP pour les routes JSON (évite de casser le JSON)
+$uri = $_SERVER['REQUEST_URI'] ?? '';
+if (str_contains($uri, '/json/')) {
+    ini_set('display_errors', '0');
+}
 
 if (session_status() === PHP_SESSION_NONE) {
     session_name('sae_r409_4e');
@@ -94,6 +101,17 @@ $router->post('json/pompes/{id}/activer',       [new PompeController(),  'active
 $router->post('json/pompes/{id}/demarrer',      [new PompeController(),  'demarrer']);
 $router->post('json/pompes/{id}/terminer',      [new PompeController(),  'terminer']);
 $router->post('json/pompes/{id}/encaisser',     [new PompeController(),  'encaisser']);
+
+// Réapprovisionnement — Sprint 4 (US20/21/22/23)
+$router->get( 'json/reappros/articles',              [new ReapproController(), 'getArticles']);
+$router->get( 'json/reappros/valeurs-defaut',        [new ReapproController(), 'getValeursDefaut']);
+$router->post('json/reappros/valeurs-defaut-type',   [new ReapproController(), 'updateValeursDefautType']);
+$router->post('json/reappros/valeurs-defaut/{id}',   [new ReapproController(), 'updateValeurDefaut']);
+$router->get( 'json/reappros',                       [new ReapproController(), 'getAll']);
+$router->post('json/reappros',                       [new ReapproController(), 'creerManuel']);
+$router->get( 'json/reappros/{id}',                  [new ReapproController(), 'getById']);
+$router->post('json/reappros/{id}/statut',           [new ReapproController(), 'updateStatut']);
+$router->post('json/reappros/{id}/annuler',          [new ReapproController(), 'annuler']);
 
 // ════════════════════════════════════════════════════════
 //  Dispatch
