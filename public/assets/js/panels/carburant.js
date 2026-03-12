@@ -78,7 +78,7 @@ const PompeCarburant = (() => {
 
     const carbBadge = carb
       ? `<span class="pc-carb-badge" style="background:${colors.bg};border-color:${colors.border};color:${colors.text};">${carb}</span>`
-      : `<span class="pc-carb-badge pc-carb-badge--vide">\u2014</span>`;
+      : `\u2014`;
 
     const modeBadge = isManuel
       ? `<span class="pc-mode-badge">MANUEL</span>`
@@ -117,7 +117,6 @@ const PompeCarburant = (() => {
             <span class="pc-card-num">${p.numero}</span>
             <span class="pc-card-mode-label${!isManuel ? " auto" : ""}">${isManuel ? "MANUEL" : "AUTO"}</span>
           </div>
-          <span class="pc-card-mini" aria-hidden="true">\u2212</span>
           ${_ledHTML(p.statut)}
         </div>
         <div class="pc-card-date">${date}</div>
@@ -138,7 +137,6 @@ const PompeCarburant = (() => {
             <span class="pc-card-num">${n}</span>
             <span class="pc-card-mode-label">${n <= 2 ? "MANUEL" : "AUTO"}</span>
           </div>
-          <span class="pc-card-mini" aria-hidden="true">\u2212</span>
           <span class="pc-led" style="background:var(--border);"></span>
         </div>
         <div class="pc-card-date" style="opacity:.4;">Chargement...</div>
@@ -159,10 +157,13 @@ const PompeCarburant = (() => {
   }
 
   function onData(pompesCarburant) {
-    _pompes = pompesCarburant;
+    const pompesOrdonnees = [...pompesCarburant].sort(
+      (a, b) => Number(a.numero) - Number(b.numero),
+    );
+    _pompes = pompesOrdonnees;
     const grid = document.getElementById("pc-grid-carburant");
     if (!grid) return;
-    grid.innerHTML = pompesCarburant.map(_cardHTML).join("");
+    grid.innerHTML = pompesOrdonnees.map(_cardHTML).join("");
   }
 
   function encaisser(idPompe) {
