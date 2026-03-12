@@ -66,6 +66,10 @@ $router->get('caisse', function () {
     (new CaisseController())->index();
 });
 
+$router->get('gerant', function () {
+    (new CaisseController())->gerant();
+});
+
 // ════════════════════════════════════════════════════════
 //  Routes JSON
 // ════════════════════════════════════════════════════════

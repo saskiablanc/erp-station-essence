@@ -3,19 +3,18 @@
  * Layout calqué sur la maquette fil de fer
  */
 const WM = (() => {
-
   const PANELS = {};
 
-  const LAYOUT_VERSION = 'v4';
-  const HAND_STORAGE_KEY = 'caisse_hand_v2';
-  const flipHand = (hand) => (hand === 'left' ? 'right' : 'left');
+  const LAYOUT_VERSION = "v4";
+  const HAND_STORAGE_KEY = "caisse_hand_v2";
+  const flipHand = (hand) => (hand === "left" ? "right" : "left");
 
   // Ajuste ces ratios pour coller exactement à la maquette
   const LAYOUT_METRICS = {
     margin: 6,
     gap: 6,
     colLeftPct: 0.66, // largeur colonne gauche
-    rowTopPct: 0.56,  // hauteur ligne du haut
+    rowTopPct: 0.56, // hauteur ligne du haut
   };
 
   // ── Layout maquette (positions fixes initiales) ──────
@@ -23,32 +22,32 @@ const WM = (() => {
   //            Pompes bas gauche large | CCE bas droit
   const BASE_LAYOUTS = {
     right: {
-      ticket:       { x: 10,  y: 10,  w: 580, h: 420 },  // Panier — grand, gauche haut
-      stock:        { x: 600, y: 10,  w: 370, h: 420 },  // Stocks — haut droit
-      pompes:       { x: 10,  y: 440, w: 580, h: 320 },  // Pompes — bas gauche large
-      cce:          { x: 600, y: 440, w: 370, h: 320 },  // Gestion CCE — bas droit
+      ticket: { x: 10, y: 10, w: 580, h: 420 }, // Panier — grand, gauche haut
+      stock: { x: 600, y: 10, w: 370, h: 420 }, // Stocks — haut droit
+      pompes: { x: 10, y: 440, w: 580, h: 320 }, // Pompes — bas gauche large
+      cce: { x: 600, y: 440, w: 370, h: 320 }, // Gestion CCE — bas droit
       // Panels secondaires (taskbar, pas sur canvas par défaut)
-      clavier:      { x: 620, y: 10,  w: 260, h: 310 },
-      paiement:     { x: 620, y: 330, w: 260, h: 280 },
-      transactions: { x: 900, y: 10,  w: 280, h: 380 },
-      alertes:      { x: 900, y: 400, w: 280, h: 200 },
+      clavier: { x: 620, y: 10, w: 260, h: 310 },
+      paiement: { x: 620, y: 330, w: 260, h: 280 },
+      transactions: { x: 900, y: 10, w: 280, h: 380 },
+      alertes: { x: 900, y: 400, w: 280, h: 200 },
     },
     left: {
-      ticket:       { x: 390, y: 10,  w: 580, h: 420 },
-      stock:        { x: 10,  y: 10,  w: 370, h: 420 },
-      pompes:       { x: 390, y: 440, w: 580, h: 320 },
-      cce:          { x: 10,  y: 440, w: 370, h: 320 },
-      clavier:      { x: 100, y: 10,  w: 260, h: 310 },
-      paiement:     { x: 100, y: 330, w: 260, h: 280 },
-      transactions: { x: 10,  y: 10,  w: 280, h: 380 },
-      alertes:      { x: 10,  y: 400, w: 280, h: 200 },
+      ticket: { x: 390, y: 10, w: 580, h: 420 },
+      stock: { x: 10, y: 10, w: 370, h: 420 },
+      pompes: { x: 390, y: 440, w: 580, h: 320 },
+      cce: { x: 10, y: 440, w: 370, h: 320 },
+      clavier: { x: 100, y: 10, w: 260, h: 310 },
+      paiement: { x: 100, y: 330, w: 260, h: 280 },
+      transactions: { x: 10, y: 10, w: 280, h: 380 },
+      alertes: { x: 10, y: 400, w: 280, h: 200 },
     },
   };
 
   function mirrorLayout(layout, leftBound, rightBound) {
     const width = rightBound - leftBound;
     const mirrored = {};
-    Object.keys(layout).forEach(id => {
+    Object.keys(layout).forEach((id) => {
       const pos = layout[id];
       mirrored[id] = {
         ...pos,
@@ -59,7 +58,7 @@ const WM = (() => {
   }
 
   function computeLayout(hand) {
-    const canvas = document.getElementById('canvas');
+    const canvas = document.getElementById("canvas");
     if (!canvas) return BASE_LAYOUTS[hand];
 
     const rect = canvas.getBoundingClientRect();
@@ -81,44 +80,60 @@ const WM = (() => {
     const bottomY = margin + rowTop + gap;
 
     const right = {
-      ticket: { x: leftX,  y: topY,    w: colLeft,  h: rowTop },
-      stock:  { x: rightX, y: topY,    w: colRight, h: rowTop },
-      pompes: { x: leftX,  y: bottomY, w: colLeft,  h: rowBottom },
-      cce:    { x: rightX, y: bottomY, w: colRight, h: rowBottom },
+      ticket: { x: leftX, y: topY, w: colLeft, h: rowTop },
+      stock: { x: rightX, y: topY, w: colRight, h: rowTop },
+      pompes: { x: leftX, y: bottomY, w: colLeft, h: rowBottom },
+      cce: { x: rightX, y: bottomY, w: colRight, h: rowBottom },
     };
 
-    const computed = hand === 'left'
-      ? mirrorLayout(right, leftX, leftX + availW)
-      : right;
+    const computed =
+      hand === "left" ? mirrorLayout(right, leftX, leftX + availW) : right;
 
     const base = BASE_LAYOUTS[hand] || {};
     return { ...base, ...computed };
   }
 
   // Panels affichés par défaut sur le canvas (ordre maquette)
-  const DEFAULT_VISIBLE = ['ticket', 'stock', 'pompes', 'cce'];
+  // En mode gérant, on n'affiche pas les panels employé par défaut
+  const DEFAULT_VISIBLE_EMPLOYE = ["ticket", "stock", "pompes", "cce"];
+  const DEFAULT_VISIBLE_GERANT = [
+    "gerant_reappro",
+    "gerant_prix",
+    "gerant_incidents",
+    "gerant_cce_params",
+    "gerant_horaires",
+  ];
+
+  function getDefaultVisible() {
+    if (typeof CAISSE_MODE !== "undefined" && CAISSE_MODE === "gerant") {
+      return DEFAULT_VISIBLE_GERANT;
+    }
+    return DEFAULT_VISIBLE_EMPLOYE;
+  }
 
   function register(id, def) {
     PANELS[id] = def;
   }
 
   function create(id) {
-    const def  = PANELS[id];
+    const def = PANELS[id];
     if (!def) return;
-    const hand = flipHand(State.get('hand'));
-    const pos  = computeLayout(hand)?.[id] ?? { x: 20, y: 20, w: 320, h: 280 };
+    const hand = flipHand(State.get("hand"));
+    const pos = computeLayout(hand)?.[id] ?? { x: 20, y: 20, w: 320, h: 280 };
 
-    const el = document.createElement('div');
-    el.className  = 'win';
-    el.id         = 'win-' + id;
+    const el = document.createElement("div");
+    el.className = "win";
+    el.id = "win-" + id;
     el.dataset.id = id;
 
     el.style.cssText = [
-      `left:${pos.x}px`, `top:${pos.y}px`,
-      `width:${pos.w}px`, `height:${pos.h}px`,
+      `left:${pos.x}px`,
+      `top:${pos.y}px`,
+      `width:${pos.w}px`,
+      `height:${pos.h}px`,
       `z-index:${++State.all().zTop}`,
       `animation:winIn .2s cubic-bezier(.25,.46,.45,.94)`,
-    ].join(';');
+    ].join(";");
 
     el.innerHTML = `
       <div class="win-title" id="wt-${id}">
@@ -131,32 +146,44 @@ const WM = (() => {
       <div class="win-resize"></div>
     `;
 
-    document.getElementById('canvas').appendChild(el);
-    el.addEventListener('mousedown', () => focus(id));
+    document.getElementById("canvas").appendChild(el);
+    el.addEventListener("mousedown", () => focus(id));
 
     interact(el).draggable({
-      allowFrom: '#wt-' + id,
-      inertia:   { resistance: 30 },
-      modifiers: [interact.modifiers.restrictRect({ restriction: '#canvas', endOnly: false })],
+      allowFrom: "#wt-" + id,
+      inertia: { resistance: 30 },
+      modifiers: [
+        interact.modifiers.restrictRect({
+          restriction: "#canvas",
+          endOnly: false,
+        }),
+      ],
       listeners: {
-        start() { el.classList.add('dragging'); },
+        start() {
+          el.classList.add("dragging");
+        },
         move(e) {
           const x = (parseFloat(el.dataset.x) || 0) + e.dx;
           const y = (parseFloat(el.dataset.y) || 0) + e.dy;
           el.style.transform = `translate(${x}px,${y}px)`;
-          el.dataset.x = x; el.dataset.y = y;
+          el.dataset.x = x;
+          el.dataset.y = y;
         },
-        end() { el.classList.remove('dragging'); },
+        end() {
+          el.classList.remove("dragging");
+        },
       },
     });
 
     interact(el).resizable({
-      edges:     { right: true, bottom: true, bottomRight: '.win-resize' },
-      modifiers: [interact.modifiers.restrictSize({ min: { width: 220, height: 140 } })],
+      edges: { right: true, bottom: true, bottomRight: ".win-resize" },
+      modifiers: [
+        interact.modifiers.restrictSize({ min: { width: 220, height: 140 } }),
+      ],
       listeners: {
         move(e) {
-          el.style.width  = e.rect.width  + 'px';
-          el.style.height = e.rect.height + 'px';
+          el.style.width = e.rect.width + "px";
+          el.style.height = e.rect.height + "px";
         },
       },
     });
@@ -167,9 +194,14 @@ const WM = (() => {
   }
 
   function focus(id) {
-    document.querySelectorAll('.win').forEach(w => w.classList.remove('focused'));
-    const el = document.getElementById('win-' + id);
-    if (el) { el.classList.add('focused'); el.style.zIndex = ++State.all().zTop; }
+    document
+      .querySelectorAll(".win")
+      .forEach((w) => w.classList.remove("focused"));
+    const el = document.getElementById("win-" + id);
+    if (el) {
+      el.classList.add("focused");
+      el.style.zIndex = ++State.all().zTop;
+    }
   }
 
   function close(id) {
@@ -181,7 +213,7 @@ const WM = (() => {
   }
 
   function open(id) {
-    if (document.getElementById('win-' + id)) {
+    if (document.getElementById("win-" + id)) {
       const w = State.all().windows[id];
       if (w?.minimized) minimize(id);
       focus(id);
@@ -192,82 +224,125 @@ const WM = (() => {
   }
 
   function applyLayout(hand) {
-    State.set('hand', hand);
+    State.set("hand", hand);
     localStorage.setItem(HAND_STORAGE_KEY, hand);
 
-    document.querySelectorAll('.hand-btn').forEach(b => {
-      b.classList.toggle('active', b.dataset.hand === hand);
+    document.querySelectorAll(".hand-btn").forEach((b) => {
+      b.classList.toggle("active", b.dataset.hand === hand);
     });
 
     // Vider le canvas
-    document.querySelectorAll('.win').forEach(w => w.remove());
+    document.querySelectorAll(".win").forEach((w) => w.remove());
     State.all().windows = {};
 
     // Charger disposition sauvegardée ou défaut
     const layoutHand = flipHand(hand);
-    const saved = JSON.parse(localStorage.getItem('caisse_layout_' + LAYOUT_VERSION + '_' + layoutHand) || 'null');
+    const saved = JSON.parse(
+      localStorage.getItem(
+        "caisse_layout_" + LAYOUT_VERSION + "_" + layoutHand,
+      ) || "null",
+    );
 
     if (saved) {
-      saved.forEach(item => {
+      saved.forEach((item) => {
         if (!PANELS[item.id]) return;
         create(item.id);
-        const el = document.getElementById('win-' + item.id);
+        const el = document.getElementById("win-" + item.id);
         if (el && item.style) Object.assign(el.style, item.style);
-        if (el && item.dx)    { el.dataset.x = item.dx; el.dataset.y = item.dy; }
+        if (el && item.dx) {
+          el.dataset.x = item.dx;
+          el.dataset.y = item.dy;
+        }
       });
     } else {
-      DEFAULT_VISIBLE.forEach(id => { if (PANELS[id]) create(id); });
+      getDefaultVisible().forEach((id) => {
+        if (PANELS[id]) create(id);
+      });
     }
     updateTaskbar();
   }
 
   function saveLayout() {
-    const hand  = flipHand(State.get('hand'));
+    const hand = flipHand(State.get("hand"));
     const items = [];
-    document.querySelectorAll('.win').forEach(w => {
+    document.querySelectorAll(".win").forEach((w) => {
       items.push({
-        id:    w.dataset.id,
-        style: { left: w.style.left, top: w.style.top, width: w.style.width, height: w.style.height, transform: w.style.transform },
-        dx:    w.dataset.x || 0,
-        dy:    w.dataset.y || 0,
+        id: w.dataset.id,
+        style: {
+          left: w.style.left,
+          top: w.style.top,
+          width: w.style.width,
+          height: w.style.height,
+          transform: w.style.transform,
+        },
+        dx: w.dataset.x || 0,
+        dy: w.dataset.y || 0,
       });
     });
-    localStorage.setItem('caisse_layout_' + LAYOUT_VERSION + '_' + hand, JSON.stringify(items));
-    Toast.ok('Disposition sauvegardée');
+    localStorage.setItem(
+      "caisse_layout_" + LAYOUT_VERSION + "_" + hand,
+      JSON.stringify(items),
+    );
+    Toast.ok("Disposition sauvegardée");
   }
 
   function resetLayout() {
-    const hand = State.get('hand');
-    localStorage.removeItem('caisse_layout_' + LAYOUT_VERSION + '_' + flipHand(hand));
+    const hand = State.get("hand");
+    localStorage.removeItem(
+      "caisse_layout_" + LAYOUT_VERSION + "_" + flipHand(hand),
+    );
     applyLayout(hand);
-    Toast.ok('Disposition réinitialisée');
+    Toast.ok("Disposition réinitialisée");
   }
 
   function hasSavedLayout(hand) {
-    return !!localStorage.getItem('caisse_layout_' + LAYOUT_VERSION + '_' + flipHand(hand));
+    return !!localStorage.getItem(
+      "caisse_layout_" + LAYOUT_VERSION + "_" + flipHand(hand),
+    );
   }
 
   function updateTaskbar() {
-    const area = document.getElementById('taskbar-chips');
+    const area = document.getElementById("taskbar-chips");
     if (!area) return;
-    area.innerHTML = '';
-    Object.keys(PANELS).forEach(id => {
-      const def    = PANELS[id];
-      const exists = !!document.getElementById('win-' + id);
-      const w      = State.all().windows[id];
-      const chip   = document.createElement('button');
-      chip.className = 'task-chip' + (exists && !w?.minimized ? ' open' : exists ? ' minimized' : '');
+    area.innerHTML = "";
+    Object.keys(PANELS).forEach((id) => {
+      const def = PANELS[id];
+      const exists = !!document.getElementById("win-" + id);
+      const w = State.all().windows[id];
+      const chip = document.createElement("button");
+      chip.className =
+        "task-chip" +
+        (exists && !w?.minimized ? " open" : exists ? " minimized" : "");
       chip.innerHTML = `${def.icon} ${def.label}`;
-      chip.title     = def.sprint > 2 ? `Sprint ${def.sprint}` : def.label;
-      chip.onclick   = () => open(id);
+      chip.title = def.sprint > 2 ? `Sprint ${def.sprint}` : def.label;
+      chip.onclick = () => open(id);
       area.appendChild(chip);
     });
   }
 
   function ajouterPanelsGerant() {
-    ['gerant_reappro','gerant_prix','gerant_incidents','gerant_cce_params','gerant_horaires']
-      .forEach(id => { if (PANELS[id]) open(id); });
+    [
+      "gerant_reappro",
+      "gerant_prix",
+      "gerant_incidents",
+      "gerant_cce_params",
+      "gerant_horaires",
+    ].forEach((id) => {
+      if (PANELS[id]) open(id);
+    });
   }
 
-  return { register, open, close, minimize, focus, applyLayout, saveLayout, resetLayout, hasSavedLayout, updateTaskbar, ajouterPanelsGerant };
+  return {
+    register,
+    open,
+    close,
+    minimize,
+    focus,
+    applyLayout,
+    saveLayout,
+    resetLayout,
+    hasSavedLayout,
+    updateTaskbar,
+    ajouterPanelsGerant,
+  };
 })();

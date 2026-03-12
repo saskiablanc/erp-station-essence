@@ -20,7 +20,8 @@ class AuthController extends Controller
     {
         // Si déjà connecté : on envoie directement à la caisse
         if (!empty($_SESSION['employe'])) {
-            $this->redirect('caisse');
+            $dest = ($_SESSION['employe']['role'] === 'gerant') ? 'gerant' : 'caisse';
+            $this->redirect($dest);
             return;
         }
 
@@ -49,8 +50,9 @@ class AuthController extends Controller
         session_regenerate_id(true);
         $_SESSION['employe'] = $employe;
 
-        // Critère 3 : redirection vers la caisse (interface principale)
-        $this->redirect('caisse');
+        // Gérant → caisse gérant, Employé → caisse employé
+        $destination = ($employe['role'] === 'gerant') ? 'gerant' : 'caisse';
+        $this->redirect($destination);
     }
 
     // POST /deconnexion
