@@ -15,6 +15,13 @@ class CaisseController extends Controller
         $this->render('caisse', ['employe' => $emp]);
     }
 
+    // GET /gerant — interface caisse réservée au gérant
+    public function gerant(): void
+    {
+        $emp = $this->requireGerant();
+        $this->render('gerant', ['employe' => $emp]);
+    }
+
     public function getArticle(string $code): void
     {
         $this->requireAuth();

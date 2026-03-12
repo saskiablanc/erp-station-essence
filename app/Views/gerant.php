@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Station — Caisse</title>
+  <title>Station — Gérant</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Familjen+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/interact.js/1.10.27/interact.min.js"></script>
@@ -17,15 +17,11 @@
   $assetsUrl = $baseUrl . '/assets';
   ?>
   <link rel="stylesheet" href="<?= $assetsUrl ?>/css/caisse.css">
-  <link rel="stylesheet" href="<?= $assetsUrl ?>/css/panels/pompes.css">
-  <link rel="stylesheet" href="<?= $assetsUrl ?>/css/panels/ticket.css">
 
   <?php
-  // SESSION injectée par PHP
-  // Si pas de session (mode démo), on met des valeurs par défaut
-  $role      = htmlspecialchars($employe['role']        ?? 'employe',  ENT_QUOTES);
-  $identifiant = htmlspecialchars($employe['identifiant'] ?? 'Démo',    ENT_QUOTES);
-  $id        = (int) ($employe['id_connexion']           ?? 0);
+  $role        = htmlspecialchars($employe['role']        ?? 'gerant',  ENT_QUOTES);
+  $identifiant = htmlspecialchars($employe['identifiant'] ?? 'Gérant',  ENT_QUOTES);
+  $id          = (int) ($employe['id_connexion']           ?? 0);
   ?>
   <script>
     const APP_BASE_URL = '<?= $baseUrl ?>';
@@ -34,14 +30,13 @@
       identifiant: '<?= $identifiant ?>',
       role:        '<?= $role ?>',
     };
-    const CAISSE_MODE = 'employe';
+    const CAISSE_MODE = 'gerant';
   </script>
 </head>
 <body>
 
 <!-- ═══════════════════════════════════════════════════
-     TOPBAR — basé sur la maquette fil de fer
-     UNICA Station | Caisse - Nom | HH:MM:SS | ◀ Gaucher Droitier ▶ | Layout | Gérant | Déconnexion
+     TOPBAR — Caisse Gérant
 ════════════════════════════════════════════════════ -->
 <header id="topbar">
 
@@ -50,8 +45,9 @@
     <span class="tb-name">UNICA Station</span>
   </div>
 
-  <div class="tb-session">
-    Caisse — <strong><?= htmlspecialchars($_SESSION['employe']['identifiant'] ?? 'Employé') ?></strong>
+  <div class="tb-session tb-session--gerant">
+    <span class="tb-badge-gerant">GÉRANT</span>
+    <span><?= htmlspecialchars($_SESSION['employe']['identifiant'] ?? 'Gérant') ?></span>
   </div>
 
   <div class="tb-spacer"></div>
@@ -81,13 +77,12 @@
       <img src="<?= $assetsUrl ?>/img/reset.png" alt="Réinitialiser">
     </button>
 
-    <?php if (($_SESSION['employe']['role'] ?? '') === 'gerant'): ?>
+    <!-- Bouton switch vers caisse employé -->
     <span class="tb-vsep"></span>
-    <button class="tb-switch-btn" onclick="App.openGerant()" title="Basculer vers la caisse gérant">
-      <img src="<?= $assetsUrl ?>/img/setting.png" alt="Gérant" class="tb-switch-icon">
-      <span>Gérant</span>
+    <button class="tb-switch-btn" onclick="App.switchCaisse()" title="Basculer vers la caisse employé">
+      <img src="<?= $assetsUrl ?>/img/setting.png" alt="Switch" class="tb-switch-icon">
+      <span>Employé</span>
     </button>
-    <?php endif; ?>
 
     <span class="tb-vsep"></span>
 
@@ -100,7 +95,7 @@
 </header>
 
 <!-- ═══════════════════════════════════════════════════
-     CANVAS — la mosaïque de fenêtres
+     CANVAS — la mosaïque de fenêtres gérant
 ════════════════════════════════════════════════════ -->
 <main id="canvas"></main>
 
@@ -135,22 +130,7 @@
 <script src="<?= $assetsUrl ?>/js/core/toast.js"></script>
 <script src="<?= $assetsUrl ?>/js/core/windows.js"></script>
 
-<!-- Panels (tous "À VENIR" pour l'instant) -->
-<script src="<?= $assetsUrl ?>/js/panels/ticket_cart.js"></script>
-<script src="<?= $assetsUrl ?>/js/panels/ticket_view.js"></script>
-<script src="<?= $assetsUrl ?>/js/panels/ticket_payment.js"></script>
-<script src="<?= $assetsUrl ?>/js/panels/ticket.js"></script>
-<script src="<?= $assetsUrl ?>/js/panels/clavier.js"></script>
-<script src="<?= $assetsUrl ?>/js/panels/paiement.js"></script>
-<script src="<?= $assetsUrl ?>/js/panels/transactions.js"></script>
-<script src="<?= $assetsUrl ?>/js/panels/carburant.js"></script>
-<script src="<?= $assetsUrl ?>/js/panels/electricite.js"></script>
-<script src="<?= $assetsUrl ?>/js/panels/pompes.js"></script>
-<script src="<?= $assetsUrl ?>/js/panels/stock.js"></script>
-<script src="<?= $assetsUrl ?>/js/panels/alertes.js"></script>
-<script src="<?= $assetsUrl ?>/js/panels/cce.js"></script>
-
-<!-- Panels gérant -->
+<!-- Panels gérant uniquement -->
 <script src="<?= $assetsUrl ?>/js/panels/gerant/reappro.js"></script>
 <script src="<?= $assetsUrl ?>/js/panels/gerant/prix.js"></script>
 <script src="<?= $assetsUrl ?>/js/panels/gerant/incidents.js"></script>

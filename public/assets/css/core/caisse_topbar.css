@@ -170,3 +170,58 @@
   filter: sepia(1) saturate(5) hue-rotate(310deg);
 }
 
+/* ── Bouton switch caisse employé ↔ gérant ─────────────── */
+.tb-switch-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 34px;
+  padding: 0 14px;
+  border-radius: 7px;
+  border: 1px solid rgba(99, 102, 241, 0.3);
+  background: var(--accent-dim);
+  cursor: pointer;
+  transition:
+    background 0.15s,
+    border-color 0.15s,
+    box-shadow 0.15s;
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--accent);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.tb-switch-btn .tb-switch-icon {
+  width: 14px;
+  height: 14px;
+  object-fit: contain;
+  opacity: 0.7;
+  filter: sepia(1) saturate(4) hue-rotate(215deg);
+}
+.tb-switch-btn:hover {
+  background: rgba(99, 102, 241, 0.18);
+  border-color: rgba(99, 102, 241, 0.5);
+  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.15);
+}
+.tb-switch-btn:hover .tb-switch-icon {
+  opacity: 1;
+}
+
+/* ── Badge GÉRANT dans la session ──────────────────────── */
+.tb-session--gerant {
+  gap: 8px;
+}
+.tb-badge-gerant {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 4px;
+  background: var(--accent);
+  color: #fff;
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  line-height: 1;
+}
