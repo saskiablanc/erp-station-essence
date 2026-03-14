@@ -148,7 +148,8 @@
 <script src="<?= $assetsUrl ?>/js/panels/pompes.js"></script>
 <script src="<?= $assetsUrl ?>/js/panels/stock.js"></script>
 <script src="<?= $assetsUrl ?>/js/panels/alertes.js"></script>
-<script src="<?= $assetsUrl ?>/js/panels/cce.js"></script>
+<script src="<?= $assetsUrl ?>/js/panels/cce-creer.js"></script>
+<script src="<?= $assetsUrl ?>/js/panels/cce-consult.js"></script>
 
 <!-- Panels gérant -->
 <script src="<?= $assetsUrl ?>/js/panels/gerant/reappro.js"></script>
