@@ -32,6 +32,12 @@ class CaisseController extends Controller
         if (!$article) {
             $this->jsonError("Article non reconnu : {$code}", 404);
         }
+
+        if (($article['stock_disponible'] ?? true) === false) {
+            $this->jsonError("Stock insuffisant pour l'article {$code}", 409);
+        }
+
+        unset($article['stock_disponible']);
         $this->json($article);
     }
 
@@ -42,7 +48,7 @@ class CaisseController extends Controller
         $article = $model->findRandomProduit();
 
         if (!$article) {
-            $this->jsonError('Aucun produit disponible', 404);
+            $this->jsonError('Aucun produit en stock disponible', 404);
         }
         $this->json($article);
     }

@@ -106,10 +106,12 @@ WM.register('ticket', {
         const article = await Requetes.randomArticle();
         await addToCart(article);
       } catch (err) {
+        const message = err.message || 'Impossible de charger un produit';
+        const stockWarning = /stock/i.test(message);
         await Swal.fire({
-          icon: 'error',
-          title: 'Erreur produit',
-          text: err.message || 'Impossible de charger un produit',
+          icon: stockWarning ? 'warning' : 'error',
+          title: stockWarning ? 'Stock insuffisant' : 'Erreur produit',
+          text: message,
           customClass: {
             popup: 'ticket-swal-popup',
             title: 'ticket-swal-title',
@@ -132,10 +134,14 @@ WM.register('ticket', {
         const ok = await addToCart(article);
         if (!ok) return;
       } catch (err) {
+        const message = err.message || 'Produit introuvable';
+        const stockWarning = /stock insuffisant/i.test(message);
         await Swal.fire({
-          icon: 'error',
-          title: 'Code-barres invalide',
-          text: err.message || 'Produit introuvable',
+          icon: stockWarning ? 'warning' : 'error',
+          title: stockWarning ? 'Stock insuffisant' : 'Code-barres invalide',
+          text: stockWarning
+            ? 'Cet article n’est plus en stock.'
+            : message,
           customClass: {
             popup: 'ticket-swal-popup',
             title: 'ticket-swal-title',
@@ -197,6 +203,14 @@ WM.register('ticket', {
       cart.removeAt(index);
       render();
     });
+
+    if (typeof ResizeObserver !== 'undefined') {
+      const ticketBody = panel.querySelector('.ticket-body');
+      const observer = new ResizeObserver(() => render());
+      if (ticketBody) {
+        observer.observe(ticketBody);
+      }
+    }
 
     render();
   },

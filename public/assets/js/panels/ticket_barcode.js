@@ -4,8 +4,7 @@ window.TicketBarcode = (() => {
 
   function formatDisplay(code) {
     const digits = String(code ?? "").replace(/\D/g, "").slice(0, MAX_LENGTH);
-    const padded = (digits + "-------------").slice(0, MAX_LENGTH);
-    return `${padded.slice(0, 4)} ${padded.slice(4, 8)} ${padded.slice(8, 13)}`;
+    return (digits + "-------------").slice(0, MAX_LENGTH);
   }
 
   async function prompt() {
@@ -17,7 +16,7 @@ window.TicketBarcode = (() => {
         <div class="ticket-barcode-modal">
           <button type="button" class="ticket-barcode-close" data-barcode-close aria-label="Fermer">X</button>
           <div class="ticket-barcode-display-wrap">
-            <div class="ticket-barcode-display" data-barcode-display>---- ---- -----</div>
+            <div class="ticket-barcode-display" data-barcode-display>-------------</div>
           </div>
           <div class="ticket-barcode-error" data-barcode-error></div>
           <div class="ticket-barcode-keypad">

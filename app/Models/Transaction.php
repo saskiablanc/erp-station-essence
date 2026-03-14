@@ -42,7 +42,7 @@ class Transaction
                 }
 
                 $stmt = $this->db->query(
-                    'SELECT code_barres, id_article, prix, quantite_produit
+                    'SELECT code_barres, id_article, prix
                      FROM `Produit`
                      WHERE code_barres = :code
                      LIMIT 1',
@@ -51,11 +51,6 @@ class Transaction
                 $prod = $stmt->fetch(PDO::FETCH_ASSOC);
                 if (!$prod) {
                     throw new \RuntimeException("Produit introuvable : {$code}");
-                }
-
-                $stock = (int) $prod['quantite_produit'];
-                if ($stock < $qty) {
-                    throw new \RuntimeException("Stock insuffisant pour {$code}");
                 }
 
                 $prix = (float) $prod['prix'];
@@ -67,7 +62,7 @@ class Transaction
                     [':id_article' => (int) $prod['id_article']]
                 );
                 $stockRow = $stockStmt->fetch(PDO::FETCH_ASSOC);
-                if ($stockRow && (int) $stockRow['quantite_stock'] < $qty) {
+                if (!$stockRow || (int) $stockRow['quantite_stock'] < $qty) {
                     throw new \RuntimeException("Stock insuffisant pour {$code}");
                 }
 
@@ -102,16 +97,6 @@ class Transaction
                         'id_transaction' => $idTransaction,
                         'code_barres'    => $item['code_barres'],
                         'quantite'       => $item['quantite'],
-                    ]
-                );
-
-                $this->db->execute(
-                    'UPDATE `Produit`
-                     SET quantite_produit = quantite_produit - :quantite
-                     WHERE code_barres = :code_barres',
-                    [
-                        'quantite'    => $item['quantite'],
-                        'code_barres' => $item['code_barres'],
                     ]
                 );
 

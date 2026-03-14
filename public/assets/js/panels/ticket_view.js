@@ -2,6 +2,18 @@
 window.TicketView = (() => {
   const MIN_ROWS = 8;
 
+  function getVisibleRows(panel, rowsEl) {
+    const rowHeightCss = parseFloat(
+      getComputedStyle(panel).getPropertyValue('--ticket-row-h'),
+    );
+    const rowHeight = Number.isFinite(rowHeightCss) && rowHeightCss > 0
+      ? rowHeightCss
+      : 26;
+    const viewportHeight = rowsEl.clientHeight;
+    if (!viewportHeight) return MIN_ROWS;
+    return Math.max(MIN_ROWS, Math.floor(viewportHeight / rowHeight));
+  }
+
   function buildHTML() {
     return `
       <div class="ticket-panel">
@@ -43,6 +55,10 @@ window.TicketView = (() => {
     const rowsEl = panel.querySelector('.ticket-rows');
     const totalEl = panel.querySelector('.ticket-total-value');
     const items = cart.getItems();
+    const scrollbarGutter = Math.max(0, rowsEl.offsetWidth - rowsEl.clientWidth);
+    panel.style.setProperty('--ticket-scrollbar-gutter', `${scrollbarGutter}px`);
+    const visibleRows = getVisibleRows(panel, rowsEl);
+    const targetRows = Math.max(items.length, visibleRows);
 
     rowsEl.innerHTML = '';
     items.forEach((item, index) => {
@@ -60,7 +76,7 @@ window.TicketView = (() => {
       rowsEl.appendChild(row);
     });
 
-    for (let i = items.length; i < MIN_ROWS; i += 1) {
+    for (let i = items.length; i < targetRows; i += 1) {
       const empty = document.createElement('div');
       empty.className = 'ticket-row';
       empty.innerHTML = '<div></div><div></div><div></div><div></div><div></div><div></div>';

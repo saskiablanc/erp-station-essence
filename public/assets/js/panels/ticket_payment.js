@@ -42,6 +42,7 @@ window.TicketPayment = (() => {
   async function chooseReceipt() {
     const result = await Swal.fire({
       ...swalBase,
+      reverseButtons: false,
       title: 'Souhaitez-vous un reçu ?',
       html: 'Voulez-vous imprimer un reçu de paiement ?',
       showDenyButton: true,
