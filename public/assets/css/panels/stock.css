@@ -10,12 +10,20 @@
   overflow: hidden;
 }
 
-.stock-switch {
-  display: inline-flex;
-  gap: 6px;
+.stock-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  flex-wrap: wrap;
+  gap: 8px;
   padding: 8px 10px 6px;
   border-bottom: 1px solid var(--border);
   background: rgba(255, 255, 255, 0.78);
+}
+
+.stock-switch {
+  display: inline-flex;
+  gap: 6px;
 }
 
 .stock-switch-btn {
@@ -33,6 +41,32 @@
   background: var(--btn-grad);
   color: var(--accent);
   border-color: var(--border-active);
+}
+
+.stock-toolbar .stock-search-input {
+  flex: 0 0 116px !important;
+  width: 116px !important;
+  min-width: 116px !important;
+  max-width: 116px !important;
+  margin-left: auto;
+  height: 26px !important;
+  padding: 0 12px !important;
+  border-radius: 999px;
+  border: 2px solid var(--border);
+  background: rgba(255, 255, 255, 0.86);
+  color: var(--text-mid);
+  font-size: 11px;
+  box-shadow: var(--shadow-soft);
+  outline: none;
+}
+
+.stock-toolbar .stock-search-input:focus {
+  border-color: var(--border-active);
+}
+
+.stock-toolbar .stock-search-input::placeholder {
+  font-size: 11px;
+  color: #9ca3af;
 }
 
 .stock-table-wrap {
@@ -64,6 +98,11 @@
   text-align: right;
 }
 
+.stock-head-qty,
+.stock-head-threshold {
+  text-align: right !important;
+}
+
 .stock-table tbody td {
   padding: 7px 10px;
   border-bottom: 1px solid var(--border);
@@ -71,7 +110,18 @@
   font-size: 12px;
 }
 
+.stock-col-name {
+  width: auto;
+}
+
 .stock-col-qty {
+  width: 24%;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.stock-col-threshold {
+  width: 22%;
   text-align: right;
   font-variant-numeric: tabular-nums;
 }

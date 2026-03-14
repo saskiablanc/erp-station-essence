@@ -94,11 +94,14 @@ class Article
         $stmt = $this->db->query(
             "SELECT p.code_barres,
                     p.libelle_produit,
-                    COALESCE(s.quantite_stock, 0) AS quantite_stock
+                    COALESCE(s.quantite_stock, 0) AS quantite_stock,
+                    v.seuil_alerte
              FROM Produit p
              LEFT JOIN Stock s
                ON s.id_article = p.id_article
               AND s.type_quantite = 'unite'
+             LEFT JOIN ValeursDefautReappro v
+               ON v.id_article = p.id_article
              ORDER BY p.libelle_produit ASC"
         );
 
@@ -108,6 +111,7 @@ class Article
                 'code_barres' => (string) ($row['code_barres'] ?? ''),
                 'libelle' => (string) ($row['libelle_produit'] ?? ''),
                 'quantite_stock' => (int) ($row['quantite_stock'] ?? 0),
+                'seuil_alerte' => isset($row['seuil_alerte']) ? (float) $row['seuil_alerte'] : null,
             ],
             $rows
         );
@@ -116,8 +120,14 @@ class Article
     public function findStockCarburants(): array
     {
         $stmt = $this->db->query(
-            "SELECT c.libelle, c.stock_litre
+            "SELECT c.libelle,
+                    c.stock_litre,
+                    v.seuil_alerte
              FROM Carburant c
+             LEFT JOIN Energie e
+               ON e.id_energie = c.id_energie
+             LEFT JOIN ValeursDefautReappro v
+               ON v.id_article = e.id_article
              ORDER BY c.libelle ASC"
         );
 
@@ -126,6 +136,7 @@ class Article
             static fn (array $row): array => [
                 'libelle' => (string) ($row['libelle'] ?? ''),
                 'quantite_stock' => (float) ($row['stock_litre'] ?? 0),
+                'seuil_alerte' => isset($row['seuil_alerte']) ? (float) $row['seuil_alerte'] : null,
             ],
             $rows
         );

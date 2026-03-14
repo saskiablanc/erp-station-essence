@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Hôte : localhost
--- Généré le : mer. 04 mars 2026 à 21:51
+-- Généré le : sam. 14 mars 2026 à 14:36
 -- Version du serveur : 11.8.3-MariaDB-0+deb13u1 from Debian
 -- Version de PHP : 8.4.16
 
@@ -87,10 +87,10 @@ CREATE TABLE `Carburant` (
 --
 
 INSERT INTO `Carburant` (`id_carburant`, `id_energie`, `prix_litre`, `stock_litre`, `libelle`) VALUES
-(1, 1, 1.799, 4990.500, 'SP95'),
-(2, 2, 1.899, 2991.900, 'SP98'),
-(3, 3, 1.699, 6912.350, 'GAZOLE'),
-(4, 4, 1.759, 4473.600, 'E10'),
+(1, 1, 1.799, 4951.072, 'SP95'),
+(2, 2, 1.899, 2874.944, 'SP98'),
+(3, 3, 1.699, 6879.483, 'GAZOLE'),
+(4, 4, 1.759, 4446.728, 'E10'),
 (5, 5, 0.999, 1978.750, 'E85');
 
 -- --------------------------------------------------------
@@ -210,6 +210,38 @@ INSERT INTO `Energie` (`id_energie`, `id_article`, `type_energie`) VALUES
 -- --------------------------------------------------------
 
 --
+-- Structure de la table `LigneReappro`
+--
+
+CREATE TABLE `LigneReappro` (
+  `id_reappro` bigint(20) UNSIGNED NOT NULL,
+  `id_article` bigint(20) UNSIGNED NOT NULL,
+  `quantite` decimal(10,3) NOT NULL,
+  `date_arrivee` date DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
+
+--
+-- Déchargement des données de la table `LigneReappro`
+--
+
+INSERT INTO `LigneReappro` (`id_reappro`, `id_article`, `quantite`, `date_arrivee`) VALUES
+(1, 1, 5000.000, '2026-03-04'),
+(1, 2, 3000.000, '2026-03-04'),
+(1, 3, 7000.000, '2026-03-05'),
+(2, 4, 5000.000, NULL),
+(2, 5, 2000.000, NULL),
+(3, 8, 20.000, NULL),
+(3, 14, 24.000, NULL),
+(3, 28, 15.000, NULL),
+(4, 5, 2000.000, NULL),
+(5, 16, 18.000, NULL),
+(5, 17, 30.000, NULL),
+(6, 12, 3.000, NULL),
+(7, 22, 67.000, NULL);
+
+-- --------------------------------------------------------
+
+--
 -- Structure de la table `Pompe`
 --
 
@@ -229,11 +261,11 @@ CREATE TABLE `Pompe` (
 --
 
 INSERT INTO `Pompe` (`id_pompe`, `numero`, `type_pompe`, `sous_type`, `mode`, `statut`, `date_debut`, `id_transaction_energie`) VALUES
-(1, 1, 'carburant', NULL, 'manuel', 'en_cours', '2026-03-04 22:49:38', 12),
+(1, 1, 'carburant', NULL, 'manuel', 'active', NULL, NULL),
 (2, 2, 'carburant', NULL, 'manuel', 'active', NULL, NULL),
 (3, 3, 'carburant', NULL, 'auto', 'active', NULL, NULL),
 (4, 4, 'carburant', NULL, 'auto', 'active', NULL, NULL),
-(5, 1, 'electricite', 'rapide', 'auto', 'active', NULL, NULL),
+(5, 1, 'electricite', 'rapide', 'auto', 'en_cours', '2026-03-04 23:15:00', 14),
 (6, 2, 'electricite', 'rapide', 'auto', 'active', NULL, NULL),
 (7, 3, 'electricite', 'rapide', 'auto', 'active', NULL, NULL),
 (8, 4, 'electricite', 'rapide', 'auto', 'active', NULL, NULL),
@@ -263,29 +295,56 @@ CREATE TABLE `Produit` (
 --
 
 INSERT INTO `Produit` (`code_barres`, `id_article`, `libelle_produit`, `quantite_produit`, `prix`) VALUES
-(3014760032112, 11, 'Chewing-gum Freedent White 10p', 1, 1.390),
+(3014760032112, 11, 'Chewing-gum Freedent White 10p', 0, 1.390),
 (3017620425035, 8, 'Chips Lay\'s Nature 45g', 1, 1.490),
-(3057640257578, 17, 'Eau Evian 50cl', 1, 1.190),
-(3175680011800, 12, 'Mentos Fruits 38g', 1, 0.990),
-(3175680091680, 23, 'Dégivrant pare-brise 400ml', 1, 4.990),
-(3228882010053, 18, 'Café Expresso capsule x1', 1, 0.890),
+(3057640257578, 17, 'Eau Evian 50cl', 0, 1.190),
+(3175680011800, 12, 'Mentos Fruits 38g', 0, 0.990),
+(3175680091680, 23, 'Dégivrant pare-brise 400ml', 0, 4.990),
+(3228882010053, 18, 'Café Expresso capsule x1', 0, 0.890),
 (3245390214017, 21, 'Briquet BIC classique', 1, 1.990),
 (3245390214024, 22, 'Allumettes x40', 1, 0.890),
 (3400930006903, 30, 'Croissant pur beurre', 1, 1.490),
 (3560070976843, 28, 'Sandwich Jambon-Beurre', 1, 3.990),
 (3571090000148, 24, 'Huile moteur 5W40 1L', 1, 9.990),
 (3600522118015, 26, 'Gel hydroalcoolique 100ml', 1, 2.490),
-(3600524068738, 27, 'Paracétamol 500mg x8', 1, 2.990),
+(3600524068738, 27, 'Paracétamol 500mg x8', 0, 2.990),
 (3760020509015, 29, 'Wrap Poulet-Crudités', 1, 4.290),
 (5000112657920, 16, 'Red Bull 250ml', 1, 2.490),
 (5000159417891, 13, 'KitKat 2 barres 41.5g', 1, 1.350),
-(5000159461121, 9, 'Chips Pringles Original 40g', 1, 1.790),
-(5099576088745, 25, 'Chiffons microfibre x3', 1, 3.490),
+(5000159461121, 9, 'Chips Pringles Original 40g', 0, 1.790),
+(5099576088745, 25, 'Chiffons microfibre x3', 0, 3.490),
 (5449000131836, 15, 'Coca-Cola Zero 50cl', 1, 2.190),
-(5449000214911, 14, 'Coca-Cola 50cl', 1, 2.190),
-(7622210449283, 10, 'Barre Céréales BelVita x2', 1, 1.290),
-(9771950123005, 19, 'L\'Équipe (journal du jour)', 1, 1.590),
+(5449000214911, 14, 'Coca-Cola 50cl', 0, 2.190),
+(7622210449283, 10, 'Barre Céréales BelVita x2', 0, 1.290),
+(9771950123005, 19, 'L\'Équipe (journal du jour)', 0, 1.590),
 (9772102347008, 20, 'Télé 7 Jours (hebdo)', 1, 2.200);
+
+-- --------------------------------------------------------
+
+--
+-- Structure de la table `Reapprovisionnement`
+--
+
+CREATE TABLE `Reapprovisionnement` (
+  `id_reappro` bigint(20) UNSIGNED NOT NULL,
+  `statut_reappro` enum('En cours','En retard','Arrivé','Annulé') NOT NULL DEFAULT 'En cours',
+  `date_reappro` date NOT NULL,
+  `date_souhaitee` date DEFAULT NULL,
+  `est_auto` tinyint(1) NOT NULL DEFAULT 0
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
+
+--
+-- Déchargement des données de la table `Reapprovisionnement`
+--
+
+INSERT INTO `Reapprovisionnement` (`id_reappro`, `statut_reappro`, `date_reappro`, `date_souhaitee`, `est_auto`) VALUES
+(1, 'Arrivé', '2026-03-01', '2026-03-05', 1),
+(2, 'Annulé', '2026-03-10', '2026-03-14', 1),
+(3, 'En cours', '2026-03-11', '2026-03-13', 0),
+(4, 'En retard', '2026-02-25', '2026-03-01', 1),
+(5, 'Annulé', '2026-03-05', '2026-03-08', 0),
+(6, 'En cours', '2026-03-12', '2026-03-20', 0),
+(7, 'Annulé', '2026-03-12', '2026-03-14', 0);
 
 -- --------------------------------------------------------
 
@@ -300,6 +359,16 @@ CREATE TABLE `Recu` (
   `horodatage` datetime NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
 
+--
+-- Déchargement des données de la table `Recu`
+--
+
+INSERT INTO `Recu` (`id_recu`, `id_transaction`, `num_carte`, `horodatage`) VALUES
+(6, 29, 200029, '2026-03-12 15:27:15'),
+(7, 30, 100030, '2026-03-12 15:31:49'),
+(8, 33, 100033, '2026-03-14 15:06:18'),
+(9, 34, 200034, '2026-03-14 15:11:54');
+
 -- --------------------------------------------------------
 
 --
@@ -312,6 +381,35 @@ CREATE TABLE `Stock` (
   `quantite_stock` int(10) NOT NULL,
   `type_quantite` enum('litre','unite') NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
+
+--
+-- Déchargement des données de la table `Stock`
+--
+
+INSERT INTO `Stock` (`id_stock`, `id_article`, `quantite_stock`, `type_quantite`) VALUES
+(1, 8, 100, 'unite'),
+(2, 9, 99, 'unite'),
+(3, 10, 97, 'unite'),
+(4, 11, 98, 'unite'),
+(5, 12, 99, 'unite'),
+(6, 13, 100, 'unite'),
+(7, 14, 99, 'unite'),
+(8, 15, 100, 'unite'),
+(9, 16, 99, 'unite'),
+(10, 17, 99, 'unite'),
+(11, 18, 98, 'unite'),
+(12, 19, 99, 'unite'),
+(13, 20, 100, 'unite'),
+(14, 21, 100, 'unite'),
+(15, 22, 100, 'unite'),
+(16, 23, 98, 'unite'),
+(17, 24, 100, 'unite'),
+(18, 25, 99, 'unite'),
+(19, 26, 99, 'unite'),
+(20, 27, 98, 'unite'),
+(21, 28, 100, 'unite'),
+(22, 29, 100, 'unite'),
+(23, 30, 100, 'unite');
 
 -- --------------------------------------------------------
 
@@ -330,7 +428,22 @@ CREATE TABLE `Transaction` (
 --
 
 INSERT INTO `Transaction` (`id_transaction`, `prix_total`, `date_heure`) VALUES
-(12, 27.770, '2026-03-04 22:49:38');
+(19, 4.990, '2026-03-05 14:08:51'),
+(20, 49.735, '2026-03-05 21:31:28'),
+(21, 18.956, '2026-03-05 21:44:33'),
+(22, 47.268, '2026-03-12 10:36:38'),
+(23, 74.374, '2026-03-12 11:04:36'),
+(24, 1.290, '2026-03-12 11:17:40'),
+(25, 67.031, '2026-03-12 13:46:30'),
+(26, 51.975, '2026-03-12 14:47:27'),
+(27, 30.959, '2026-03-12 14:48:02'),
+(28, 5.080, '2026-03-12 15:12:26'),
+(29, 4.780, '2026-03-12 15:26:25'),
+(30, 2.180, '2026-03-12 15:31:15'),
+(31, 4.470, '2026-03-14 13:24:09'),
+(32, 4.670, '2026-03-14 15:02:22'),
+(33, 5.670, '2026-03-14 15:06:17'),
+(34, 55.841, '2026-03-14 15:11:51');
 
 -- --------------------------------------------------------
 
@@ -353,7 +466,14 @@ CREATE TABLE `TransactionEnergie` (
 --
 
 INSERT INTO `TransactionEnergie` (` id_transaction_energie`, `id_transaction`, `id_energie`, `quantite_delivree`, `temps_charge`, `statut`, `id_pompe`) VALUES
-(12, NULL, 3, 16.340, '00:00:00', 'en_cours', 1);
+(17, 20, 2, 26.190, '00:00:00', 'payee', 1),
+(18, 21, 1, 10.537, '00:00:00', 'payee', 1),
+(19, 22, 4, 26.872, '00:00:00', 'payee', 1),
+(20, 23, 2, 39.165, '00:00:00', 'payee', 2),
+(21, 25, 2, 35.298, '00:00:00', 'payee', 1),
+(22, 26, 1, 28.891, '00:00:00', 'payee', 2),
+(23, 27, 2, 16.303, '00:00:00', 'payee', 2),
+(24, 34, 3, 32.867, '00:00:00', 'payee', 2);
 
 -- --------------------------------------------------------
 
@@ -367,6 +487,80 @@ CREATE TABLE `TransactionProduit` (
   `code_barres` bigint(20) UNSIGNED NOT NULL,
   `quantite_produit_totale` int(10) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
+
+--
+-- Déchargement des données de la table `TransactionProduit`
+--
+
+INSERT INTO `TransactionProduit` (`id_transaction_produit`, ` id_transaction`, `code_barres`, `quantite_produit_totale`) VALUES
+(3, 19, 3175680091680, 1),
+(4, 24, 7622210449283, 1),
+(5, 28, 5099576088745, 1),
+(6, 28, 9771950123005, 1),
+(7, 29, 3600524068738, 1),
+(8, 29, 5000159461121, 1),
+(9, 30, 3175680011800, 1),
+(10, 30, 3057640257578, 1),
+(11, 31, 3228882010053, 1),
+(12, 31, 3014760032112, 1),
+(13, 31, 5449000214911, 1),
+(14, 32, 3600522118015, 1),
+(15, 32, 7622210449283, 1),
+(16, 32, 3228882010053, 1),
+(17, 33, 7622210449283, 1),
+(18, 33, 3600524068738, 1),
+(19, 33, 3014760032112, 1);
+
+-- --------------------------------------------------------
+
+--
+-- Structure de la table `ValeursDefautReappro`
+--
+
+CREATE TABLE `ValeursDefautReappro` (
+  `id_valeur_reappro_defaut` bigint(20) UNSIGNED NOT NULL,
+  `id_article` bigint(20) UNSIGNED NOT NULL,
+  `seuil_alerte` decimal(10,3) NOT NULL DEFAULT 10.000,
+  `volume` decimal(10,3) NOT NULL DEFAULT 50.000,
+  `frequence_valeur` int(10) NOT NULL DEFAULT 7,
+  `frequence_unite` enum('jour','semaine','mois') NOT NULL DEFAULT 'semaine'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
+
+--
+-- Déchargement des données de la table `ValeursDefautReappro`
+--
+
+INSERT INTO `ValeursDefautReappro` (`id_valeur_reappro_defaut`, `id_article`, `seuil_alerte`, `volume`, `frequence_valeur`, `frequence_unite`) VALUES
+(1, 1, 500.000, 5000.000, 1, 'semaine'),
+(2, 2, 500.000, 3000.000, 1, 'semaine'),
+(3, 3, 800.000, 7000.000, 5, 'jour'),
+(4, 4, 500.000, 5000.000, 1, 'semaine'),
+(5, 5, 300.000, 2000.000, 2, 'semaine'),
+(6, 6, 0.000, 0.000, 1, 'mois'),
+(7, 7, 0.000, 0.000, 1, 'mois'),
+(8, 8, 5.000, 20.000, 1, 'semaine'),
+(9, 9, 5.000, 20.000, 1, 'semaine'),
+(10, 10, 5.000, 15.000, 1, 'semaine'),
+(11, 11, 3.000, 12.000, 2, 'semaine'),
+(12, 12, 3.000, 12.000, 2, 'semaine'),
+(13, 13, 3.000, 12.000, 2, 'semaine'),
+(14, 14, 8.000, 24.000, 5, 'jour'),
+(15, 15, 8.000, 24.000, 5, 'jour'),
+(16, 16, 6.000, 18.000, 1, 'semaine'),
+(17, 17, 10.000, 30.000, 5, 'jour'),
+(18, 18, 6.000, 18.000, 1, 'semaine'),
+(19, 19, 2.000, 10.000, 1, 'jour'),
+(20, 20, 2.000, 5.000, 1, 'semaine'),
+(21, 21, 5.000, 20.000, 1, 'semaine'),
+(22, 22, 3.000, 10.000, 2, 'semaine'),
+(23, 23, 2.000, 6.000, 1, 'mois'),
+(24, 24, 1.000, 4.000, 1, 'mois'),
+(25, 25, 2.000, 6.000, 1, 'mois'),
+(26, 26, 3.000, 10.000, 2, 'semaine'),
+(27, 27, 3.000, 10.000, 2, 'semaine'),
+(28, 28, 3.000, 15.000, 5, 'jour'),
+(29, 29, 4.000, 15.000, 5, 'jour'),
+(30, 30, 6.000, 20.000, 5, 'jour');
 
 --
 -- Index pour les tables déchargées
@@ -426,6 +620,13 @@ ALTER TABLE `Energie`
   ADD KEY `id_article` (`id_article`);
 
 --
+-- Index pour la table `LigneReappro`
+--
+ALTER TABLE `LigneReappro`
+  ADD PRIMARY KEY (`id_reappro`,`id_article`),
+  ADD KEY `fk_lr_article` (`id_article`);
+
+--
 -- Index pour la table `Pompe`
 --
 ALTER TABLE `Pompe`
@@ -439,6 +640,12 @@ ALTER TABLE `Produit`
   ADD PRIMARY KEY (`code_barres`),
   ADD UNIQUE KEY `code_barres` (`code_barres`),
   ADD KEY `id_article` (`id_article`);
+
+--
+-- Index pour la table `Reapprovisionnement`
+--
+ALTER TABLE `Reapprovisionnement`
+  ADD PRIMARY KEY (`id_reappro`);
 
 --
 -- Index pour la table `Recu`
@@ -481,6 +688,13 @@ ALTER TABLE `TransactionProduit`
   ADD UNIQUE KEY `id_transaction_produit` (`id_transaction_produit`),
   ADD KEY ` id_transaction` (` id_transaction`),
   ADD KEY `code_barres` (`code_barres`);
+
+--
+-- Index pour la table `ValeursDefautReappro`
+--
+ALTER TABLE `ValeursDefautReappro`
+  ADD PRIMARY KEY (`id_valeur_reappro_defaut`),
+  ADD UNIQUE KEY `uk_article` (`id_article`);
 
 --
 -- AUTO_INCREMENT pour les tables déchargées
@@ -541,34 +755,46 @@ ALTER TABLE `Produit`
   MODIFY `code_barres` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9772102347009;
 
 --
+-- AUTO_INCREMENT pour la table `Reapprovisionnement`
+--
+ALTER TABLE `Reapprovisionnement`
+  MODIFY `id_reappro` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
+
+--
 -- AUTO_INCREMENT pour la table `Recu`
 --
 ALTER TABLE `Recu`
-  MODIFY `id_recu` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
+  MODIFY `id_recu` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10;
 
 --
 -- AUTO_INCREMENT pour la table `Stock`
 --
 ALTER TABLE `Stock`
-  MODIFY `id_stock` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
+  MODIFY `id_stock` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=24;
 
 --
 -- AUTO_INCREMENT pour la table `Transaction`
 --
 ALTER TABLE `Transaction`
-  MODIFY `id_transaction` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=13;
+  MODIFY `id_transaction` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=35;
 
 --
 -- AUTO_INCREMENT pour la table `TransactionEnergie`
 --
 ALTER TABLE `TransactionEnergie`
-  MODIFY ` id_transaction_energie` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=13;
+  MODIFY ` id_transaction_energie` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=25;
 
 --
 -- AUTO_INCREMENT pour la table `TransactionProduit`
 --
 ALTER TABLE `TransactionProduit`
-  MODIFY `id_transaction_produit` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
+  MODIFY `id_transaction_produit` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=20;
+
+--
+-- AUTO_INCREMENT pour la table `ValeursDefautReappro`
+--
+ALTER TABLE `ValeursDefautReappro`
+  MODIFY `id_valeur_reappro_defaut` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=31;
 
 --
 -- Contraintes pour les tables déchargées
@@ -597,6 +823,13 @@ ALTER TABLE `Electricite`
 --
 ALTER TABLE `Energie`
   ADD CONSTRAINT `fk_energie_article` FOREIGN KEY (`id_article`) REFERENCES `Article` (`id_article`);
+
+--
+-- Contraintes pour la table `LigneReappro`
+--
+ALTER TABLE `LigneReappro`
+  ADD CONSTRAINT `fk_lr_article` FOREIGN KEY (`id_article`) REFERENCES `Article` (`id_article`),
+  ADD CONSTRAINT `fk_lr_reappro` FOREIGN KEY (`id_reappro`) REFERENCES `Reapprovisionnement` (`id_reappro`);
 
 --
 -- Contraintes pour la table `Produit`
@@ -629,6 +862,12 @@ ALTER TABLE `TransactionEnergie`
 ALTER TABLE `TransactionProduit`
   ADD CONSTRAINT `fk_tp_produit` FOREIGN KEY (`code_barres`) REFERENCES `Produit` (`code_barres`),
   ADD CONSTRAINT `fk_tp_transaction` FOREIGN KEY (` id_transaction`) REFERENCES `Transaction` (`id_transaction`);
+
+--
+-- Contraintes pour la table `ValeursDefautReappro`
+--
+ALTER TABLE `ValeursDefautReappro`
+  ADD CONSTRAINT `fk_vdr_article` FOREIGN KEY (`id_article`) REFERENCES `Article` (`id_article`);
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
