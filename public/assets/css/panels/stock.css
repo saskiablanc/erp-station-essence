@@ -1,0 +1,87 @@
+/* Stock panel */
+.stock-panel {
+  height: calc(100% + 24px);
+  margin: -12px;
+  display: flex;
+  flex-direction: column;
+  background: rgba(255, 255, 255, 0.72);
+  border: 2px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.stock-switch {
+  display: inline-flex;
+  gap: 6px;
+  padding: 8px 10px 6px;
+  border-bottom: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.78);
+}
+
+.stock-switch-btn {
+  height: 26px;
+  padding: 0 12px;
+  border-radius: 999px;
+  border: 2px solid var(--border);
+  background: rgba(255, 255, 255, 0.86);
+  color: var(--text-mid);
+  font-size: 11px;
+  box-shadow: var(--shadow-soft);
+}
+
+.stock-switch-btn.active {
+  background: var(--btn-grad);
+  color: var(--accent);
+  border-color: var(--border-active);
+}
+
+.stock-table-wrap {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+}
+
+.stock-table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+.stock-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: rgba(255, 255, 255, 0.9);
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 600;
+  text-align: left;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--border);
+}
+
+.stock-table thead th:last-child {
+  text-align: right;
+}
+
+.stock-table tbody td {
+  padding: 7px 10px;
+  border-bottom: 1px solid var(--border);
+  color: var(--text-mid);
+  font-size: 12px;
+}
+
+.stock-col-qty {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.stock-state {
+  text-align: center;
+  color: var(--text-dim);
+  padding: 16px 10px !important;
+}
+
+.stock-state--error {
+  color: var(--danger);
+}

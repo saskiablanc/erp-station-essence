@@ -158,6 +158,8 @@ window.TicketPayment = (() => {
         confirmButtonText: 'Fermer',
         allowOutsideClick: false,
       });
+
+      window.dispatchEvent(new CustomEvent('stock:changed'));
       return { status: 'success', responses };
     } catch (err) {
       await Swal.fire({

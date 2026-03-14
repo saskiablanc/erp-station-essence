@@ -52,7 +52,7 @@ const Requetes = (() => {
     demarrerPompe: (id, data) => appel('POST', `/json/pompes/${id}/demarrer`, data),
     terminerPompe: (id) => appel('POST', `/json/pompes/${id}/terminer`),
     encaisserPompe: (id, data) => appel('POST', `/json/pompes/${id}/encaisser`, data),
-    getStock:     ()   => appel('GET',  '/json/stock'),
+    getStock:     (type = 'articles')   => appel('GET',  `/json/stock?type=${encodeURIComponent(type)}`),
 
     // ── Sprint 5 ──────────────────────────────────────────
     getCCE:      (id)       => appel('GET',  `/json/cce/${id}`),

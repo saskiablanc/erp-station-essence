@@ -61,6 +61,17 @@ class CaisseController extends Controller
         $this->json($articles);
     }
 
+    public function getStock(): void
+    {
+        $this->requireAuth();
+        $model = new Article();
+        $type = strtolower(trim((string) ($_GET['type'] ?? 'articles')));
+        $stocks = in_array($type, ['carburant', 'carburants'], true)
+            ? $model->findStockCarburants()
+            : $model->findStockProduits();
+        $this->json($stocks);
+    }
+
     public function creerTransaction(): void
     {
         $this->requireAuth();

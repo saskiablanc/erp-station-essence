@@ -88,4 +88,46 @@ class Article
             $rows
         );
     }
+
+    public function findStockProduits(): array
+    {
+        $stmt = $this->db->query(
+            "SELECT p.code_barres,
+                    p.libelle_produit,
+                    COALESCE(s.quantite_stock, 0) AS quantite_stock
+             FROM Produit p
+             LEFT JOIN Stock s
+               ON s.id_article = p.id_article
+              AND s.type_quantite = 'unite'
+             ORDER BY p.libelle_produit ASC"
+        );
+
+        $rows = $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+        return array_map(
+            static fn (array $row): array => [
+                'code_barres' => (string) ($row['code_barres'] ?? ''),
+                'libelle' => (string) ($row['libelle_produit'] ?? ''),
+                'quantite_stock' => (int) ($row['quantite_stock'] ?? 0),
+            ],
+            $rows
+        );
+    }
+
+    public function findStockCarburants(): array
+    {
+        $stmt = $this->db->query(
+            "SELECT c.libelle, c.stock_litre
+             FROM Carburant c
+             ORDER BY c.libelle ASC"
+        );
+
+        $rows = $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+        return array_map(
+            static fn (array $row): array => [
+                'libelle' => (string) ($row['libelle'] ?? ''),
+                'quantite_stock' => (float) ($row['stock_litre'] ?? 0),
+            ],
+            $rows
+        );
+    }
 }
