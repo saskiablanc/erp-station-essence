@@ -35,6 +35,7 @@ const Requetes = (() => {
     logout:   () => appel('POST', '/json/auth/logout'),
 
     // ── Articles ──────────────────────────────────────────
+    getArticles: () => appel('GET', '/json/articles'),
     getArticle: (code) => appel('GET', `/json/articles/${code}`),
     randomArticle: () => appel('GET', '/json/articles/random'),
 

@@ -281,3 +281,43 @@
   min-width: 140px;
   margin-top: 8px;
 }
+
+.swal2-popup.ticket-swal-popup.ticket-swal-popup-list {
+  width: min(52rem, 94vw);
+}
+.ticket-list-wrap {
+  max-height: min(58vh, 540px);
+  overflow: auto;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.82);
+}
+.ticket-list-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+.ticket-list-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: rgba(255, 255, 255, 0.95);
+  color: var(--text);
+  text-align: left;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--border);
+}
+.ticket-list-table tbody td {
+  padding: 7px 10px;
+  border-bottom: 1px solid var(--border);
+  color: var(--text-mid);
+}
+.ticket-list-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+.ticket-list-empty {
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.82);
+}

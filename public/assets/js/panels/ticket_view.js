@@ -33,6 +33,7 @@ window.TicketView = (() => {
             <div class="ticket-actions">
               <button class="ticket-action-btn" data-action="random" type="button">Scanner article</button>
               <button class="ticket-action-btn" data-action="barcode" type="button">Insérer code-barres</button>
+              <button class="ticket-action-btn" data-action="list" type="button">Liste Article</button>
             </div>
           </div>
           <div class="ticket-footer-right">

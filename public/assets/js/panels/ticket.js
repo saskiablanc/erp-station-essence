@@ -52,6 +52,14 @@ WM.register('ticket', {
     const panel = root.querySelector('.ticket-panel');
     const cart = TicketCart.create();
 
+    const escapeHtml = (value) =>
+      String(value ?? '')
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#39;');
+
     const render = () => TicketView.renderRows(panel, cart);
     const addToCart = async (article, successMessage = null) => {
       const result = cart.addArticle(article);
@@ -142,6 +150,59 @@ WM.register('ticket', {
           text: stockWarning
             ? 'Cet article n’est plus en stock.'
             : message,
+          customClass: {
+            popup: 'ticket-swal-popup',
+            title: 'ticket-swal-title',
+            htmlContainer: 'ticket-swal-text',
+            confirmButton: 'ticket-swal-btn',
+          },
+          buttonsStyling: false,
+        });
+      }
+    });
+
+    panel.querySelector('[data-action="list"]').addEventListener('click', async () => {
+      try {
+        const articles = await Requetes.getArticles();
+        const rows = (articles || [])
+          .map(
+            (article) => `
+              <tr>
+                <td>${escapeHtml(article.code_barres)}</td>
+                <td>${escapeHtml(article.libelle)}</td>
+              </tr>
+            `,
+          )
+          .join('');
+
+        await Swal.fire({
+          title: 'Liste articles',
+          html: rows
+            ? `
+              <div class="ticket-list-wrap">
+                <table class="ticket-list-table">
+                  <thead>
+                    <tr><th>Code-barres</th><th>Article</th></tr>
+                  </thead>
+                  <tbody>${rows}</tbody>
+                </table>
+              </div>
+            `
+            : '<div class="ticket-list-empty">Aucun article trouvé.</div>',
+          customClass: {
+            popup: 'ticket-swal-popup ticket-swal-popup-list',
+            title: 'ticket-swal-title',
+            htmlContainer: 'ticket-swal-text',
+            confirmButton: 'ticket-swal-btn',
+          },
+          buttonsStyling: false,
+          confirmButtonText: 'Fermer',
+        });
+      } catch (err) {
+        await Swal.fire({
+          icon: 'error',
+          title: 'Erreur',
+          text: err.message || 'Impossible de charger la liste des articles',
           customClass: {
             popup: 'ticket-swal-popup',
             title: 'ticket-swal-title',

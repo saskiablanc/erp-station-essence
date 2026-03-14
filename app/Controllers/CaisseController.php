@@ -53,6 +53,14 @@ class CaisseController extends Controller
         $this->json($article);
     }
 
+    public function getArticles(): void
+    {
+        $this->requireAuth();
+        $model = new Article();
+        $articles = $model->findAllCodeBarres();
+        $this->json($articles);
+    }
+
     public function creerTransaction(): void
     {
         $this->requireAuth();

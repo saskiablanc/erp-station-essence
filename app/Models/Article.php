@@ -70,4 +70,22 @@ class Article
             'prix'        => (float) $row['prix'],
         ];
     }
+
+    public function findAllCodeBarres(): array
+    {
+        $stmt = $this->db->query(
+            "SELECT p.code_barres, p.libelle_produit
+             FROM Produit p
+             ORDER BY p.code_barres ASC"
+        );
+
+        $rows = $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+        return array_map(
+            static fn (array $row): array => [
+                'code_barres' => (string) ($row['code_barres'] ?? ''),
+                'libelle' => (string) ($row['libelle_produit'] ?? ''),
+            ],
+            $rows
+        );
+    }
 }

@@ -80,6 +80,7 @@ $router->post('json/auth/logout',               [new AuthController(),   'jsonLo
 
 // ── Articles ─────────────────────────────────────────────
 $router->get( 'json/articles/random',           [new CaisseController(), 'getRandomArticle']);
+$router->get( 'json/articles',                  [new CaisseController(), 'getArticles']);
 $router->get( 'json/articles/{code}',           [new CaisseController(), 'getArticle']);
 
 // ── Transactions produits ─────────────────────────────────
