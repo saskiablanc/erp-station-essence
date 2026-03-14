@@ -24,7 +24,10 @@ const Requetes = (() => {
     const data    = await reponse.json();
 
     if (!reponse.ok) {
-      throw new Error(data.message || `Erreur ${reponse.status}`);
+      const error = new Error(data.message || `Erreur ${reponse.status}`);
+      error.status = reponse.status;
+      error.data = data;
+      throw error;
     }
     return data;
   }
@@ -55,6 +58,7 @@ const Requetes = (() => {
     getStock:     (type = 'articles')   => appel('GET',  `/json/stock?type=${encodeURIComponent(type)}`),
 
     // ── Sprint 5 ──────────────────────────────────────────
+    getCCELatest: ()         => appel('GET',  '/json/cce/latest'),
     getCCE:      (id)       => appel('GET',  `/json/cce/${id}`),
     creerCCE:    (data)     => appel('POST', '/json/cce',              data),
     rechargerCCE:(id, mont) => appel('POST', `/json/cce/${id}/recharger`, { montant: mont }),

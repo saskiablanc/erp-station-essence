@@ -4,6 +4,7 @@ declare(strict_types=1);
 use App\Core\Router;
 use App\Controllers\AuthController;
 use App\Controllers\CaisseController;
+use App\Controllers\CceController;
 use App\Controllers\PompeController;
 
 if (session_status() === PHP_SESSION_NONE) {
@@ -97,6 +98,12 @@ $router->post('json/pompes/{id}/activer',       [new PompeController(),  'active
 $router->post('json/pompes/{id}/demarrer',      [new PompeController(),  'demarrer']);
 $router->post('json/pompes/{id}/terminer',      [new PompeController(),  'terminer']);
 $router->post('json/pompes/{id}/encaisser',     [new PompeController(),  'encaisser']);
+
+// CCE ───────────────────────────────────────
+$router->get( 'json/cce/latest',               [new CceController(),    'latest']);
+$router->get( 'json/cce/{id}',                  [new CceController(),    'get']);
+$router->post('json/cce',                       [new CceController(),    'create']);
+$router->post('json/cce/{id}/recharger',        [new CceController(),    'recharger']);
 
 // ════════════════════════════════════════════════════════
 //  Dispatch
