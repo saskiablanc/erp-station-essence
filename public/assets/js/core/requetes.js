@@ -102,5 +102,14 @@ const Requetes = (() => {
     modifierPrix: (d) => appel("POST", "/json/carburants/prix", d),
     getIncidents: () => appel("GET", "/json/incidents"),
     creerIncident: (d) => appel("POST", "/json/incidents", d),
+    // ── Sprint 6 — Paramètres CCE (US14) ─────────────────────
+    getCceParams: () => appel("GET", "/json/cce/params"),
+    updateMontantMin: (montant) =>
+      appel("POST", "/json/cce/params", { montant_min: montant }),
+    addBonus: (t, b) =>
+      appel("POST", "/json/cce/bonus", { tranche: t, montant_bonus: b }),
+    updateBonus: (id, t, b) =>
+      appel("POST", `/json/cce/bonus/${id}`, { tranche: t, montant_bonus: b }),
+    deleteBonus: (id) => appel("POST", `/json/cce/bonus/${id}/suppr`),
   };
 })();

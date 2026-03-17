@@ -7,8 +7,8 @@ use App\Controllers\CaisseController;
 use App\Controllers\CceController;
 use App\Controllers\PompeController;
 use App\Controllers\ReapproController;
+use App\Controllers\CceParamsController;
 
-// Désactiver l'affichage d'erreurs PHP pour les routes JSON (évite de casser le JSON)
 $uri = $_SERVER['REQUEST_URI'] ?? '';
 if (str_contains($uri, '/json/')) {
     ini_set('display_errors', '0');
@@ -25,7 +25,6 @@ define('CONFIG_PATH',  ROOT_PATH . '/config');
 define('VIEW_PATH',    APP_PATH  . '/Views');
 define('STORAGE_PATH', ROOT_PATH . '/storage');
 
-// ── .env ─────────────────────────────────────────────────
 $envPath = ROOT_PATH . '/.env';
 if (is_file($envPath)) {
     foreach (file($envPath, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) as $line) {
@@ -45,7 +44,6 @@ if (is_file($envPath)) {
 
 require CONFIG_PATH . '/config.php';
 
-// ── Autoload ──────────────────────────────────────────────
 spl_autoload_register(static function (string $class): void {
     $prefix = 'App\\';
     if (!str_starts_with($class, $prefix)) return;
@@ -65,11 +63,7 @@ $router->post('deconnexion',[new AuthController(),   'logout']);
 
 $router->get('caisse', function () {
     if (empty($_SESSION['employe'])) {
-        $_SESSION['employe'] = [
-            'id_connexion' => 0,
-            'identifiant'  => 'demo',
-            'role'         => 'employe',
-        ];
+        $_SESSION['employe'] = ['id_connexion' => 0, 'identifiant' => 'demo', 'role' => 'employe'];
     }
     (new CaisseController())->index();
 });
@@ -82,39 +76,44 @@ $router->get('gerant', function () {
 //  Routes JSON
 // ════════════════════════════════════════════════════════
 
-// ── Auth ─────────────────────────────────────────────────
 $router->get( 'json/auth/session',              [new AuthController(),   'jsonSession']);
 $router->post('json/auth/logout',               [new AuthController(),   'jsonLogout']);
 
-// ── Articles ─────────────────────────────────────────────
 $router->get( 'json/articles/random',           [new CaisseController(), 'getRandomArticle']);
 $router->get( 'json/articles',                  [new CaisseController(), 'getArticles']);
 $router->get( 'json/articles/{code}',           [new CaisseController(), 'getArticle']);
 $router->get( 'json/stock',                     [new CaisseController(), 'getStock']);
 
-// ── Transactions produits ─────────────────────────────────
 $router->post('json/transactions',              [new CaisseController(), 'creerTransaction']);
 $router->get( 'json/transactions',              [new CaisseController(), 'getTransactions']);
 $router->get( 'json/transactions/{id}',         [new CaisseController(), 'getTransaction']);
 $router->post('json/transactions/{id}/annuler', [new CaisseController(), 'annulerTransaction']);
 $router->post('json/recus',                     [new CaisseController(), 'creerRecus']);
 
-// Pompes ────────────────────────────────────
 $router->get( 'json/pompes',                    [new PompeController(),  'getAll']);
 $router->post('json/pompes/{id}/activer',       [new PompeController(),  'activer']);
 $router->post('json/pompes/{id}/demarrer',      [new PompeController(),  'demarrer']);
 $router->post('json/pompes/{id}/terminer',      [new PompeController(),  'terminer']);
 $router->post('json/pompes/{id}/encaisser',     [new PompeController(),  'encaisser']);
 
-// CCE ───────────────────────────────────────
-$router->get( 'json/cce',                      [new CceController(),    'all']);
-$router->get( 'json/cce/latest',               [new CceController(),    'latest']);
-$router->get( 'json/cce/{id}/transactions',    [new CceController(),    'transactions']);
-$router->get( 'json/cce/{id}',                  [new CceController(),    'get']);
-$router->post('json/cce',                       [new CceController(),    'create']);
-$router->post('json/cce/{id}/recharger',        [new CceController(),    'recharger']);
-$router->post('json/cce/{id}/debiter',          [new CceController(),    'debiter']);
-// Réapprovisionnement — Sprint 4 (US20/21/22/23)
+// ── CCE  ────────
+$router->get( 'json/cce',                       [new CceController(),       'all']);
+$router->get( 'json/cce/latest',                [new CceController(),       'latest']);
+// Sprint 6 US14 
+$router->get( 'json/cce/params',                [new CceParamsController(), 'get']);
+$router->post('json/cce/params',                [new CceParamsController(), 'updateMin']);
+// Sprint 6 US14 
+$router->post('json/cce/bonus',                 [new CceParamsController(), 'addBonus']);
+$router->post('json/cce/bonus/{id}/suppr',      [new CceParamsController(), 'deleteBonus']);
+$router->post('json/cce/bonus/{id}',            [new CceParamsController(), 'updateBonus']);
+// Routes CCE dynamiques 
+$router->get( 'json/cce/{id}/transactions',     [new CceController(),       'transactions']);
+$router->get( 'json/cce/{id}',                  [new CceController(),       'get']);
+$router->post('json/cce',                       [new CceController(),       'create']);
+$router->post('json/cce/{id}/recharger',        [new CceController(),       'recharger']);
+$router->post('json/cce/{id}/debiter',          [new CceController(),       'debiter']);
+
+// ── Réapprovisionnement — Sprint 4 ───────────────────────
 $router->get( 'json/reappros/articles',              [new ReapproController(), 'getArticles']);
 $router->get( 'json/reappros/valeurs-defaut',        [new ReapproController(), 'getValeursDefaut']);
 $router->post('json/reappros/valeurs-defaut-type',   [new ReapproController(), 'updateValeursDefautType']);
@@ -126,8 +125,6 @@ $router->post('json/reappros/{id}/statut',           [new ReapproController(), '
 $router->post('json/reappros/{id}/annuler',          [new ReapproController(), 'annuler']);
 
 // ════════════════════════════════════════════════════════
-//  Dispatch
-// ════════════════════════════════════════════════════════
 $page = (string) ($_GET['page'] ?? '');
 if ($page === '') {
     $uri  = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH);
@@ -137,7 +134,5 @@ if ($page === '') {
     }
     $page = $uri;
 }
-
 if ($page === '/index.php' || $page === 'index.php') $page = '/';
-
 $router->dispatch($_SERVER['REQUEST_METHOD'] ?? 'GET', $page);
