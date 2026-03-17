@@ -11,6 +11,7 @@ class Cce
 {
     private Database $db;
     private ?bool $hasTransactionCardLink = null;
+    private ?int $defaultParametreId = null;
 
     public function __construct()
     {
@@ -23,6 +24,7 @@ class Cce
         $prenom = $this->normalizeName((string) ($data['prenom'] ?? ''), 'prenom');
         $email = $this->normalizeEmail((string) ($data['email'] ?? ''));
         $telephone = $this->normalizeTelephone((string) ($data['telephone'] ?? ''));
+        $idParametre = $this->getDefaultParametreId();
         $dateApport = date('Y-m-d');
         $montantApport = 0;
         $soldeClient = 0.0;
@@ -50,15 +52,16 @@ class Cce
 
             $this->db->execute(
                 'INSERT INTO `CarteCE`
-                    (`id_client`, `code_secret`, `solde_client`, `date_dernier_apport`, `montant_dernier_apport`)
+                    (`id_client`, `code_secret`, `solde_client`, `date_dernier_apport`, `montant_dernier_apport`, `id_parametre`)
                  VALUES
-                    (:id_client, :code_secret, :solde_client, :date_dernier_apport, :montant_dernier_apport)',
+                    (:id_client, :code_secret, :solde_client, :date_dernier_apport, :montant_dernier_apport, :id_parametre)',
                 [
                     'id_client' => $idClient,
                     'code_secret' => $codeSecret,
                     'solde_client' => $soldeClient,
                     'date_dernier_apport' => $dateApport,
                     'montant_dernier_apport' => $montantApport,
+                    'id_parametre' => $idParametre,
                 ]
             );
 
@@ -80,6 +83,7 @@ class Cce
                 'solde_client' => number_format($soldeClient, 3, '.', ''),
                 'date_dernier_apport' => $dateApport,
                 'montant_dernier_apport' => $montantApport,
+                'id_parametre' => $idParametre,
             ];
         } catch (\Throwable $e) {
             if ($this->db->getConnection()->inTransaction()) {
@@ -134,9 +138,14 @@ class Cce
                 cc.code_secret,
                 cc.solde_client,
                 cc.date_dernier_apport,
-                cc.montant_dernier_apport
+                cc.montant_dernier_apport,
+                cc.id_parametre,
+                p.montant_min,
+                p.bonus_100,
+                p.bonus_200
              FROM `CarteCE` cc
              INNER JOIN `Client` c ON c.id_client = cc.id_client
+             INNER JOIN `ParametreCCE` p ON p.id_parametre = cc.id_parametre
              WHERE cc.id_carte_CE = :id
              LIMIT 1',
             ['id' => $idCarte]
@@ -169,9 +178,14 @@ class Cce
                 cc.code_secret,
                 cc.solde_client,
                 cc.date_dernier_apport,
-                cc.montant_dernier_apport
+                cc.montant_dernier_apport,
+                cc.id_parametre,
+                p.montant_min,
+                p.bonus_100,
+                p.bonus_200
              FROM `CarteCE` cc
              INNER JOIN `Client` c ON c.id_client = cc.id_client
+             INNER JOIN `ParametreCCE` p ON p.id_parametre = cc.id_parametre
              ORDER BY cc.id_carte_CE DESC
              LIMIT 1'
         );
@@ -207,32 +221,66 @@ class Cce
         }
 
         $arrondi = round($montant, 3);
+        $parametres = $this->findParametresForCard($idCarte);
+        if (!$parametres) {
+            return null;
+        }
+
+        $montantMinimum = (float) ($parametres['montant_min'] ?? 0);
+        if ($arrondi < $montantMinimum) {
+            throw new RuntimeException(
+                sprintf('Le montant minimum de rechargement est de %.2f EUR', $montantMinimum)
+            );
+        }
+
+        $bonus = 0.0;
+        $bonus100 = (float) ($parametres['bonus_100'] ?? 0);
+        $bonus200 = (float) ($parametres['bonus_200'] ?? 0);
+        if ($arrondi >= 200.0 && $bonus200 > 0) {
+            $bonus = round($bonus200, 3);
+        } elseif ($arrondi >= 100.0 && $bonus100 > 0) {
+            $bonus = round($bonus100, 3);
+        }
+
+        $montantCredite = round($arrondi + $bonus, 3);
         $dateApport = date('Y-m-d');
 
         $this->db->execute(
             'UPDATE `CarteCE`
-             SET solde_client = solde_client + :montant,
+             SET solde_client = solde_client + :montant_credite,
                  date_dernier_apport = :date_dernier_apport,
                  montant_dernier_apport = :montant_entier
              WHERE id_carte_CE = :id',
             [
-                'montant' => $arrondi,
+                'montant_credite' => $montantCredite,
                 'date_dernier_apport' => $dateApport,
                 'montant_entier' => (int) round($montant),
                 'id' => $idCarte,
             ]
         );
 
-        return $this->findOverviewById($idCarte);
+        $cce = $this->findOverviewById($idCarte);
+        if (!$cce) {
+            return null;
+        }
+
+        $cce['rechargement'] = [
+            'montant_saisi' => $arrondi,
+            'bonus_applique' => $bonus,
+            'montant_credite' => $montantCredite,
+        ];
+
+        return $cce;
     }
 
-    public function debiter(int $idCarte, float $montant): ?array
+    public function debiter(int $idCarte, float $montant, array $idTransactions = []): ?array
     {
         if ($montant <= 0) {
             throw new RuntimeException('Le montant doit être supérieur à 0');
         }
 
         $arrondi = round($montant, 3);
+        $idTransactions = $this->normalizeTransactionIds($idTransactions);
 
         $this->db->beginTransaction();
         try {
@@ -264,6 +312,23 @@ class Cce
                 ]
             );
 
+            if ($idTransactions !== []) {
+                if (!$this->hasTransactionCardLink()) {
+                    throw new RuntimeException('Table TransactionCCE introuvable');
+                }
+
+                foreach ($idTransactions as $idTransaction) {
+                    $this->db->execute(
+                        'INSERT IGNORE INTO `TransactionCCE` (`id_transaction`, `id_carte_CE`)
+                         VALUES (:id_transaction, :id_carte_CE)',
+                        [
+                            'id_transaction' => $idTransaction,
+                            'id_carte_CE' => $idCarte,
+                        ]
+                    );
+                }
+            }
+
             $this->db->commit();
         } catch (\Throwable $e) {
             if ($this->db->getConnection()->inTransaction()) {
@@ -276,47 +341,66 @@ class Cce
     }
 
     /**
+     * @param array<int, mixed> $ids
+     * @return array<int, int>
+     */
+    private function normalizeTransactionIds(array $ids): array
+    {
+        $normalized = [];
+
+        foreach ($ids as $id) {
+            $current = (int) $id;
+            if ($current > 0) {
+                $normalized[] = $current;
+            }
+        }
+
+        return array_values(array_unique($normalized));
+    }
+
+    /**
      * @return array{columns: string[], rows: array<int, array<string, mixed>>}
      */
     public function findTransactionCceForCard(int $idCarte): array
     {
+        if (!$this->hasTransactionCardLink()) {
+            throw new RuntimeException('Table TransactionCCE introuvable');
+        }
+
         $columnsStmt = $this->db->query('SHOW COLUMNS FROM `Transaction`');
         $columns = $columnsStmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
         if ($columns === []) {
             return ['columns' => [], 'rows' => []];
         }
 
-        $cardColumn = null;
-        $idColumnToSkip = null;
+        $transactionPk = null;
         $selectedColumns = [];
 
-        foreach ($columns as $index => $column) {
+        foreach ($columns as $column) {
             $field = trim((string) ($column['Field'] ?? ''));
             if ($field === '') {
                 continue;
             }
 
-            if (strcasecmp($field, 'id_carte_CE') === 0) {
-                $cardColumn = $field;
-            }
-
             $extra = strtolower(trim((string) ($column['Extra'] ?? '')));
-            if ($idColumnToSkip === null && str_contains($extra, 'auto_increment')) {
-                $idColumnToSkip = $field;
+            if ($transactionPk === null && str_contains($extra, 'auto_increment')) {
+                $transactionPk = $field;
             }
 
             $selectedColumns[] = $field;
         }
 
-        if ($cardColumn === null) {
-            throw new RuntimeException('Colonne id_carte_CE introuvable dans Transaction');
+        if ($transactionPk === null) {
+            foreach ($selectedColumns as $column) {
+                if (strcasecmp($column, 'id_transaction') === 0) {
+                    $transactionPk = $column;
+                    break;
+                }
+            }
         }
 
-        if ($idColumnToSkip !== null) {
-            $selectedColumns = array_values(array_filter(
-                $selectedColumns,
-                static fn (string $column): bool => strcasecmp($column, $idColumnToSkip) !== 0
-            ));
+        if ($transactionPk === null) {
+            throw new RuntimeException('Colonne id_transaction introuvable dans Transaction');
         }
 
         if ($selectedColumns === []) {
@@ -326,7 +410,11 @@ class Cce
         $selectSql = implode(
             ', ',
             array_map(
-                static fn (string $column): string => sprintf('`%s`', str_replace('`', '``', $column)),
+                static fn (string $column): string => sprintf(
+                    't.`%s` AS `%s`',
+                    str_replace('`', '``', $column),
+                    str_replace('`', '``', $column)
+                ),
                 $selectedColumns
             )
         );
@@ -343,12 +431,13 @@ class Cce
 
         $query = sprintf(
             'SELECT %s
-             FROM `Transaction`
-             WHERE `%s` = :id_carte%s',
+             FROM `Transaction` t
+             INNER JOIN `TransactionCCE` tcce ON tcce.id_transaction = t.`%s`
+             WHERE tcce.id_carte_CE = :id_carte%s',
             $selectSql,
-            str_replace('`', '``', $cardColumn),
+            str_replace('`', '``', $transactionPk),
             $orderColumn !== null
-                ? sprintf(' ORDER BY `%s` DESC', str_replace('`', '``', $orderColumn))
+                ? sprintf(' ORDER BY t.`%s` DESC', str_replace('`', '``', $orderColumn))
                 : ''
         );
 
@@ -409,6 +498,46 @@ class Cce
         return $value;
     }
 
+    private function getDefaultParametreId(): int
+    {
+        if ($this->defaultParametreId !== null) {
+            return $this->defaultParametreId;
+        }
+
+        $stmt = $this->db->query(
+            'SELECT id_parametre
+             FROM `ParametreCCE`
+             ORDER BY id_parametre ASC
+             LIMIT 1'
+        );
+        $id = (int) $stmt->fetchColumn();
+        if ($id <= 0) {
+            throw new RuntimeException('Aucun paramètre CCE disponible');
+        }
+
+        $this->defaultParametreId = $id;
+        return $id;
+    }
+
+    private function findParametresForCard(int $idCarte): ?array
+    {
+        $stmt = $this->db->query(
+            'SELECT
+                p.id_parametre,
+                p.bonus_100,
+                p.bonus_200,
+                p.montant_min
+             FROM `CarteCE` c
+             INNER JOIN `ParametreCCE` p ON p.id_parametre = c.id_parametre
+             WHERE c.id_carte_CE = :id
+             LIMIT 1',
+            ['id' => $idCarte]
+        );
+
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+        return $row ?: null;
+    }
+
     private function generateUniqueCodeSecret(): int
     {
         for ($attempt = 0; $attempt < 25; $attempt++) {
@@ -445,12 +574,13 @@ class Cce
 
         $stmt = $this->db->query(
             'SELECT
-                id_transaction,
-                prix_total,
-                date_heure
-             FROM `Transaction`
-             WHERE id_carte_CE = :id_carte_CE
-             ORDER BY date_heure DESC, id_transaction DESC',
+                t.id_transaction,
+                t.prix_total,
+                t.date_heure
+             FROM `Transaction` t
+             INNER JOIN `TransactionCCE` tcce ON tcce.id_transaction = t.id_transaction
+             WHERE tcce.id_carte_CE = :id_carte_CE
+             ORDER BY t.date_heure DESC, t.id_transaction DESC',
             ['id_carte_CE' => $idCarte]
         );
 
@@ -463,18 +593,9 @@ class Cce
             return $this->hasTransactionCardLink;
         }
 
-        $stmt = $this->db->query('SHOW COLUMNS FROM `Transaction`');
-        $columns = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-        foreach ($columns as $column) {
-            if (trim((string) ($column['Field'] ?? '')) === 'id_carte_CE') {
-                $this->hasTransactionCardLink = true;
-                return true;
-            }
-        }
-
-        $this->hasTransactionCardLink = false;
-        return false;
+        $stmt = $this->db->query("SHOW TABLES LIKE 'TransactionCCE'");
+        $this->hasTransactionCardLink = (bool) $stmt->fetchColumn();
+        return $this->hasTransactionCardLink;
     }
 
 }

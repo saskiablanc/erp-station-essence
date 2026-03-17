@@ -117,6 +117,13 @@ const CceConsultPanel = (() => {
     });
   }
 
+  function resetConsultation(root) {
+    root._cceCurrent = null;
+    root._cceCurrentId = null;
+    setSelectedCard(null);
+    renderScannerState(root, 'Cliquez sur "Scanner CCE" pour sélectionner une carte.');
+  }
+
   async function refresh(root, idCarte = null) {
     if (!idCarte || Number(idCarte) <= 0) {
       renderScannerState(root, 'Cliquez sur "Scanner CCE" pour sélectionner une carte.');
@@ -255,7 +262,7 @@ const CceConsultPanel = (() => {
       allowOutsideClick: false,
       allowEscapeKey: true,
       customClass: {
-        popup: 'cce-swal-popup',
+        popup: 'cce-swal-popup cce-swal-popup-recharge-choice',
         title: 'cce-swal-title',
         htmlContainer: 'cce-swal-text',
       },
@@ -489,8 +496,32 @@ const CceConsultPanel = (() => {
   }
 
   async function openRechargePopup(root, cce) {
+    let cceCourante = cce;
+    try {
+      cceCourante = await Requetes.getCCE(Number(cce?.id_carte_CE || 0));
+    } catch (_) {
+      cceCourante = cce;
+    }
+
     const montant = await promptRechargeAmount();
     if (!montant || montant <= 0) return;
+    const montantMin = Number(cceCourante?.montant_min ?? 0);
+    if (Number.isFinite(montantMin) && montantMin > 0 && montant < montantMin) {
+      await Swal.fire({
+        title: 'Montant insuffisant',
+        text: `Le montant minimum de rechargement est de ${formatMoney(montantMin)}.`,
+        icon: 'warning',
+        customClass: {
+          popup: 'cce-swal-popup',
+          title: 'cce-swal-title',
+          htmlContainer: 'cce-swal-text',
+          confirmButton: 'cce-swal-btn',
+        },
+        buttonsStyling: false,
+        confirmButtonText: 'Fermer',
+      });
+      return;
+    }
 
     const method = await chooseRechargeMethod(montant);
     if (!method) return;
@@ -517,14 +548,21 @@ const CceConsultPanel = (() => {
     }
 
     try {
-      await Requetes.rechargerCCE(Number(cce.id_carte_CE), montant);
-      await refresh(root, Number(cce.id_carte_CE));
+      const rechargeResult = await Requetes.rechargerCCE(Number(cceCourante.id_carte_CE), montant);
+      const rechargeInfo = rechargeResult?.cce?.rechargement || rechargeResult?.rechargement || null;
+      const bonusApplique = Number(rechargeInfo?.bonus_applique ?? 0);
+      const montantCredite = Number(rechargeInfo?.montant_credite ?? montant);
+      await refresh(root, Number(cceCourante.id_carte_CE));
       await Swal.fire({
         title: 'Paiement accepté',
         html: `
           ${method === 'espece' && cashDetails
             ? `<div>Montant reçu : <strong>${formatMoney(cashDetails.given)}</strong></div>
                ${cashDetails.change > 0 ? `<div>Trop-perçu : <strong>${formatMoney(cashDetails.change)}</strong></div>` : ''}`
+            : ''}
+          ${bonusApplique > 0
+            ? `<div style="margin-top:8px;">Bonus CCE appliqué : <strong>${formatMoney(bonusApplique)}</strong></div>
+               <div>Montant crédité : <strong>${formatMoney(montantCredite)}</strong></div>`
             : ''}
           <div style="margin-top:${method === 'espece' ? '8px' : '0'};">
             Rechargement CCE effectué avec succès.
@@ -563,10 +601,11 @@ const CceConsultPanel = (() => {
       title: 'Actions',
       text: `Carte #${cce.id_carte_CE}`,
       showDenyButton: true,
-      showCancelButton: false,
+      showCancelButton: true,
       showCloseButton: true,
       confirmButtonText: 'Recharger CCE',
       denyButtonText: 'Consulter transactions',
+      cancelButtonText: 'Fin consultation',
       allowOutsideClick: false,
       customClass: {
         popup: 'cce-swal-popup cce-swal-popup-actions',
@@ -575,6 +614,7 @@ const CceConsultPanel = (() => {
         actions: 'cce-swal-actions-two',
         confirmButton: 'cce-swal-btn',
         denyButton: 'cce-swal-btn',
+        cancelButton: 'cce-swal-btn',
       },
       buttonsStyling: false,
     });
@@ -585,6 +625,10 @@ const CceConsultPanel = (() => {
     }
     if (result.isDenied) {
       await openTransactionsPopup(cce);
+      return;
+    }
+    if (result.dismiss === Swal.DismissReason.cancel) {
+      resetConsultation(root);
     }
   }
 
@@ -652,6 +696,7 @@ const CceConsultPanel = (() => {
     if (listeners.has(id)) {
       window.removeEventListener('cce:created', listeners.get(id).created);
       window.removeEventListener('cce:updated', listeners.get(id).updated);
+      window.removeEventListener('caisse:payment:success', listeners.get(id).payment);
       listeners.delete(id);
     }
 
@@ -660,6 +705,7 @@ const CceConsultPanel = (() => {
       if (!currentRoot || !document.body.contains(currentRoot)) {
         window.removeEventListener('cce:created', onCreated);
         window.removeEventListener('cce:updated', onUpdated);
+        window.removeEventListener('caisse:payment:success', onPaymentSuccess);
         listeners.delete(id);
         return;
       }
@@ -673,6 +719,7 @@ const CceConsultPanel = (() => {
       if (!currentRoot || !document.body.contains(currentRoot)) {
         window.removeEventListener('cce:created', onCreated);
         window.removeEventListener('cce:updated', onUpdated);
+        window.removeEventListener('caisse:payment:success', onPaymentSuccess);
         listeners.delete(id);
         return;
       }
@@ -683,9 +730,23 @@ const CceConsultPanel = (() => {
       }
     };
 
+    const onPaymentSuccess = () => {
+      const currentRoot = document.getElementById('win-' + id);
+      if (!currentRoot || !document.body.contains(currentRoot)) {
+        window.removeEventListener('cce:created', onCreated);
+        window.removeEventListener('cce:updated', onUpdated);
+        window.removeEventListener('caisse:payment:success', onPaymentSuccess);
+        listeners.delete(id);
+        return;
+      }
+
+      resetConsultation(currentRoot);
+    };
+
     window.addEventListener('cce:created', onCreated);
     window.addEventListener('cce:updated', onUpdated);
-    listeners.set(id, { created: onCreated, updated: onUpdated });
+    window.addEventListener('caisse:payment:success', onPaymentSuccess);
+    listeners.set(id, { created: onCreated, updated: onUpdated, payment: onPaymentSuccess });
   }
 
   function buildHTML() {

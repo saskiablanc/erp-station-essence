@@ -75,8 +75,11 @@ const Requetes = (() => {
     creerCCE: (data) => appel("POST", "/json/cce", data),
     rechargerCCE: (id, mont) =>
       appel("POST", `/json/cce/${id}/recharger`, { montant: mont }),
-    debiterCCE: (id, mont) =>
-      appel("POST", `/json/cce/${id}/debiter`, { montant: mont }),
+    debiterCCE: (id, mont, idTransactions = []) =>
+      appel("POST", `/json/cce/${id}/debiter`, {
+        montant: mont,
+        id_transactions: idTransactions,
+      }),
 
     // ── Sprint 4 — Réapprovisionnement (US20/21/22/23) ────
     getReappros: (statut) =>

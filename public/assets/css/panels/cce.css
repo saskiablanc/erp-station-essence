@@ -350,6 +350,7 @@
   margin-top: auto;
   display: flex;
   justify-content: flex-end;
+  gap: 10px;
 }
 
 .cce-consult-action-btn {
@@ -382,7 +383,30 @@
 }
 
 .swal2-popup.cce-swal-popup.cce-swal-popup-actions {
-  width: min(30rem, 92vw);
+  width: min(40rem, 94vw);
+}
+
+.swal2-popup.cce-swal-popup.cce-swal-popup-recharge-choice .swal2-html-container {
+  text-align: center;
+}
+
+.swal2-popup.cce-swal-popup.cce-swal-popup-recharge-choice .ticket-pay-choice-total {
+  margin-bottom: 14px;
+}
+
+.swal2-popup.cce-swal-popup.cce-swal-popup-recharge-choice .ticket-pay-choice-grid--two {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(140px, 190px));
+  justify-content: center;
+  gap: 12px;
+  width: min(392px, 100%);
+  margin: 0 auto;
+}
+
+.swal2-popup.cce-swal-popup.cce-swal-popup-recharge-choice .ticket-pay-choice-btn-cancel {
+  display: block;
+  width: min(190px, 100%);
+  margin: 14px auto 0;
 }
 
 .swal2-html-container.cce-swal-text {
@@ -404,8 +428,12 @@
 
 .cce-swal-actions-two {
   display: grid !important;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 10px;
+}
+
+.cce-swal-actions-two .swal2-styled {
+  white-space: nowrap;
 }
 
 .ticket-pay-choice-grid--two {

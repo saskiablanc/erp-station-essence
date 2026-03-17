@@ -125,10 +125,14 @@ class CceController extends Controller
         $this->requireAuth();
         $body = $this->body();
         $montant = (float) ($body['montant'] ?? 0);
+        $idTransactions = $body['id_transactions'] ?? [];
+        if (!is_array($idTransactions)) {
+            $idTransactions = [];
+        }
         $model = new Cce();
 
         try {
-            $cce = $model->debiter((int) $id, $montant);
+            $cce = $model->debiter((int) $id, $montant, $idTransactions);
         } catch (\Throwable $e) {
             $code = str_contains(strtolower($e->getMessage()), 'insuffisant') ? 409 : 400;
             $this->jsonError($e->getMessage(), $code);

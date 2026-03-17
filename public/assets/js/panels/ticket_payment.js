@@ -342,8 +342,9 @@ window.TicketPayment = (() => {
         window.PompesPanelRefresh();
       }
 
+      const transactionIds = collectTransactionIds(responses);
       if (method === 'cce' && cceContext?.idCarte > 0) {
-        await Requetes.debiterCCE(cceContext.idCarte, total);
+        await Requetes.debiterCCE(cceContext.idCarte, total, transactionIds);
         window.dispatchEvent(new CustomEvent('cce:updated', { detail: { id_carte_CE: cceContext.idCarte } }));
       }
 
@@ -352,7 +353,6 @@ window.TicketPayment = (() => {
       }
       let receiptState = 'none';
       if (wantsReceipt) {
-        const transactionIds = collectTransactionIds(responses);
         if (transactionIds.length === 0) {
           receiptState = 'missing';
         } else {
@@ -394,6 +394,7 @@ window.TicketPayment = (() => {
       });
 
       window.dispatchEvent(new CustomEvent('stock:changed'));
+      window.dispatchEvent(new CustomEvent('caisse:payment:success'));
       return { status: 'success', responses };
     } catch (err) {
       await Swal.fire({
