@@ -10,6 +10,7 @@ use App\Controllers\ReapproController;
 use App\Controllers\CceParamsController;
 use App\Controllers\CarburantPrixController;
 use App\Controllers\HorairesBoutiqueController;
+use App\Controllers\IncidentController;
 
 
 $uri = $_SERVER['REQUEST_URI'] ?? '';
@@ -102,6 +103,10 @@ $router->post('json/pompes/{id}/encaisser',     [new PompeController(),  'encais
 // ── Prix carburant — Sprint 6 (US12 + US13) ──────────────
 $router->get( 'json/carburants/prix',  [new CarburantPrixController(), 'get']);
 $router->post('json/carburants/prix',  [new CarburantPrixController(), 'update']);
+
+// ── Fiches incident — Sprint 6 (US11) ─────────────────────
+$router->get( 'json/incidents',        [new IncidentController(), 'getAll']);
+$router->post('json/incidents',        [new IncidentController(), 'create']);
  
 // ── CCE  ────────
 $router->get( 'json/cce',                       [new CceController(),       'all']);
