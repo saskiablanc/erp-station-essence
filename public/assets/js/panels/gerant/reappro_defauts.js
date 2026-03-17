@@ -12,7 +12,7 @@ WM.register("gerant_reappro_defauts", {
           <div class="ra-msg">Chargement...</div>
         </div>
         <div class="vd-footer">
-          <button class="vd-btn-confirm" id="vd-confirm" disabled>Confirmer nouvelles valeurs</button>
+          <button class="vd-btn-confirm" id="vd-confirm" disabled>Confirmer</button>
         </div>
       </div>
     `;

@@ -21,7 +21,8 @@
    US23 — Consultation réapprovisionnement
    ═══════════════════════════════════════════════════════ */
 .ra-panel {
-  height: 100%;
+  height: calc(100% + 24px);
+  margin: -12px;
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -39,6 +40,40 @@
   border: 1px solid var(--border);
   background: #fff;
   color: var(--text);
+}
+.ra-th-filter-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.ra-th-filter {
+  width: 16px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--text-dim);
+  font-family: var(--mono);
+  font-size: 10px;
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 10 10'%3E%3Cpath d='M2 3.5 5 6.5 8 3.5' fill='none' stroke='%236b7280' stroke-width='1.4' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: 10px 10px;
+  text-indent: -9999px;
+  overflow: hidden;
+}
+.ra-th-filter:hover {
+  opacity: 0.8;
+}
+.ra-th-filter:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.14);
+  border-radius: 3px;
 }
 .ra-table-wrap {
   flex: 1;
@@ -149,7 +184,8 @@
    US20 — Valeurs défaut
    ═══════════════════════════════════════════════════════ */
 .vd-panel {
-  height: 100%;
+  height: calc(100% + 24px);
+  margin: -14px;
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -159,21 +195,27 @@
   overflow: auto;
 }
 .vd-footer {
-  padding: 6px 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px 2px 0;
   border-top: 1px solid var(--border);
   flex-shrink: 0;
-  text-align: center;
 }
 .vd-btn-confirm {
+  display: block;
   font-family: var(--mono);
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 600;
-  padding: 6px 16px;
-  border-radius: 6px;
+  margin: 0;
+  padding: 2px 2px;
+  border-radius: 5px;
   background: var(--accent);
   color: #fff;
   border: none;
   cursor: pointer;
+  line-height: 1;
+  vertical-align: top;
   transition: opacity 0.12s;
 }
 .vd-btn-confirm:disabled {
@@ -254,11 +296,13 @@
   font-size: 11px;
   width: 100%;
   min-width: 0;
-  padding: 4px 6px;
+  height: 24px;
+  padding: 1px 4px;
   border-radius: 4px;
   border: 1px solid var(--border);
   background: #fff;
   color: var(--text);
+  box-sizing: border-box;
 }
 .vd-input--sm {
   width: 88px;
@@ -271,19 +315,21 @@
   box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.12);
 }
 .vd-input--metric {
-  min-width: 100px;
+  min-width: 80px;
   max-width: 150px;
   text-align: right;
 }
 .vd-sel {
   font-family: var(--mono);
   font-size: 10px;
-  padding: 4px 6px;
+  height: 24px;
+  padding: 1px 6px;
   border-radius: 3px;
   border: 1px solid var(--border);
   background: #fff;
   color: var(--text);
   min-width: 88px;
+  box-sizing: border-box;
 }
 .vd-freq-cell {
   display: flex;

@@ -8,15 +8,6 @@ WM.register("gerant_reappro", {
   buildHTML() {
     return `
       <div class="ra-panel">
-        <div class="ra-toolbar">
-          <select id="ra-filtre" class="ra-select">
-            <option value="">Tous les statuts</option>
-            <option value="En cours">En cours</option>
-            <option value="En retard">En retard</option>
-            <option value="Arrivé">Arrivé</option>
-            <option value="Annulé">Annulé</option>
-          </select>
-        </div>
         <div class="ra-table-wrap" id="ra-table-wrap">
           <div class="ra-msg">Chargement...</div>
         </div>
@@ -25,13 +16,13 @@ WM.register("gerant_reappro", {
   },
 
   onMount() {
-    const filtre = document.getElementById("ra-filtre");
     const wrap = document.getElementById("ra-table-wrap");
+    var currentStatut = "";
 
     async function charger() {
       wrap.innerHTML = '<div class="ra-msg">Chargement...</div>';
       try {
-        const statut = filtre.value || undefined;
+        const statut = currentStatut || undefined;
         const data = await Requetes.getReappros(statut);
         render(data);
       } catch (e) {
@@ -61,7 +52,23 @@ WM.register("gerant_reappro", {
       var html =
         '<table class="ra-table"><thead><tr>' +
         "<th>N° Ordre</th><th>Nom</th><th>Code-barres</th><th>Quantité</th>" +
-        "<th>Statut</th><th>Création</th><th>Souhaitée</th><th>Arrivée</th><th></th>" +
+        '<th><div class="ra-th-filter-group"><span>Statut</span><select id="ra-filtre" class="ra-th-filter" aria-label="Filtrer par statut" title="Filtrer par statut">' +
+        '<option value=""' +
+        (currentStatut === "" ? " selected" : "") +
+        ">Tous</option>" +
+        '<option value="En cours"' +
+        (currentStatut === "En cours" ? " selected" : "") +
+        ">En cours</option>" +
+        '<option value="En retard"' +
+        (currentStatut === "En retard" ? " selected" : "") +
+        ">En retard</option>" +
+        '<option value="Arrivé"' +
+        (currentStatut === "Arrivé" ? " selected" : "") +
+        ">Arrivé</option>" +
+        '<option value="Annulé"' +
+        (currentStatut === "Annulé" ? " selected" : "") +
+        ">Annulé</option>" +
+        "</select></div></th><th>Création</th><th>Souhaitée</th><th>Arrivée</th><th></th>" +
         "</tr></thead><tbody>";
 
       rows.forEach(function (row) {
@@ -147,7 +154,13 @@ WM.register("gerant_reappro", {
       }
     });
 
-    filtre.addEventListener("change", charger);
+    wrap.addEventListener("change", function (e) {
+      var filtre = e.target.closest("#ra-filtre");
+      if (!filtre) return;
+      currentStatut = filtre.value || "";
+      charger();
+    });
+
     charger();
   },
 });
