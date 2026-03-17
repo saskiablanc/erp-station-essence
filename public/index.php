@@ -8,6 +8,8 @@ use App\Controllers\CceController;
 use App\Controllers\PompeController;
 use App\Controllers\ReapproController;
 use App\Controllers\CceParamsController;
+use App\Controllers\CarburantPrixController;
+
 
 $uri = $_SERVER['REQUEST_URI'] ?? '';
 if (str_contains($uri, '/json/')) {
@@ -96,6 +98,10 @@ $router->post('json/pompes/{id}/demarrer',      [new PompeController(),  'demarr
 $router->post('json/pompes/{id}/terminer',      [new PompeController(),  'terminer']);
 $router->post('json/pompes/{id}/encaisser',     [new PompeController(),  'encaisser']);
 
+// ── Prix carburant — Sprint 6 (US12 + US13) ──────────────
+$router->get( 'json/carburants/prix',  [new CarburantPrixController(), 'get']);
+$router->post('json/carburants/prix',  [new CarburantPrixController(), 'update']);
+ 
 // ── CCE  ────────
 $router->get( 'json/cce',                       [new CceController(),       'all']);
 $router->get( 'json/cce/latest',                [new CceController(),       'latest']);
