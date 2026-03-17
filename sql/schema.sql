@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Hôte : localhost
--- Généré le : mar. 17 mars 2026 à 19:11
+-- Généré le : mar. 17 mars 2026 à 20:28
 -- Version du serveur : 11.8.6-MariaDB-0+deb13u1 from Debian
 -- Version de PHP : 8.4.16
 
@@ -71,6 +71,26 @@ INSERT INTO `Article` (`id_article`, `type_article`) VALUES
 -- --------------------------------------------------------
 
 --
+-- Structure de la table `BonusCCE`
+--
+
+CREATE TABLE `BonusCCE` (
+  `id_bonus` int(10) UNSIGNED NOT NULL,
+  `tranche` decimal(10,2) NOT NULL,
+  `montant_bonus` decimal(10,2) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
+
+--
+-- Déchargement des données de la table `BonusCCE`
+--
+
+INSERT INTO `BonusCCE` (`id_bonus`, `tranche`, `montant_bonus`) VALUES
+(1, 100.00, 10.00),
+(2, 200.00, 25.00);
+
+-- --------------------------------------------------------
+
+--
 -- Structure de la table `Carburant`
 --
 
@@ -105,21 +125,21 @@ CREATE TABLE `CarteCE` (
   `code_secret` int(11) NOT NULL,
   `solde_client` decimal(10,3) NOT NULL,
   `date_dernier_apport` date NOT NULL,
-  `montant_dernier_apport` int(11) NOT NULL,
-  `id_parametre` bigint(20) UNSIGNED NOT NULL
+  `montant_dernier_apport` int(11) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
 
 --
 -- Déchargement des données de la table `CarteCE`
 --
 
-INSERT INTO `CarteCE` (`id_carte_CE`, `id_client`, `code_secret`, `solde_client`, `date_dernier_apport`, `montant_dernier_apport`, `id_parametre`) VALUES
-(1, 1, 1234, 375.000, '2026-03-17', 200, 1),
-(2, 2, 5678, 50.000, '2026-02-05', 50, 1),
-(3, 3, 9999, 571.300, '2026-03-17', 50, 1),
-(4, 4, 4850, 0.000, '2026-03-14', 0, 1),
-(5, 5, 2019, 225.000, '2026-03-17', 200, 1),
-(10, 10, 4665, 220.040, '2026-03-17', 100, 1);
+INSERT INTO `CarteCE` (`id_carte_CE`, `id_client`, `code_secret`, `solde_client`, `date_dernier_apport`, `montant_dernier_apport`) VALUES
+(1, 1, 1234, 375.000, '2026-03-17', 200),
+(2, 2, 5678, 50.000, '2026-02-05', 50),
+(3, 3, 9999, 571.300, '2026-03-17', 50),
+(4, 4, 4850, 0.000, '2026-03-14', 0),
+(5, 5, 2019, 225.000, '2026-03-17', 200),
+(10, 10, 4665, 220.040, '2026-03-17', 100),
+(12, 12, 4931, 0.000, '2026-03-17', 0);
 
 -- --------------------------------------------------------
 
@@ -145,7 +165,8 @@ INSERT INTO `Client` (`id_client`, `nom`, `prenom`, `email`, `num_tel`) VALUES
 (3, 'Durand', 'Pierre', 'pierre.durand@email.com', '698765432'),
 (4, 'Bachov', 'Steven', 's.bach@mail.com', '+0766161603'),
 (5, 'bachova', 'camilia', 'c.bachova@mail.com', '+0766161604'),
-(10, 'Mongrandi', 'Lenny', 'lenny21@gmail.com', '+33618212121');
+(10, 'Mongrandi', 'Lenny', 'lenny21@gmail.com', '+33618212121'),
+(12, 'Blanc', 'Saskia', 'saskia@gmail.com', '+33677777777');
 
 -- --------------------------------------------------------
 
@@ -249,22 +270,20 @@ INSERT INTO `LigneReappro` (`id_reappro`, `id_article`, `quantite`, `date_arrive
 -- --------------------------------------------------------
 
 --
--- Structure de la table `ParametreCCE`
+-- Structure de la table `ParametresCCE`
 --
 
-CREATE TABLE `ParametreCCE` (
-  `id_parametre` bigint(20) UNSIGNED NOT NULL,
-  `bonus_100` int(11) NOT NULL,
-  `bonus_200` int(11) NOT NULL,
-  `montant_min` int(11) NOT NULL
+CREATE TABLE `ParametresCCE` (
+  `id_parametre` int(10) UNSIGNED NOT NULL,
+  `montant_min` decimal(10,2) NOT NULL DEFAULT 50.00
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
 
 --
--- Déchargement des données de la table `ParametreCCE`
+-- Déchargement des données de la table `ParametresCCE`
 --
 
-INSERT INTO `ParametreCCE` (`id_parametre`, `bonus_100`, `bonus_200`, `montant_min`) VALUES
-(1, 10, 25, 50);
+INSERT INTO `ParametresCCE` (`id_parametre`, `montant_min`) VALUES
+(1, 57.00);
 
 -- --------------------------------------------------------
 
@@ -713,6 +732,12 @@ ALTER TABLE `Article`
   ADD UNIQUE KEY `id_article` (`id_article`);
 
 --
+-- Index pour la table `BonusCCE`
+--
+ALTER TABLE `BonusCCE`
+  ADD PRIMARY KEY (`id_bonus`);
+
+--
 -- Index pour la table `Carburant`
 --
 ALTER TABLE `Carburant`
@@ -726,8 +751,7 @@ ALTER TABLE `Carburant`
 ALTER TABLE `CarteCE`
   ADD PRIMARY KEY (`id_carte_CE`),
   ADD UNIQUE KEY `id_carte_CE` (`id_carte_CE`),
-  ADD KEY `id_client` (`id_client`),
-  ADD KEY `id_parametre` (`id_parametre`);
+  ADD KEY `id_client` (`id_client`);
 
 --
 -- Index pour la table `Client`
@@ -769,9 +793,9 @@ ALTER TABLE `LigneReappro`
   ADD KEY `fk_lr_article` (`id_article`);
 
 --
--- Index pour la table `ParametreCCE`
+-- Index pour la table `ParametresCCE`
 --
-ALTER TABLE `ParametreCCE`
+ALTER TABLE `ParametresCCE`
   ADD PRIMARY KEY (`id_parametre`);
 
 --
@@ -862,6 +886,12 @@ ALTER TABLE `Article`
   MODIFY `id_article` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=31;
 
 --
+-- AUTO_INCREMENT pour la table `BonusCCE`
+--
+ALTER TABLE `BonusCCE`
+  MODIFY `id_bonus` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+
+--
 -- AUTO_INCREMENT pour la table `Carburant`
 --
 ALTER TABLE `Carburant`
@@ -871,13 +901,13 @@ ALTER TABLE `Carburant`
 -- AUTO_INCREMENT pour la table `CarteCE`
 --
 ALTER TABLE `CarteCE`
-  MODIFY `id_carte_CE` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=12;
+  MODIFY `id_carte_CE` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=13;
 
 --
 -- AUTO_INCREMENT pour la table `Client`
 --
 ALTER TABLE `Client`
-  MODIFY `id_client` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=12;
+  MODIFY `id_client` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=13;
 
 --
 -- AUTO_INCREMENT pour la table `Connexion`
@@ -898,10 +928,10 @@ ALTER TABLE `Energie`
   MODIFY `id_energie` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
 
 --
--- AUTO_INCREMENT pour la table `ParametreCCE`
+-- AUTO_INCREMENT pour la table `ParametresCCE`
 --
-ALTER TABLE `ParametreCCE`
-  MODIFY `id_parametre` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+ALTER TABLE `ParametresCCE`
+  MODIFY `id_parametre` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
 
 --
 -- AUTO_INCREMENT pour la table `Pompe`
@@ -971,8 +1001,7 @@ ALTER TABLE `Carburant`
 -- Contraintes pour la table `CarteCE`
 --
 ALTER TABLE `CarteCE`
-  ADD CONSTRAINT `CarteCE_ibfk_1` FOREIGN KEY (`id_client`) REFERENCES `Client` (`id_client`),
-  ADD CONSTRAINT `CarteCE_ibfk_2` FOREIGN KEY (`id_parametre`) REFERENCES `ParametreCCE` (`id_parametre`);
+  ADD CONSTRAINT `CarteCE_ibfk_1` FOREIGN KEY (`id_client`) REFERENCES `Client` (`id_client`);
 
 --
 -- Contraintes pour la table `Electricite`

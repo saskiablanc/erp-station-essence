@@ -646,14 +646,31 @@ const CceConsultPanel = (() => {
       return;
     }
     if (action === 'bonus') {
-      const bonus100 = Number(cceCourante?.bonus_100 ?? 0);
-      const bonus200 = Number(cceCourante?.bonus_200 ?? 0);
+      const rulesRaw = Array.isArray(cceCourante?.bonus_rules) ? cceCourante.bonus_rules : [];
+      const rules = rulesRaw
+        .map((rule) => ({
+          tranche: Number(rule?.tranche ?? 0),
+          montant_bonus: Number(rule?.montant_bonus ?? 0),
+        }))
+        .filter((rule) => Number.isFinite(rule.tranche) && rule.tranche > 0 && Number.isFinite(rule.montant_bonus))
+        .sort((a, b) => a.tranche - b.tranche);
+
+      const bonusHtml = rules.length > 0
+        ? rules
+          .map((rule) => `
+            <div class="cce-bonus-line">
+              Bonus à partir de ${rule.tranche.toFixed(2)} EUR : <strong>${formatMoney(rule.montant_bonus)}</strong>
+            </div>
+          `)
+          .join('')
+        : `
+          <div class="cce-bonus-line">Bonus à partir de 100 EUR : <strong>${formatMoney(Number(cceCourante?.bonus_100 ?? 0))}</strong></div>
+          <div class="cce-bonus-line">Bonus à partir de 200 EUR : <strong>${formatMoney(Number(cceCourante?.bonus_200 ?? 0))}</strong></div>
+        `;
+
       await Swal.fire({
         title: 'Informations bonus',
-        html: `
-          <div class="cce-bonus-line">Bonus à partir de 100 EUR : <strong>${formatMoney(bonus100)}</strong></div>
-          <div class="cce-bonus-line">Bonus à partir de 200 EUR : <strong>${formatMoney(bonus200)}</strong></div>
-        `,
+        html: bonusHtml,
         customClass: {
           popup: 'cce-swal-popup',
           title: 'cce-swal-title',

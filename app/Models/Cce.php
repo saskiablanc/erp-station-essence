@@ -11,7 +11,7 @@ class Cce
 {
     private Database $db;
     private ?bool $hasTransactionCardLink = null;
-    private ?int $defaultParametreId = null;
+    private ?array $cachedSettings = null;
 
     public function __construct()
     {
@@ -39,7 +39,8 @@ class Cce
             }
             throw new RuntimeException('Coordonnées déjà utilisées');
         }
-        $idParametre = $this->getDefaultParametreId();
+        // Vérifie que la configuration CCE globale existe avant de créer la carte.
+        $this->getGlobalSettings();
         $dateApport = date('Y-m-d');
         $montantApport = 0;
         $soldeClient = 0.0;
@@ -67,16 +68,15 @@ class Cce
 
             $this->db->execute(
                 'INSERT INTO `CarteCE`
-                    (`id_client`, `code_secret`, `solde_client`, `date_dernier_apport`, `montant_dernier_apport`, `id_parametre`)
+                    (`id_client`, `code_secret`, `solde_client`, `date_dernier_apport`, `montant_dernier_apport`)
                  VALUES
-                    (:id_client, :code_secret, :solde_client, :date_dernier_apport, :montant_dernier_apport, :id_parametre)',
+                    (:id_client, :code_secret, :solde_client, :date_dernier_apport, :montant_dernier_apport)',
                 [
                     'id_client' => $idClient,
                     'code_secret' => $codeSecret,
                     'solde_client' => $soldeClient,
                     'date_dernier_apport' => $dateApport,
                     'montant_dernier_apport' => $montantApport,
-                    'id_parametre' => $idParametre,
                 ]
             );
 
@@ -87,7 +87,7 @@ class Cce
 
             $this->db->commit();
 
-            return [
+            $created = [
                 'id_carte_CE' => $idCarte,
                 'id_client' => $idClient,
                 'nom' => $nom,
@@ -98,8 +98,9 @@ class Cce
                 'solde_client' => number_format($soldeClient, 3, '.', ''),
                 'date_dernier_apport' => $dateApport,
                 'montant_dernier_apport' => $montantApport,
-                'id_parametre' => $idParametre,
             ];
+
+            return $this->attachCceSettings($created);
         } catch (\Throwable $e) {
             if ($this->db->getConnection()->inTransaction()) {
                 $this->db->rollBack();
@@ -129,21 +130,20 @@ class Cce
                 cc.code_secret,
                 cc.solde_client,
                 cc.date_dernier_apport,
-                cc.montant_dernier_apport,
-                cc.id_parametre,
-                p.montant_min,
-                p.bonus_100,
-                p.bonus_200
+                cc.montant_dernier_apport
              FROM `CarteCE` cc
              INNER JOIN `Client` c ON c.id_client = cc.id_client
-             INNER JOIN `ParametreCCE` p ON p.id_parametre = cc.id_parametre
              WHERE cc.id_carte_CE = :id
              LIMIT 1',
             ['id' => $idCarte]
         );
 
         $row = $stmt->fetch(PDO::FETCH_ASSOC);
-        return $row ?: null;
+        if (!$row) {
+            return null;
+        }
+
+        return $this->attachCceSettings($row);
     }
 
     public function findOverviewById(int $idCarte): ?array
@@ -169,14 +169,9 @@ class Cce
                 cc.code_secret,
                 cc.solde_client,
                 cc.date_dernier_apport,
-                cc.montant_dernier_apport,
-                cc.id_parametre,
-                p.montant_min,
-                p.bonus_100,
-                p.bonus_200
+                cc.montant_dernier_apport
              FROM `CarteCE` cc
              INNER JOIN `Client` c ON c.id_client = cc.id_client
-             INNER JOIN `ParametreCCE` p ON p.id_parametre = cc.id_parametre
              ORDER BY cc.id_carte_CE DESC
              LIMIT 1'
         );
@@ -186,7 +181,7 @@ class Cce
             return null;
         }
 
-        return $this->withTransactions($row);
+        return $this->withTransactions($this->attachCceSettings($row));
     }
 
     public function findAllForScan(): array
@@ -212,26 +207,28 @@ class Cce
         }
 
         $arrondi = round($montant, 3);
-        $parametres = $this->findParametresForCard($idCarte);
-        if (!$parametres) {
+        $exists = $this->db->query(
+            'SELECT 1 FROM `CarteCE` WHERE id_carte_CE = :id LIMIT 1',
+            ['id' => $idCarte]
+        )->fetchColumn();
+        if (!$exists) {
             return null;
         }
 
-        $montantMinimum = (float) ($parametres['montant_min'] ?? 0);
+        $settings = $this->getGlobalSettings();
+        $montantMinimum = (float) ($settings['montant_min'] ?? 0);
         if ($arrondi < $montantMinimum) {
             throw new RuntimeException(
                 sprintf('Le montant minimum de rechargement est de %.2f EUR', $montantMinimum)
             );
         }
 
-        $bonus = 0.0;
-        $bonus100 = (float) ($parametres['bonus_100'] ?? 0);
-        $bonus200 = (float) ($parametres['bonus_200'] ?? 0);
-        if ($arrondi >= 200.0 && $bonus200 > 0) {
-            $bonus = round($bonus200, 3);
-        } elseif ($arrondi >= 100.0 && $bonus100 > 0) {
-            $bonus = round($bonus100, 3);
-        }
+        $bonusRule = $this->resolveBonusForAmount(
+            $arrondi,
+            is_array($settings['bonus_rules'] ?? null) ? $settings['bonus_rules'] : []
+        );
+        $bonus = (float) ($bonusRule['bonus'] ?? 0.0);
+        $trancheBonus = (float) ($bonusRule['tranche'] ?? 0.0);
 
         $montantCredite = round($arrondi + $bonus, 3);
         $dateApport = date('Y-m-d');
@@ -258,6 +255,7 @@ class Cce
         $cce['rechargement'] = [
             'montant_saisi' => $arrondi,
             'bonus_applique' => $bonus,
+            'tranche_bonus' => $trancheBonus > 0 ? $trancheBonus : null,
             'montant_credite' => $montantCredite,
         ];
 
@@ -532,44 +530,113 @@ class Cce
         return $first;
     }
 
-    private function getDefaultParametreId(): int
+    private function getGlobalSettings(): array
     {
-        if ($this->defaultParametreId !== null) {
-            return $this->defaultParametreId;
+        if ($this->cachedSettings !== null) {
+            return $this->cachedSettings;
         }
 
         $stmt = $this->db->query(
-            'SELECT id_parametre
-             FROM `ParametreCCE`
+            'SELECT id_parametre, montant_min
+             FROM `ParametresCCE`
              ORDER BY id_parametre ASC
              LIMIT 1'
         );
-        $id = (int) $stmt->fetchColumn();
-        if ($id <= 0) {
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+        if (!$row) {
             throw new RuntimeException('Aucun paramètre CCE disponible');
         }
 
-        $this->defaultParametreId = $id;
-        return $id;
+        $rules = $this->findBonusRules();
+        $settings = [
+            'id_parametre' => (int) ($row['id_parametre'] ?? 0),
+            'montant_min' => (float) ($row['montant_min'] ?? 0),
+            'bonus_rules' => $rules,
+            // Compatibilité front existant.
+            'bonus_100' => $this->findBonusForTranche($rules, 100.0),
+            'bonus_200' => $this->findBonusForTranche($rules, 200.0),
+        ];
+
+        $this->cachedSettings = $settings;
+        return $settings;
     }
 
-    private function findParametresForCard(int $idCarte): ?array
+    /**
+     * @return array<int, array{tranche: float, montant_bonus: float}>
+     */
+    private function findBonusRules(): array
     {
         $stmt = $this->db->query(
             'SELECT
-                p.id_parametre,
-                p.bonus_100,
-                p.bonus_200,
-                p.montant_min
-             FROM `CarteCE` c
-             INNER JOIN `ParametreCCE` p ON p.id_parametre = c.id_parametre
-             WHERE c.id_carte_CE = :id
-             LIMIT 1',
-            ['id' => $idCarte]
+                tranche,
+                montant_bonus
+             FROM `BonusCCE`
+             ORDER BY tranche ASC, id_bonus ASC'
         );
 
-        $row = $stmt->fetch(PDO::FETCH_ASSOC);
-        return $row ?: null;
+        $rows = $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+        $rules = [];
+        foreach ($rows as $row) {
+            $tranche = round((float) ($row['tranche'] ?? 0), 2);
+            $montantBonus = round((float) ($row['montant_bonus'] ?? 0), 2);
+            if ($tranche <= 0 || $montantBonus < 0) {
+                continue;
+            }
+
+            $rules[] = [
+                'tranche' => $tranche,
+                'montant_bonus' => $montantBonus,
+            ];
+        }
+
+        return $rules;
+    }
+
+    private function findBonusForTranche(array $rules, float $target): float
+    {
+        foreach ($rules as $rule) {
+            if (abs(((float) ($rule['tranche'] ?? 0)) - $target) < 0.0001) {
+                return (float) ($rule['montant_bonus'] ?? 0);
+            }
+        }
+
+        return 0.0;
+    }
+
+    /**
+     * @param array<int, array{tranche: float, montant_bonus: float}> $rules
+     * @return array{tranche: float, bonus: float}
+     */
+    private function resolveBonusForAmount(float $amount, array $rules): array
+    {
+        $selectedTranche = 0.0;
+        $selectedBonus = 0.0;
+
+        foreach ($rules as $rule) {
+            $tranche = (float) ($rule['tranche'] ?? 0);
+            $bonus = (float) ($rule['montant_bonus'] ?? 0);
+
+            if ($amount >= $tranche && $tranche >= $selectedTranche) {
+                $selectedTranche = $tranche;
+                $selectedBonus = $bonus;
+            }
+        }
+
+        return [
+            'tranche' => round($selectedTranche, 2),
+            'bonus' => round($selectedBonus, 3),
+        ];
+    }
+
+    private function attachCceSettings(array $cce): array
+    {
+        $settings = $this->getGlobalSettings();
+        $cce['id_parametre'] = $settings['id_parametre'] ?? null;
+        $cce['montant_min'] = $settings['montant_min'] ?? 0.0;
+        $cce['bonus_100'] = $settings['bonus_100'] ?? 0.0;
+        $cce['bonus_200'] = $settings['bonus_200'] ?? 0.0;
+        $cce['bonus_rules'] = $settings['bonus_rules'] ?? [];
+        return $cce;
     }
 
     private function generateUniqueCodeSecret(): int
