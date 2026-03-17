@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Hôte : localhost
--- Généré le : mar. 17 mars 2026 à 20:43
+-- Généré le : mar. 17 mars 2026 à 21:26
 -- Version du serveur : 11.8.6-MariaDB-0+deb13u1 from Debian
 -- Version de PHP : 8.4.16
 
@@ -99,6 +99,7 @@ CREATE TABLE `Carburant` (
   `id_energie` bigint(20) UNSIGNED NOT NULL,
   `prix_litre` decimal(10,3) NOT NULL,
   `stock_litre` decimal(10,3) NOT NULL,
+  `livraison_min` decimal(10,3) NOT NULL DEFAULT 5.000,
   `libelle` varchar(50) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
 
@@ -106,12 +107,12 @@ CREATE TABLE `Carburant` (
 -- Déchargement des données de la table `Carburant`
 --
 
-INSERT INTO `Carburant` (`id_carburant`, `id_energie`, `prix_litre`, `stock_litre`, `libelle`) VALUES
-(1, 1, 1.799, 4951.072, 'SP95'),
-(2, 2, 1.899, 2874.944, 'SP98'),
-(3, 3, 1.699, 6879.483, 'GAZOLE'),
-(4, 4, 1.759, 4432.688, 'E10'),
-(5, 5, 0.999, 1967.319, 'E85');
+INSERT INTO `Carburant` (`id_carburant`, `id_energie`, `prix_litre`, `stock_litre`, `livraison_min`, `libelle`) VALUES
+(1, 1, 1.799, 4951.072, 30.000, 'SP95'),
+(2, 2, 1.897, 2874.944, 30.000, 'SP98'),
+(3, 3, 1.699, 6879.483, 20.000, 'GAZOLE'),
+(4, 4, 1.759, 4432.688, 30.000, 'E10'),
+(5, 5, 0.999, 1967.319, 10.000, 'E85');
 
 -- --------------------------------------------------------
 
@@ -138,7 +139,7 @@ INSERT INTO `CarteCE` (`id_carte_CE`, `id_client`, `code_secret`, `solde_client`
 (3, 3, 9999, 571.300, '2026-03-17', 50),
 (4, 4, 4850, 0.000, '2026-03-14', 0),
 (5, 5, 2019, 225.000, '2026-03-17', 200),
-(10, 10, 4665, 445.040, '2026-03-17', 200),
+(10, 10, 4665, 433.460, '2026-03-17', 200),
 (12, 12, 4931, 0.000, '2026-03-17', 0);
 
 -- --------------------------------------------------------
@@ -234,6 +235,58 @@ INSERT INTO `Energie` (`id_energie`, `id_article`, `type_energie`) VALUES
 (5, 5, 'carburant'),
 (6, 6, 'electricite'),
 (7, 7, 'electricite');
+
+-- --------------------------------------------------------
+
+--
+-- Structure de la table `FicheIncident`
+--
+
+CREATE TABLE `FicheIncident` (
+  `id_ref_unique` bigint(20) NOT NULL,
+  `date_creation` date NOT NULL,
+  `heure_creation` time NOT NULL,
+  `type_incident` varchar(100) NOT NULL,
+  `detail_tech` text NOT NULL,
+  `solution` text NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Structure de la table `Horaire`
+--
+
+CREATE TABLE `Horaire` (
+  `id_horaire` bigint(20) UNSIGNED NOT NULL,
+  `id_jour` bigint(20) UNSIGNED NOT NULL,
+  `heure_ouverture` time NOT NULL,
+  `heure_fermeture` time NOT NULL,
+  `est_ferme` tinyint(1) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Structure de la table `JourFermeture`
+--
+
+CREATE TABLE `JourFermeture` (
+  `id_fermeture` bigint(20) NOT NULL,
+  `date_fermeture` date NOT NULL,
+  `motif` varchar(100) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Structure de la table `JourSemaine`
+--
+
+CREATE TABLE `JourSemaine` (
+  `id_jour` bigint(20) UNSIGNED NOT NULL,
+  `libelle` varchar(10) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
 
 -- --------------------------------------------------------
 
@@ -448,12 +501,12 @@ INSERT INTO `Stock` (`id_stock`, `id_article`, `quantite_stock`, `type_quantite`
 (9, 16, 93, 'unite'),
 (10, 17, 95, 'unite'),
 (11, 18, 91, 'unite'),
-(12, 19, 99, 'unite'),
+(12, 19, 98, 'unite'),
 (13, 20, 96, 'unite'),
 (14, 21, 96, 'unite'),
 (15, 22, 99, 'unite'),
 (16, 23, 95, 'unite'),
-(17, 24, 99, 'unite'),
+(17, 24, 98, 'unite'),
 (18, 25, 95, 'unite'),
 (19, 26, 97, 'unite'),
 (20, 27, 94, 'unite'),
@@ -513,7 +566,8 @@ INSERT INTO `Transaction` (`id_transaction`, `prix_total`, `date_heure`) VALUES
 (51, 8.630, '2026-03-17 15:33:50'),
 (52, 8.830, '2026-03-17 15:36:59'),
 (53, 7.170, '2026-03-17 18:29:45'),
-(54, 9.960, '2026-03-17 18:47:43');
+(54, 9.960, '2026-03-17 18:47:43'),
+(55, 11.580, '2026-03-17 21:43:35');
 
 -- --------------------------------------------------------
 
@@ -532,7 +586,8 @@ CREATE TABLE `TransactionCCE` (
 
 INSERT INTO `TransactionCCE` (`id_transaction`, `id_carte_CE`) VALUES
 (53, 3),
-(54, 10);
+(54, 10),
+(55, 10);
 
 -- --------------------------------------------------------
 
@@ -667,7 +722,9 @@ INSERT INTO `TransactionProduit` (`id_transaction_produit`, ` id_transaction`, `
 (83, 54, 3017620425035, 1),
 (84, 54, 5000112657920, 1),
 (85, 54, 3560070976843, 1),
-(86, 54, 3245390214017, 1);
+(86, 54, 3245390214017, 1),
+(87, 55, 9771950123005, 1),
+(88, 55, 3571090000148, 1);
 
 -- --------------------------------------------------------
 
@@ -784,6 +841,31 @@ ALTER TABLE `Energie`
   ADD PRIMARY KEY (`id_energie`),
   ADD UNIQUE KEY `id_energie` (`id_energie`),
   ADD KEY `id_article` (`id_article`);
+
+--
+-- Index pour la table `FicheIncident`
+--
+ALTER TABLE `FicheIncident`
+  ADD PRIMARY KEY (`id_ref_unique`);
+
+--
+-- Index pour la table `Horaire`
+--
+ALTER TABLE `Horaire`
+  ADD PRIMARY KEY (`id_horaire`),
+  ADD KEY `id_jour` (`id_jour`);
+
+--
+-- Index pour la table `JourFermeture`
+--
+ALTER TABLE `JourFermeture`
+  ADD PRIMARY KEY (`id_fermeture`);
+
+--
+-- Index pour la table `JourSemaine`
+--
+ALTER TABLE `JourSemaine`
+  ADD PRIMARY KEY (`id_jour`);
 
 --
 -- Index pour la table `LigneReappro`
@@ -928,6 +1010,30 @@ ALTER TABLE `Energie`
   MODIFY `id_energie` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
 
 --
+-- AUTO_INCREMENT pour la table `FicheIncident`
+--
+ALTER TABLE `FicheIncident`
+  MODIFY `id_ref_unique` bigint(20) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT pour la table `Horaire`
+--
+ALTER TABLE `Horaire`
+  MODIFY `id_horaire` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT pour la table `JourFermeture`
+--
+ALTER TABLE `JourFermeture`
+  MODIFY `id_fermeture` bigint(20) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT pour la table `JourSemaine`
+--
+ALTER TABLE `JourSemaine`
+  MODIFY `id_jour` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
+
+--
 -- AUTO_INCREMENT pour la table `ParametresCCE`
 --
 ALTER TABLE `ParametresCCE`
@@ -967,7 +1073,7 @@ ALTER TABLE `Stock`
 -- AUTO_INCREMENT pour la table `Transaction`
 --
 ALTER TABLE `Transaction`
-  MODIFY `id_transaction` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=55;
+  MODIFY `id_transaction` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=56;
 
 --
 -- AUTO_INCREMENT pour la table `TransactionEnergie`
@@ -979,7 +1085,7 @@ ALTER TABLE `TransactionEnergie`
 -- AUTO_INCREMENT pour la table `TransactionProduit`
 --
 ALTER TABLE `TransactionProduit`
-  MODIFY `id_transaction_produit` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=87;
+  MODIFY `id_transaction_produit` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=89;
 
 --
 -- AUTO_INCREMENT pour la table `ValeursDefautReappro`
@@ -1014,6 +1120,12 @@ ALTER TABLE `Electricite`
 --
 ALTER TABLE `Energie`
   ADD CONSTRAINT `fk_energie_article` FOREIGN KEY (`id_article`) REFERENCES `Article` (`id_article`);
+
+--
+-- Contraintes pour la table `Horaire`
+--
+ALTER TABLE `Horaire`
+  ADD CONSTRAINT `Horaire_ibfk_1` FOREIGN KEY (`id_jour`) REFERENCES `JourSemaine` (`id_jour`);
 
 --
 -- Contraintes pour la table `LigneReappro`
