@@ -111,5 +111,8 @@ const Requetes = (() => {
     updateBonus: (id, t, b) =>
       appel("POST", `/json/cce/bonus/${id}`, { tranche: t, montant_bonus: b }),
     deleteBonus: (id) => appel("POST", `/json/cce/bonus/${id}/suppr`),
+    getHorairesBoutique: () => appel("GET", "/json/horaires/boutique"),
+    updateHorairesBoutique: (horaires) =>
+      appel("POST", "/json/horaires/boutique", { horaires }),
   };
 })();

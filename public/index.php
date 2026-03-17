@@ -9,6 +9,7 @@ use App\Controllers\PompeController;
 use App\Controllers\ReapproController;
 use App\Controllers\CceParamsController;
 use App\Controllers\CarburantPrixController;
+use App\Controllers\HorairesBoutiqueController;
 
 
 $uri = $_SERVER['REQUEST_URI'] ?? '';
@@ -129,6 +130,10 @@ $router->post('json/reappros',                       [new ReapproController(), '
 $router->get( 'json/reappros/{id}',                  [new ReapproController(), 'getById']);
 $router->post('json/reappros/{id}/statut',           [new ReapproController(), 'updateStatut']);
 $router->post('json/reappros/{id}/annuler',          [new ReapproController(), 'annuler']);
+
+// ── Horaires boutique — Sprint 6 / US15 ──────────────────
+$router->get( 'json/horaires/boutique',              [new HorairesBoutiqueController(), 'get']);
+$router->post('json/horaires/boutique',              [new HorairesBoutiqueController(), 'update']);
 
 // ════════════════════════════════════════════════════════
 $page = (string) ($_GET['page'] ?? '');
