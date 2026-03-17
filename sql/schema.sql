@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Hôte : localhost
--- Généré le : mar. 17 mars 2026 à 14:12
+-- Généré le : mar. 17 mars 2026 à 20:43
 -- Version du serveur : 11.8.6-MariaDB-0+deb13u1 from Debian
 -- Version de PHP : 8.4.16
 
@@ -71,6 +71,26 @@ INSERT INTO `Article` (`id_article`, `type_article`) VALUES
 -- --------------------------------------------------------
 
 --
+-- Structure de la table `BonusCCE`
+--
+
+CREATE TABLE `BonusCCE` (
+  `id_bonus` int(10) UNSIGNED NOT NULL,
+  `tranche` decimal(10,2) NOT NULL,
+  `montant_bonus` decimal(10,2) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
+
+--
+-- Déchargement des données de la table `BonusCCE`
+--
+
+INSERT INTO `BonusCCE` (`id_bonus`, `tranche`, `montant_bonus`) VALUES
+(1, 100.00, 10.00),
+(2, 200.00, 25.00);
+
+-- --------------------------------------------------------
+
+--
 -- Structure de la table `Carburant`
 --
 
@@ -113,16 +133,13 @@ CREATE TABLE `CarteCE` (
 --
 
 INSERT INTO `CarteCE` (`id_carte_CE`, `id_client`, `code_secret`, `solde_client`, `date_dernier_apport`, `montant_dernier_apport`) VALUES
-(1, 1, 1234, 150.000, '2026-02-01', 100),
+(1, 1, 1234, 375.000, '2026-03-17', 200),
 (2, 2, 5678, 50.000, '2026-02-05', 50),
-(3, 3, 9999, 537.100, '2026-03-16', 50),
+(3, 3, 9999, 571.300, '2026-03-17', 50),
 (4, 4, 4850, 0.000, '2026-03-14', 0),
-(5, 5, 2019, 0.000, '2026-03-15', 0),
-(6, 6, 6192, 0.000, '2026-03-15', 0),
-(7, 7, 2069, 0.000, '2026-03-15', 0),
-(8, 8, 7670, 0.000, '2026-03-15', 0),
-(9, 9, 8424, 0.000, '2026-03-15', 0),
-(10, 10, 4665, 0.000, '2026-03-16', 0);
+(5, 5, 2019, 225.000, '2026-03-17', 200),
+(10, 10, 4665, 445.040, '2026-03-17', 200),
+(12, 12, 4931, 0.000, '2026-03-17', 0);
 
 -- --------------------------------------------------------
 
@@ -148,11 +165,8 @@ INSERT INTO `Client` (`id_client`, `nom`, `prenom`, `email`, `num_tel`) VALUES
 (3, 'Durand', 'Pierre', 'pierre.durand@email.com', '698765432'),
 (4, 'Bachov', 'Steven', 's.bach@mail.com', '+0766161603'),
 (5, 'bachova', 'camilia', 'c.bachova@mail.com', '+0766161604'),
-(6, 'test', 'stest', 'tests@mail.com', '+0101010101'),
-(7, 'test', 'test', 'test@mail.com', '+0101010101'),
-(8, 'test', 'test', 'test@mail.com', '+0101010101'),
-(9, 'test2', 'test2', 'test2@mail.com', '+0101010101'),
-(10, 'Mongrandi', 'Lenny', 'lenny21@gmail.com', '+33618212121');
+(10, 'Mongrandi', 'Lenny', 'lenny21@gmail.com', '+33618212121'),
+(12, 'Blanc', 'Saskia', 'saskia@gmail.com', '+33677777777');
 
 -- --------------------------------------------------------
 
@@ -252,6 +266,24 @@ INSERT INTO `LigneReappro` (`id_reappro`, `id_article`, `quantite`, `date_arrive
 (5, 17, 30.000, NULL),
 (6, 12, 3.000, NULL),
 (7, 22, 67.000, NULL);
+
+-- --------------------------------------------------------
+
+--
+-- Structure de la table `ParametresCCE`
+--
+
+CREATE TABLE `ParametresCCE` (
+  `id_parametre` int(10) UNSIGNED NOT NULL,
+  `montant_min` decimal(10,2) NOT NULL DEFAULT 50.00
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
+
+--
+-- Déchargement des données de la table `ParametresCCE`
+--
+
+INSERT INTO `ParametresCCE` (`id_parametre`, `montant_min`) VALUES
+(1, 50.00);
 
 -- --------------------------------------------------------
 
@@ -405,28 +437,28 @@ CREATE TABLE `Stock` (
 --
 
 INSERT INTO `Stock` (`id_stock`, `id_article`, `quantite_stock`, `type_quantite`) VALUES
-(1, 8, 98, 'unite'),
-(2, 9, 97, 'unite'),
+(1, 8, 97, 'unite'),
+(2, 9, 96, 'unite'),
 (3, 10, 91, 'unite'),
 (4, 11, 97, 'unite'),
-(5, 12, 99, 'unite'),
-(6, 13, 98, 'unite'),
-(7, 14, 95, 'unite'),
+(5, 12, 98, 'unite'),
+(6, 13, 96, 'unite'),
+(7, 14, 94, 'unite'),
 (8, 15, 97, 'unite'),
-(9, 16, 94, 'unite'),
+(9, 16, 93, 'unite'),
 (10, 17, 95, 'unite'),
 (11, 18, 91, 'unite'),
 (12, 19, 99, 'unite'),
-(13, 20, 97, 'unite'),
-(14, 21, 97, 'unite'),
+(13, 20, 96, 'unite'),
+(14, 21, 96, 'unite'),
 (15, 22, 99, 'unite'),
-(16, 23, 96, 'unite'),
+(16, 23, 95, 'unite'),
 (17, 24, 99, 'unite'),
 (18, 25, 95, 'unite'),
-(19, 26, 98, 'unite'),
-(20, 27, 95, 'unite'),
-(21, 28, 100, 'unite'),
-(22, 29, 99, 'unite'),
+(19, 26, 97, 'unite'),
+(20, 27, 94, 'unite'),
+(21, 28, 99, 'unite'),
+(22, 29, 98, 'unite'),
 (23, 30, 97, 'unite');
 
 -- --------------------------------------------------------
@@ -477,7 +509,11 @@ INSERT INTO `Transaction` (`id_transaction`, `prix_total`, `date_heure`) VALUES
 (47, 8.070, '2026-03-16 22:23:38'),
 (48, 12.770, '2026-03-17 14:33:54'),
 (49, 11.420, '2026-03-17 14:36:07'),
-(50, 4.830, '2026-03-17 14:59:26');
+(50, 4.830, '2026-03-17 14:59:26'),
+(51, 8.630, '2026-03-17 15:33:50'),
+(52, 8.830, '2026-03-17 15:36:59'),
+(53, 7.170, '2026-03-17 18:29:45'),
+(54, 9.960, '2026-03-17 18:47:43');
 
 -- --------------------------------------------------------
 
@@ -489,6 +525,14 @@ CREATE TABLE `TransactionCCE` (
   `id_transaction` bigint(20) UNSIGNED NOT NULL,
   `id_carte_CE` bigint(20) UNSIGNED NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
+
+--
+-- Déchargement des données de la table `TransactionCCE`
+--
+
+INSERT INTO `TransactionCCE` (`id_transaction`, `id_carte_CE`) VALUES
+(53, 3),
+(54, 10);
 
 -- --------------------------------------------------------
 
@@ -609,7 +653,21 @@ INSERT INTO `TransactionProduit` (`id_transaction_produit`, ` id_transaction`, `
 (69, 48, 7622210449283, 1),
 (70, 50, 3400930006903, 1),
 (71, 50, 3245390214017, 1),
-(72, 50, 5000159417891, 1);
+(72, 50, 5000159417891, 1),
+(73, 51, 5000159417891, 1),
+(74, 51, 3760020509015, 1),
+(75, 51, 3600524068738, 1),
+(76, 52, 3600522118015, 1),
+(77, 52, 5000159417891, 1),
+(78, 52, 3175680091680, 1),
+(79, 53, 5000159461121, 1),
+(80, 53, 9772102347008, 1),
+(81, 53, 3175680011800, 1),
+(82, 53, 5449000214911, 1),
+(83, 54, 3017620425035, 1),
+(84, 54, 5000112657920, 1),
+(85, 54, 3560070976843, 1),
+(86, 54, 3245390214017, 1);
 
 -- --------------------------------------------------------
 
@@ -674,6 +732,12 @@ ALTER TABLE `Article`
   ADD UNIQUE KEY `id_article` (`id_article`);
 
 --
+-- Index pour la table `BonusCCE`
+--
+ALTER TABLE `BonusCCE`
+  ADD PRIMARY KEY (`id_bonus`);
+
+--
 -- Index pour la table `Carburant`
 --
 ALTER TABLE `Carburant`
@@ -694,7 +758,9 @@ ALTER TABLE `CarteCE`
 --
 ALTER TABLE `Client`
   ADD PRIMARY KEY (`id_client`),
-  ADD UNIQUE KEY `id_client` (`id_client`);
+  ADD UNIQUE KEY `id_client` (`id_client`),
+  ADD UNIQUE KEY `uk_client_email` (`email`),
+  ADD UNIQUE KEY `uk_client_num_tel` (`num_tel`);
 
 --
 -- Index pour la table `Connexion`
@@ -725,6 +791,12 @@ ALTER TABLE `Energie`
 ALTER TABLE `LigneReappro`
   ADD PRIMARY KEY (`id_reappro`,`id_article`),
   ADD KEY `fk_lr_article` (`id_article`);
+
+--
+-- Index pour la table `ParametresCCE`
+--
+ALTER TABLE `ParametresCCE`
+  ADD PRIMARY KEY (`id_parametre`);
 
 --
 -- Index pour la table `Pompe`
@@ -814,6 +886,12 @@ ALTER TABLE `Article`
   MODIFY `id_article` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=31;
 
 --
+-- AUTO_INCREMENT pour la table `BonusCCE`
+--
+ALTER TABLE `BonusCCE`
+  MODIFY `id_bonus` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
+
+--
 -- AUTO_INCREMENT pour la table `Carburant`
 --
 ALTER TABLE `Carburant`
@@ -823,13 +901,13 @@ ALTER TABLE `Carburant`
 -- AUTO_INCREMENT pour la table `CarteCE`
 --
 ALTER TABLE `CarteCE`
-  MODIFY `id_carte_CE` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=11;
+  MODIFY `id_carte_CE` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=13;
 
 --
 -- AUTO_INCREMENT pour la table `Client`
 --
 ALTER TABLE `Client`
-  MODIFY `id_client` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=11;
+  MODIFY `id_client` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=13;
 
 --
 -- AUTO_INCREMENT pour la table `Connexion`
@@ -848,6 +926,12 @@ ALTER TABLE `Electricite`
 --
 ALTER TABLE `Energie`
   MODIFY `id_energie` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
+
+--
+-- AUTO_INCREMENT pour la table `ParametresCCE`
+--
+ALTER TABLE `ParametresCCE`
+  MODIFY `id_parametre` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
 
 --
 -- AUTO_INCREMENT pour la table `Pompe`
@@ -883,7 +967,7 @@ ALTER TABLE `Stock`
 -- AUTO_INCREMENT pour la table `Transaction`
 --
 ALTER TABLE `Transaction`
-  MODIFY `id_transaction` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=51;
+  MODIFY `id_transaction` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=55;
 
 --
 -- AUTO_INCREMENT pour la table `TransactionEnergie`
@@ -895,7 +979,7 @@ ALTER TABLE `TransactionEnergie`
 -- AUTO_INCREMENT pour la table `TransactionProduit`
 --
 ALTER TABLE `TransactionProduit`
-  MODIFY `id_transaction_produit` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=73;
+  MODIFY `id_transaction_produit` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=87;
 
 --
 -- AUTO_INCREMENT pour la table `ValeursDefautReappro`
