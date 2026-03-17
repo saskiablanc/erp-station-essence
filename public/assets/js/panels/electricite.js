@@ -1,9 +1,9 @@
 /**
  * panels/electricite.js
  * IIFE globale PompeElectricite
- * Rendu de la section ELECTRICITE dans le panel pompes.
+ * Rendu de la section ÉLECTRICITÉ dans le panel pompes.
  *
- * Super-chargeurs rapides : 8 bornes (2 rangees × 4)
+ * Super-chargeurs rapides : 8 bornes (2 rangées × 4)
  * Chargeurs lents         : 2 bornes (1 colonne de 2)
  * Tous en mode AUTO — pas d'encaissement caisse
  */
@@ -154,10 +154,10 @@ const PompeElectricite = (() => {
     }
     try {
       await Requetes.activerPompe(idPompe);
-      Toast.ok(`Borne ${idPompe} reactivee`);
+      Toast.ok(`Borne ${idPompe} réactivée`);
       if (typeof PompesPanelRefresh === "function") PompesPanelRefresh();
     } catch (e) {
-      Toast.err(`Echec activation : ${e.message}`);
+      Toast.err(`Échec activation : ${e.message}`);
       if (btn) {
         btn.disabled = false;
         btn.textContent = "Activer";

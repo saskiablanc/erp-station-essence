@@ -36,7 +36,7 @@ window.TicketPayment = (() => {
         <div class="ticket-pay-choice-grid">
           <button type="button" class="ticket-pay-choice-btn" data-payment-method="cb">Carte bleue</button>
           <button type="button" class="ticket-pay-choice-btn" data-payment-method="cce">CCE</button>
-          <button type="button" class="ticket-pay-choice-btn" data-payment-method="espece">Espèce</button>
+          <button type="button" class="ticket-pay-choice-btn" data-payment-method="especes">Espèces</button>
         </div>
         <button type="button" class="ticket-pay-choice-btn ticket-pay-choice-btn-cancel" data-payment-cancel>
           Annuler
@@ -282,7 +282,7 @@ window.TicketPayment = (() => {
 
     let cashDetails = null;
     let wantsReceipt = null;
-    if (method === 'espece') {
+    if (method === 'especes') {
       cashDetails = await promptCashAmount(total);
       if (!cashDetails) {
         return { status: 'cancel' };
@@ -290,7 +290,7 @@ window.TicketPayment = (() => {
       wantsReceipt = await chooseReceipt();
     }
 
-    if (method !== 'espece') {
+    if (method !== 'especes') {
       Swal.fire({
         ...swalBase,
         title: 'Paiement en cours',
@@ -381,15 +381,15 @@ window.TicketPayment = (() => {
         icon: 'success',
         title: 'Paiement accepté',
         html: `
-          ${method === 'espece' && cashDetails
+          ${method === 'especes' && cashDetails
             ? `<div>Montant reçu : <strong>${formatMoney(cashDetails.given)}</strong></div>
                ${cashDetails.change > 0 ? `<div>Trop-perçu : <strong>${formatMoney(cashDetails.change)}</strong></div>` : ''}`
             : ''}
-          <div style="margin-top:${method === 'espece' ? '8px' : '0'};">
+          <div style="margin-top:${method === 'especes' ? '8px' : '0'};">
             ${receiptMessage}
           </div>
         `,
-        confirmButtonText: method === 'espece' ? 'Valider' : 'Fermer',
+        confirmButtonText: method === 'especes' ? 'Valider' : 'Fermer',
         allowOutsideClick: false,
       });
 

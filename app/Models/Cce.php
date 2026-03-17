@@ -208,7 +208,7 @@ class Cce
     public function recharger(int $idCarte, float $montant): ?array
     {
         if ($montant <= 0) {
-            throw new RuntimeException('Le montant doit être superieur à 0');
+            throw new RuntimeException('Le montant doit être supérieur à 0');
         }
 
         $arrondi = round($montant, 3);
@@ -475,15 +475,15 @@ class Cce
         $value = preg_replace('/\s+/', '', trim($value));
 
         if ($value === '') {
-            throw new RuntimeException('Le numéro de telephone est requis');
+            throw new RuntimeException('Le numéro de téléphone est requis');
         }
 
         if (!preg_match('/^\+?[0-9().-]{6,20}$/', $value)) {
-            throw new RuntimeException('Numéro de telephone invalide');
+            throw new RuntimeException('Numéro de téléphone invalide');
         }
 
         if (strlen($value) > 20) {
-            throw new RuntimeException('Numéro de telephone trop long');
+            throw new RuntimeException('Numéro de téléphone trop long');
         }
 
         return $value;

@@ -251,7 +251,7 @@ const CceConsultPanel = (() => {
         <div class="ticket-pay-choice-total">Montant à recharger : <strong>${formatMoney(montant)}</strong></div>
         <div class="ticket-pay-choice-grid ticket-pay-choice-grid--two">
           <button type="button" class="ticket-pay-choice-btn" data-payment-method="cb">Carte bleue</button>
-          <button type="button" class="ticket-pay-choice-btn" data-payment-method="espece">Espèce</button>
+          <button type="button" class="ticket-pay-choice-btn" data-payment-method="especes">Espèces</button>
         </div>
         <button type="button" class="ticket-pay-choice-btn ticket-pay-choice-btn-cancel" data-payment-cancel>
           Annuler
@@ -527,7 +527,7 @@ const CceConsultPanel = (() => {
     if (!method) return;
 
     let cashDetails = null;
-    if (method === 'espece') {
+    if (method === 'especes') {
       cashDetails = await promptCashAmount(montant);
       if (!cashDetails) return;
     } else {
@@ -556,7 +556,7 @@ const CceConsultPanel = (() => {
       await Swal.fire({
         title: 'Paiement accepté',
         html: `
-          ${method === 'espece' && cashDetails
+          ${method === 'especes' && cashDetails
             ? `<div>Montant reçu : <strong>${formatMoney(cashDetails.given)}</strong></div>
                ${cashDetails.change > 0 ? `<div>Trop-perçu : <strong>${formatMoney(cashDetails.change)}</strong></div>` : ''}`
             : ''}
@@ -564,12 +564,12 @@ const CceConsultPanel = (() => {
             ? `<div style="margin-top:8px;">Bonus CCE appliqué : <strong>${formatMoney(bonusApplique)}</strong></div>
                <div>Montant crédité : <strong>${formatMoney(montantCredite)}</strong></div>`
             : ''}
-          <div style="margin-top:${method === 'espece' ? '8px' : '0'};">
+          <div style="margin-top:${method === 'especes' ? '8px' : '0'};">
             Rechargement CCE effectué avec succès.
           </div>
         `,
         icon: 'success',
-        confirmButtonText: method === 'espece' ? 'Valider' : 'Fermer',
+        confirmButtonText: method === 'especes' ? 'Valider' : 'Fermer',
         allowOutsideClick: false,
         customClass: {
           popup: 'cce-swal-popup',

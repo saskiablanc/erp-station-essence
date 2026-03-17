@@ -53,7 +53,7 @@ const CceCreatePanel = (() => {
           </label>
 
           <label class="cce-create-field">
-            <span class="cce-create-label">Numéro de tel</span>
+            <span class="cce-create-label">Numéro de téléphone</span>
             <input
               class="cce-create-input"
               type="tel"
