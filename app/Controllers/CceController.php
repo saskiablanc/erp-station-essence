@@ -8,6 +8,13 @@ use App\Models\Cce;
 
 class CceController extends Controller
 {
+    public function all(): void
+    {
+        $this->requireAuth();
+        $model = new Cce();
+        $this->json($model->findAllForScan());
+    }
+
     public function latest(): void
     {
         $this->requireAuth();
@@ -32,6 +39,26 @@ class CceController extends Controller
         }
 
         $this->json($cce);
+    }
+
+    public function transactions(string $id): void
+    {
+        $this->requireAuth();
+        $idCarte = (int) $id;
+        if ($idCarte <= 0) {
+            $this->jsonError('Identifiant CCE invalide', 400);
+        }
+
+        $model = new Cce();
+        try {
+            $payload = $model->findTransactionCceForCard($idCarte);
+        } catch (\Throwable $e) {
+            $message = $e->getMessage();
+            $status = str_contains(strtolower($message), 'introuvable') ? 404 : 400;
+            $this->jsonError($message, $status);
+        }
+
+        $this->json($payload);
     }
 
     public function create(): void
@@ -81,6 +108,30 @@ class CceController extends Controller
             $cce = $model->recharger((int) $id, $montant);
         } catch (\Throwable $e) {
             $this->jsonError($e->getMessage(), 400);
+        }
+
+        if (!$cce) {
+            $this->jsonError("CCE #{$id} introuvable", 404);
+        }
+
+        $this->json([
+            'success' => true,
+            'cce' => $cce,
+        ]);
+    }
+
+    public function debiter(string $id): void
+    {
+        $this->requireAuth();
+        $body = $this->body();
+        $montant = (float) ($body['montant'] ?? 0);
+        $model = new Cce();
+
+        try {
+            $cce = $model->debiter((int) $id, $montant);
+        } catch (\Throwable $e) {
+            $code = str_contains(strtolower($e->getMessage()), 'insuffisant') ? 409 : 400;
+            $this->jsonError($e->getMessage(), $code);
         }
 
         if (!$cce) {

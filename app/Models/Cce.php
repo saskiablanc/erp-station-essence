@@ -184,6 +184,22 @@ class Cce
         return $this->withTransactions($row);
     }
 
+    public function findAllForScan(): array
+    {
+        $stmt = $this->db->query(
+            'SELECT
+                cc.id_carte_CE,
+                c.nom,
+                c.prenom,
+                cc.solde_client
+             FROM `CarteCE` cc
+             INNER JOIN `Client` c ON c.id_client = cc.id_client
+             ORDER BY cc.id_carte_CE DESC'
+        );
+
+        return $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+    }
+
     public function recharger(int $idCarte, float $montant): ?array
     {
         if ($montant <= 0) {
@@ -208,6 +224,136 @@ class Cce
         );
 
         return $this->findOverviewById($idCarte);
+    }
+
+    public function debiter(int $idCarte, float $montant): ?array
+    {
+        if ($montant <= 0) {
+            throw new RuntimeException('Le montant doit être supérieur à 0');
+        }
+
+        $arrondi = round($montant, 3);
+
+        $this->db->beginTransaction();
+        try {
+            $row = $this->db->query(
+                'SELECT solde_client
+                 FROM `CarteCE`
+                 WHERE id_carte_CE = :id
+                 LIMIT 1',
+                ['id' => $idCarte]
+            )->fetch(PDO::FETCH_ASSOC);
+
+            if (!$row) {
+                $this->db->rollBack();
+                return null;
+            }
+
+            $solde = (float) ($row['solde_client'] ?? 0);
+            if ($solde < $arrondi) {
+                throw new RuntimeException('Solde CCE insuffisant');
+            }
+
+            $this->db->execute(
+                'UPDATE `CarteCE`
+                 SET solde_client = solde_client - :montant
+                 WHERE id_carte_CE = :id',
+                [
+                    'montant' => $arrondi,
+                    'id' => $idCarte,
+                ]
+            );
+
+            $this->db->commit();
+        } catch (\Throwable $e) {
+            if ($this->db->getConnection()->inTransaction()) {
+                $this->db->rollBack();
+            }
+            throw $e;
+        }
+
+        return $this->findOverviewById($idCarte);
+    }
+
+    /**
+     * @return array{columns: string[], rows: array<int, array<string, mixed>>}
+     */
+    public function findTransactionCceForCard(int $idCarte): array
+    {
+        $columnsStmt = $this->db->query('SHOW COLUMNS FROM `Transaction`');
+        $columns = $columnsStmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+        if ($columns === []) {
+            return ['columns' => [], 'rows' => []];
+        }
+
+        $cardColumn = null;
+        $idColumnToSkip = null;
+        $selectedColumns = [];
+
+        foreach ($columns as $index => $column) {
+            $field = trim((string) ($column['Field'] ?? ''));
+            if ($field === '') {
+                continue;
+            }
+
+            if (strcasecmp($field, 'id_carte_CE') === 0) {
+                $cardColumn = $field;
+            }
+
+            $extra = strtolower(trim((string) ($column['Extra'] ?? '')));
+            if ($idColumnToSkip === null && str_contains($extra, 'auto_increment')) {
+                $idColumnToSkip = $field;
+            }
+
+            $selectedColumns[] = $field;
+        }
+
+        if ($cardColumn === null) {
+            throw new RuntimeException('Colonne id_carte_CE introuvable dans Transaction');
+        }
+
+        if ($idColumnToSkip !== null) {
+            $selectedColumns = array_values(array_filter(
+                $selectedColumns,
+                static fn (string $column): bool => strcasecmp($column, $idColumnToSkip) !== 0
+            ));
+        }
+
+        if ($selectedColumns === []) {
+            return ['columns' => [], 'rows' => []];
+        }
+
+        $selectSql = implode(
+            ', ',
+            array_map(
+                static fn (string $column): string => sprintf('`%s`', str_replace('`', '``', $column)),
+                $selectedColumns
+            )
+        );
+
+        $orderColumn = null;
+        foreach (['date_heure', 'horodatage', 'date_transaction', 'id_transaction'] as $candidate) {
+            foreach ($selectedColumns as $column) {
+                if (strcasecmp($column, $candidate) === 0) {
+                    $orderColumn = $column;
+                    break 2;
+                }
+            }
+        }
+
+        $query = sprintf(
+            'SELECT %s
+             FROM `Transaction`
+             WHERE `%s` = :id_carte%s',
+            $selectSql,
+            str_replace('`', '``', $cardColumn),
+            $orderColumn !== null
+                ? sprintf(' ORDER BY `%s` DESC', str_replace('`', '``', $orderColumn))
+                : ''
+        );
+
+        $rows = $this->db->query($query, ['id_carte' => $idCarte])->fetchAll(PDO::FETCH_ASSOC) ?: [];
+        return ['columns' => $selectedColumns, 'rows' => $rows];
     }
 
     private function normalizeName(string $value, string $field): string
@@ -330,4 +476,5 @@ class Cce
         $this->hasTransactionCardLink = false;
         return false;
     }
+
 }

@@ -282,6 +282,107 @@
   margin-top: 8px;
 }
 
+/* Choix des modes de paiement (CB / CCE / Espèce) */
+.ticket-pay-choice-total {
+  margin-bottom: 10px;
+  color: var(--text);
+}
+.ticket-pay-choice-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+.ticket-pay-choice-btn {
+  height: 42px;
+  border-radius: 999px;
+  border: 2px solid var(--border);
+  background: var(--btn-grad);
+  color: var(--accent);
+  font-family: var(--mono);
+  font-size: 0.95rem;
+  box-shadow: var(--shadow-soft);
+}
+.ticket-pay-choice-btn-cancel {
+  margin-top: 12px;
+  min-width: 130px;
+  height: 40px;
+  background: rgba(255, 255, 255, 0.95);
+  color: var(--text-mid);
+}
+
+/* Popup espèces */
+.swal2-popup.ticket-swal-popup.ticket-swal-popup-cash {
+  width: min(27rem, 92vw);
+  padding: 0.8rem 0.9rem 0.95rem;
+}
+.swal2-html-container.ticket-swal-cash-html {
+  margin: 0 !important;
+}
+.ticket-cash-modal {
+  position: relative;
+  display: grid;
+  gap: 10px;
+  justify-items: center;
+}
+.ticket-cash-close {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  width: 44px;
+  height: 44px;
+  border: 1px solid #a3a3a3;
+  background: #f7f7f7;
+  border-radius: 0;
+  color: #ef4444;
+  font-size: 2rem;
+  line-height: 1;
+}
+.ticket-cash-total {
+  margin-top: 4px;
+  color: var(--text);
+}
+.ticket-cash-display-wrap {
+  width: min(330px, 100%);
+  padding: 16px 14px;
+  border: 1px solid #9f9f9f;
+  background: rgba(255, 255, 255, 0.95);
+}
+.ticket-cash-display {
+  width: 100%;
+  text-align: center;
+  font-size: 1.95rem;
+  letter-spacing: 1px;
+  color: #1f2937;
+}
+.ticket-cash-error {
+  min-height: 1.2rem;
+  font-size: 0.9rem;
+  color: #dc2626;
+}
+.ticket-cash-keypad {
+  width: min(330px, 100%);
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+.ticket-cash-keypad button {
+  height: 66px;
+  border: 1px solid #9f9f9f;
+  background: #fff;
+  color: #1f2937;
+  font-size: 2rem;
+  border-radius: 0;
+}
+.ticket-cash-keypad button:focus {
+  outline: 2px solid var(--border-active);
+}
+
+@media (max-width: 560px) {
+  .ticket-pay-choice-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
 .swal2-popup.ticket-swal-popup.ticket-swal-popup-list {
   width: min(52rem, 94vw);
 }

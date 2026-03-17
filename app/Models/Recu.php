@@ -64,7 +64,12 @@ final class Recu
 
     private function genererNumCarte(string $modePaiement, int $idTransaction): int
     {
-        $prefix = strtolower(trim($modePaiement)) === 'cce' ? 2 : 1;
+        $mode = strtolower(trim($modePaiement));
+        $prefix = match ($mode) {
+            'cce' => 2,
+            'espece' => 3,
+            default => 1, // cb
+        };
         $suffix = $idTransaction % 100000;
         return (int) ($prefix * 100000 + $suffix);
     }

@@ -58,10 +58,13 @@ const Requetes = (() => {
     getStock:     (type = 'articles')   => appel('GET',  `/json/stock?type=${encodeURIComponent(type)}`),
 
     // ── Sprint 5 ──────────────────────────────────────────
+    getCCEs:     ()         => appel('GET',  '/json/cce'),
     getCCELatest: ()         => appel('GET',  '/json/cce/latest'),
+    getCCETransactions: (id) => appel('GET', `/json/cce/${id}/transactions`),
     getCCE:      (id)       => appel('GET',  `/json/cce/${id}`),
     creerCCE:    (data)     => appel('POST', '/json/cce',              data),
     rechargerCCE:(id, mont) => appel('POST', `/json/cce/${id}/recharger`, { montant: mont }),
+    debiterCCE:  (id, mont) => appel('POST', `/json/cce/${id}/debiter`, { montant: mont }),
 
     // ── Sprint 4-6 Gérant ─────────────────────────────────
     getReappros:     ()    => appel('GET',  '/json/reappros'),
