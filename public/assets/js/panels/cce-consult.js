@@ -597,37 +597,75 @@ const CceConsultPanel = (() => {
   }
 
   async function openActionsPopup(root, cce) {
-    const result = await Swal.fire({
+    let cceCourante = cce;
+    try {
+      cceCourante = await Requetes.getCCE(Number(cce?.id_carte_CE || 0));
+      root._cceCurrent = cceCourante;
+      root._cceCurrentId = Number(cceCourante?.id_carte_CE || 0) || null;
+    } catch (_) {
+      cceCourante = cce;
+    }
+
+    let action = null;
+    await Swal.fire({
       title: 'Actions',
-      text: `Carte #${cce.id_carte_CE}`,
-      showDenyButton: true,
-      showCancelButton: true,
-      showCloseButton: true,
-      confirmButtonText: 'Recharger CCE',
-      denyButtonText: 'Consulter transactions',
-      cancelButtonText: 'Fin consultation',
+      html: `
+        <div class="cce-actions-card">Carte #${escapeHtml(cceCourante.id_carte_CE)}</div>
+        <div class="cce-actions-grid">
+          <button type="button" class="cce-actions-btn" data-cce-action="recharge">Recharger CCE</button>
+          <button type="button" class="cce-actions-btn" data-cce-action="transactions">Consulter transactions</button>
+          <button type="button" class="cce-actions-btn" data-cce-action="bonus">Informations bonus</button>
+          <button type="button" class="cce-actions-btn" data-cce-action="end">Fin consultation</button>
+        </div>
+      `,
       allowOutsideClick: false,
+      showConfirmButton: false,
+      showCancelButton: false,
+      showCloseButton: true,
       customClass: {
         popup: 'cce-swal-popup cce-swal-popup-actions',
         title: 'cce-swal-title',
         htmlContainer: 'cce-swal-text',
-        actions: 'cce-swal-actions-two',
-        confirmButton: 'cce-swal-btn',
-        denyButton: 'cce-swal-btn',
-        cancelButton: 'cce-swal-btn',
       },
-      buttonsStyling: false,
+      didOpen: (popup) => {
+        popup.querySelectorAll('[data-cce-action]').forEach((button) => {
+          button.addEventListener('click', () => {
+            action = String(button.dataset.cceAction || '').toLowerCase();
+            Swal.close();
+          });
+        });
+      },
     });
 
-    if (result.isConfirmed) {
-      await openRechargePopup(root, cce);
+    if (action === 'recharge') {
+      await openRechargePopup(root, cceCourante);
       return;
     }
-    if (result.isDenied) {
-      await openTransactionsPopup(cce);
+    if (action === 'transactions') {
+      await openTransactionsPopup(cceCourante);
       return;
     }
-    if (result.dismiss === Swal.DismissReason.cancel) {
+    if (action === 'bonus') {
+      const bonus100 = Number(cceCourante?.bonus_100 ?? 0);
+      const bonus200 = Number(cceCourante?.bonus_200 ?? 0);
+      await Swal.fire({
+        title: 'Informations bonus',
+        html: `
+          <div class="cce-bonus-line">Bonus à partir de 100 EUR : <strong>${formatMoney(bonus100)}</strong></div>
+          <div class="cce-bonus-line">Bonus à partir de 200 EUR : <strong>${formatMoney(bonus200)}</strong></div>
+        `,
+        customClass: {
+          popup: 'cce-swal-popup',
+          title: 'cce-swal-title',
+          htmlContainer: 'cce-swal-text',
+          confirmButton: 'cce-swal-btn',
+        },
+        buttonsStyling: false,
+        confirmButtonText: 'Fermer',
+      });
+      return;
+    }
+    if (action === 'end') {
       resetConsultation(root);
     }
   }

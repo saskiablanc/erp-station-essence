@@ -8,6 +8,54 @@ use App\Models\Cce;
 
 class CceController extends Controller
 {
+    private function buildDuplicateResponse(array $existing): array
+    {
+        $duplicateEmail = (bool) ($existing['duplicate_email'] ?? false);
+        $duplicateTelephone = (bool) ($existing['duplicate_telephone'] ?? false);
+
+        $message = 'Coordonnées déjà utilisées';
+        if ($duplicateEmail && $duplicateTelephone) {
+            $message = "L'adresse mail et le numéro de téléphone sont déjà utilisés";
+        } elseif ($duplicateEmail) {
+            $message = "L'adresse mail est déjà utilisée";
+        } elseif ($duplicateTelephone) {
+            $message = 'Le numéro de téléphone est déjà utilisé';
+        }
+
+        return [
+            'error' => true,
+            'duplicate' => true,
+            'message' => $message,
+            'client' => $existing,
+            'conflicts' => [
+                'email' => $duplicateEmail,
+                'telephone' => $duplicateTelephone,
+            ],
+        ];
+    }
+
+    public function checkDuplicate(): void
+    {
+        $this->requireAuth();
+        $model = new Cce();
+        $body = $this->body();
+
+        try {
+            $existing = $model->findDuplicateClient($body);
+        } catch (\Throwable $e) {
+            $this->jsonError($e->getMessage(), 400);
+        }
+
+        if ($existing) {
+            $this->json($this->buildDuplicateResponse($existing), 409);
+        }
+
+        $this->json([
+            'success' => true,
+            'duplicate' => false,
+        ]);
+    }
+
     public function all(): void
     {
         $this->requireAuth();
@@ -66,23 +114,15 @@ class CceController extends Controller
         $this->requireAuth();
         $model = new Cce();
         $body = $this->body();
-        $forcerCreation = !empty($body['forcer_creation']);
 
-        if (!$forcerCreation) {
-            try {
-                $existing = $model->findDuplicateClient($body);
-            } catch (\Throwable $e) {
-                $this->jsonError($e->getMessage(), 400);
-            }
+        try {
+            $existing = $model->findDuplicateClient($body);
+        } catch (\Throwable $e) {
+            $this->jsonError($e->getMessage(), 400);
+        }
 
-            if ($existing) {
-                $this->json([
-                    'error' => true,
-                    'duplicate' => true,
-                    'message' => 'Les informations du clients sont déjà enregistrées',
-                    'client' => $existing,
-                ], 409);
-            }
+        if ($existing) {
+            $this->json($this->buildDuplicateResponse($existing), 409);
         }
 
         try {

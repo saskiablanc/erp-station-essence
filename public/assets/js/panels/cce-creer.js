@@ -83,7 +83,7 @@ const CceCreatePanel = (() => {
     const result = await Swal.fire({
       ...swalBase,
       icon: "question",
-      title: "Confirmer la création du CCE",
+      title: "Confirmer la création de la carte CCE",
       showCancelButton: true,
       confirmButtonText: "Valider",
       cancelButtonText: "Annuler",
@@ -93,18 +93,17 @@ const CceCreatePanel = (() => {
     return result.isConfirmed;
   }
 
-  async function askDuplicateRecreate() {
-    const result = await Swal.fire({
+  async function showCodeChoiceStep() {
+    await Swal.fire({
       ...swalBase,
-      icon: "warning",
-      title: "Les informations du clients sont déjà enregistrées",
-      showCancelButton: true,
-      confirmButtonText: "Recréer CCE",
-      cancelButtonText: "Annuler",
+      icon: "info",
+      title: "Le client choisit son code",
+      timer: 3000,
+      timerProgressBar: true,
+      showConfirmButton: false,
       allowOutsideClick: false,
+      allowEscapeKey: false,
     });
-
-    return result.isConfirmed;
   }
 
   async function showCancelled() {
@@ -156,12 +155,6 @@ const CceCreatePanel = (() => {
       return;
     }
 
-    const confirmed = await askConfirmation();
-    if (!confirmed) {
-      await showCancelled();
-      return;
-    }
-
     const submitBtn = form.querySelector(".cce-create-submit");
     if (submitBtn) {
       submitBtn.disabled = true;
@@ -171,29 +164,16 @@ const CceCreatePanel = (() => {
     setFeedback(form, "");
 
     try {
-      let result;
+      await Requetes.checkCCEDuplicate({ nom, prenom, email, telephone });
+      await showCodeChoiceStep();
 
-      try {
-        result = await createCce({ nom, prenom, email, telephone });
-      } catch (error) {
-        if (error?.data?.duplicate) {
-          const recreate = await askDuplicateRecreate();
-          if (!recreate) {
-            await showCancelled();
-            return;
-          }
-
-          result = await createCce({
-            nom,
-            prenom,
-            email,
-            telephone,
-            forcer_creation: true,
-          });
-        } else {
-          throw error;
-        }
+      const confirmed = await askConfirmation();
+      if (!confirmed) {
+        await showCancelled();
+        return;
       }
+
+      const result = await createCce({ nom, prenom, email, telephone });
 
       const cce = result.cce || result;
 

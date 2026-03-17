@@ -72,6 +72,7 @@ const Requetes = (() => {
     getCCELatest: () => appel("GET", "/json/cce/latest"),
     getCCETransactions: (id) => appel("GET", `/json/cce/${id}/transactions`),
     getCCE: (id) => appel("GET", `/json/cce/${id}`),
+    checkCCEDuplicate: (data) => appel("POST", "/json/cce/check-duplicate", data),
     creerCCE: (data) => appel("POST", "/json/cce", data),
     rechargerCCE: (id, mont) =>
       appel("POST", `/json/cce/${id}/recharger`, { montant: mont }),

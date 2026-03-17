@@ -111,6 +111,7 @@ $router->get( 'json/cce',                      [new CceController(),    'all']);
 $router->get( 'json/cce/latest',               [new CceController(),    'latest']);
 $router->get( 'json/cce/{id}/transactions',    [new CceController(),    'transactions']);
 $router->get( 'json/cce/{id}',                  [new CceController(),    'get']);
+$router->post('json/cce/check-duplicate',      [new CceController(),    'checkDuplicate']);
 $router->post('json/cce',                       [new CceController(),    'create']);
 $router->post('json/cce/{id}/recharger',        [new CceController(),    'recharger']);
 $router->post('json/cce/{id}/debiter',          [new CceController(),    'debiter']);

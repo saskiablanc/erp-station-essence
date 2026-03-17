@@ -386,6 +386,32 @@
   width: min(40rem, 94vw);
 }
 
+.cce-actions-card {
+  margin-bottom: 12px;
+  color: var(--text-mid);
+}
+
+.cce-actions-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.cce-actions-btn {
+  min-height: 40px;
+  border-radius: 999px;
+  border: 2px solid var(--border);
+  background: var(--btn-grad);
+  color: var(--accent);
+  font-family: var(--mono);
+  font-size: 0.95rem;
+  box-shadow: var(--shadow-soft);
+}
+
+.cce-bonus-line {
+  margin: 6px 0;
+}
+
 .swal2-popup.cce-swal-popup.cce-swal-popup-recharge-choice .swal2-html-container {
   text-align: center;
 }

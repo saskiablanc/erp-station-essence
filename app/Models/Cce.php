@@ -24,6 +24,21 @@ class Cce
         $prenom = $this->normalizeName((string) ($data['prenom'] ?? ''), 'prenom');
         $email = $this->normalizeEmail((string) ($data['email'] ?? ''));
         $telephone = $this->normalizeTelephone((string) ($data['telephone'] ?? ''));
+        $duplicate = $this->findDuplicateByContact($email, $telephone);
+        if ($duplicate) {
+            $duplicateEmail = (bool) ($duplicate['duplicate_email'] ?? false);
+            $duplicateTelephone = (bool) ($duplicate['duplicate_telephone'] ?? false);
+            if ($duplicateEmail && $duplicateTelephone) {
+                throw new RuntimeException("L'adresse mail et le numéro de téléphone sont déjà utilisés");
+            }
+            if ($duplicateEmail) {
+                throw new RuntimeException("L'adresse mail est déjà utilisée");
+            }
+            if ($duplicateTelephone) {
+                throw new RuntimeException('Le numéro de téléphone est déjà utilisé');
+            }
+            throw new RuntimeException('Coordonnées déjà utilisées');
+        }
         $idParametre = $this->getDefaultParametreId();
         $dateApport = date('Y-m-d');
         $montantApport = 0;
@@ -95,34 +110,10 @@ class Cce
 
     public function findDuplicateClient(array $data): ?array
     {
-        $nom = $this->normalizeName((string) ($data['nom'] ?? ''), 'nom');
-        $prenom = $this->normalizeName((string) ($data['prenom'] ?? ''), 'prenom');
         $email = $this->normalizeEmail((string) ($data['email'] ?? ''));
         $telephone = $this->normalizeTelephone((string) ($data['telephone'] ?? ''));
 
-        $stmt = $this->db->query(
-            'SELECT
-                id_client,
-                nom,
-                prenom,
-                email,
-                num_tel
-             FROM `Client`
-             WHERE nom = :nom
-               AND prenom = :prenom
-               AND email = :email
-               AND num_tel = :num_tel
-             LIMIT 1',
-            [
-                'nom' => $nom,
-                'prenom' => $prenom,
-                'email' => $email,
-                'num_tel' => $telephone,
-            ]
-        );
-
-        $row = $stmt->fetch(PDO::FETCH_ASSOC);
-        return $row ?: null;
+        return $this->findDuplicateByContact($email, $telephone);
     }
 
     public function findById(int $idCarte): ?array
@@ -496,6 +487,49 @@ class Cce
         }
 
         return $value;
+    }
+
+    private function findDuplicateByContact(string $email, string $telephone): ?array
+    {
+        $stmt = $this->db->query(
+            'SELECT
+                id_client,
+                nom,
+                prenom,
+                email,
+                num_tel
+             FROM `Client`
+             WHERE email = :email
+                OR num_tel = :num_tel
+             ORDER BY id_client ASC',
+            [
+                'email' => $email,
+                'num_tel' => $telephone,
+            ]
+        );
+
+        $rows = $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+        if ($rows === []) {
+            return null;
+        }
+
+        $duplicateEmail = false;
+        $duplicateTelephone = false;
+
+        foreach ($rows as $row) {
+            if (strcasecmp((string) ($row['email'] ?? ''), $email) === 0) {
+                $duplicateEmail = true;
+            }
+            if ((string) ($row['num_tel'] ?? '') === $telephone) {
+                $duplicateTelephone = true;
+            }
+        }
+
+        $first = $rows[0];
+        $first['duplicate_email'] = $duplicateEmail;
+        $first['duplicate_telephone'] = $duplicateTelephone;
+
+        return $first;
     }
 
     private function getDefaultParametreId(): int
