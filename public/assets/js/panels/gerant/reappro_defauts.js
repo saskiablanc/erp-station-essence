@@ -24,6 +24,19 @@ WM.register("gerant_reappro_defauts", {
     var allData = [];
     var modified = {};
 
+    function formatTypeLabel(type) {
+      var value = String(type || "").trim();
+      if (!value) return "Non défini";
+      return value.charAt(0).toUpperCase() + value.slice(1);
+    }
+
+    function getVolumeUnit(type) {
+      var value = String(type || "").toLowerCase();
+      if (value === "carburant" || value === "energie") return "L";
+      if (value === "electricite") return "kWh";
+      return "qte";
+    }
+
     async function charger() {
       content.innerHTML = '<div class="ra-msg">Chargement...</div>';
       try {
@@ -56,13 +69,15 @@ WM.register("gerant_reappro_defauts", {
         "</tr></thead><tbody>";
 
       Object.keys(grouped).forEach(function (type) {
+        var volumeUnit = getVolumeUnit(type);
+
         // Ligne titre du type avec accordéon
         html +=
           '<tr class="vd-type-row" data-toggle-type="' +
           type +
           '">' +
           '<td colspan="3"><strong>' +
-          type +
+          formatTypeLabel(type) +
           "</strong></td>" +
           '<td class="vd-toggle">▼</td>' +
           "</tr>";
@@ -84,12 +99,14 @@ WM.register("gerant_reappro_defauts", {
             '<td class="vd-nom">' +
             (d.nom_article || "#" + d.id_article) +
             "</td>" +
-            '<td><input type="number" class="vd-input" data-field="seuil_alerte" value="' +
+            '<td><div class="vd-field-wrap vd-field-wrap--alert"><span class="vd-prefix">&lt;</span><input type="number" class="vd-input vd-input--metric" data-field="seuil_alerte" value="' +
             d.seuil_alerte +
-            '" step="0.1" min="0"></td>' +
-            '<td><input type="number" class="vd-input" data-field="volume" value="' +
+            '" step="0.1" min="0"></div></td>' +
+            '<td><div class="vd-field-wrap"><input type="number" class="vd-input vd-input--metric" data-field="volume" value="' +
             d.volume +
-            '" step="0.1" min="0"></td>' +
+            '" step="0.1" min="0"><span class="vd-suffix">' +
+            volumeUnit +
+            "</span></div></td>" +
             '<td class="vd-freq-cell">' +
             '<input type="number" class="vd-input vd-input--sm" data-field="frequence_valeur" value="' +
             d.frequence_valeur +

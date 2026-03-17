@@ -82,7 +82,7 @@ WM.register("gerant_reappro", {
           statutCls +
           '">' +
           '<td class="ra-cell-id">' +
-          r.id_reappro +
+          "#" + r.id_reappro +
           "</td>" +
           "<td>" +
           (l ? l.nom_article || "—" : "—") +

@@ -11,7 +11,7 @@ WM.register("gerant_reappro_manuel", {
         <div class="rm-form" id="rm-form">
           <div class="rm-row">
             <label class="rm-label">N° Ordre</label>
-            <input type="text" class="rm-input" id="rm-num" value="AUTO" disabled>
+            <input type="text" class="rm-input" id="rm-num" value="Chargement..." disabled>
           </div>
           <div class="rm-row">
             <label class="rm-label">Nom Article</label>
@@ -49,12 +49,17 @@ WM.register("gerant_reappro_manuel", {
   },
 
   onMount() {
+    var inputNum = document.getElementById("rm-num");
     var selectArticle = document.getElementById("rm-article");
     var inputQty = document.getElementById("rm-qty");
     var inputDateSouhaitee = document.getElementById("rm-date-souhaitee");
     var inputDateCreation = document.getElementById("rm-date-creation");
     var btnSend = document.getElementById("rm-send");
     var btnCancel = document.getElementById("rm-cancel");
+
+    function setNumeroOrdre(id) {
+      inputNum.value = id ? "#" + id : "AUTO";
+    }
 
     // Date de création = aujourd'hui
     var today = new Date().toISOString().split("T")[0];
@@ -64,6 +69,19 @@ WM.register("gerant_reappro_manuel", {
     var demain = new Date();
     demain.setDate(demain.getDate() + 1);
     inputDateSouhaitee.value = demain.toISOString().split("T")[0];
+
+    async function chargerProchainNumero() {
+      try {
+        var reappros = await Requetes.getReappros();
+        var maxId = 0;
+        reappros.forEach(function (r) {
+          maxId = Math.max(maxId, parseInt(r.id_reappro, 10) || 0);
+        });
+        setNumeroOrdre(maxId + 1);
+      } catch (_) {
+        setNumeroOrdre(null);
+      }
+    }
 
     // Charger les articles
     async function chargerArticles() {
@@ -79,7 +97,9 @@ WM.register("gerant_reappro_manuel", {
                 '">' +
                 a.nom_article +
                 " (" +
-                a.type_article +
+                String(a.type_article || "").replace(/^./, function (c) {
+                  return c.toUpperCase();
+                }) +
                 ")</option>"
               );
             })
@@ -93,6 +113,7 @@ WM.register("gerant_reappro_manuel", {
       selectArticle.value = "";
       inputQty.value = "1";
       inputDateSouhaitee.value = demain.toISOString().split("T")[0];
+      chargerProchainNumero();
     }
 
     // US21 critère 2 : lancer le réapprovisionnement
@@ -132,6 +153,7 @@ WM.register("gerant_reappro_manuel", {
             "</div>",
         });
 
+        setNumeroOrdre((parseInt(res.id_reappro, 10) || 0) + 1);
         resetForm();
       } catch (err) {
         Toast.err(err.message);
@@ -141,5 +163,6 @@ WM.register("gerant_reappro_manuel", {
     btnCancel.addEventListener("click", resetForm);
 
     chargerArticles();
+    chargerProchainNumero();
   },
 });
