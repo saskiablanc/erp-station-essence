@@ -2,19 +2,102 @@
 const GerantFermeturesPanel = (() => {
   const panelStates = new Map();
 
-  function getInitialRows() {
-    return [
-      { id: 1, date: "2025-12-25", motif: "Jour de Noël" },
-      { id: 2, date: "2026-01-01", motif: "Jour de l’an" },
-      { id: 3, date: "2026-04-01", motif: "Jour de fermeture exceptionnelle" },
-    ];
-  }
-
   function toFrDate(isoDate) {
     if (!isoDate || !isoDate.includes("-")) return "—";
     const [year, month, day] = isoDate.split("-");
     if (!year || !month || !day) return "—";
     return `${day}/${month}/${year}`;
+  }
+
+  function toIsoDate(rawValue) {
+    const value = String(rawValue || "").trim();
+    if (!value) return null;
+
+    if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+      return value;
+    }
+
+    const match = value.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+    if (!match) return null;
+
+    const day = Number(match[1]);
+    const month = Number(match[2]);
+    const year = Number(match[3]);
+    if (year < 1900 || month < 1 || month > 12 || day < 1 || day > 31) return null;
+
+    const dt = new Date(year, month - 1, day);
+    if (
+      dt.getFullYear() !== year ||
+      dt.getMonth() !== month - 1 ||
+      dt.getDate() !== day
+    ) {
+      return null;
+    }
+
+    return `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+  }
+
+  function applyDateMask(input) {
+    if (!input) return;
+
+    input.addEventListener("input", () => {
+      const digits = input.value.replace(/\D/g, "").slice(0, 8);
+      if (digits.length <= 2) {
+        input.value = digits;
+      } else if (digits.length <= 4) {
+        input.value = `${digits.slice(0, 2)}/${digits.slice(2)}`;
+      } else {
+        input.value = `${digits.slice(0, 2)}/${digits.slice(2, 4)}/${digits.slice(4)}`;
+      }
+    });
+  }
+
+  function initNativeDatePicker(root) {
+    const textInput = root.querySelector("[data-gf-date-input]");
+    const openBtn = root.querySelector("[data-gf-date-btn]");
+    if (!textInput || !openBtn) return;
+
+    const openPicker = async () => {
+      const iso = toIsoDate(textInput.value);
+      const result = await Swal.fire({
+        title: "Choisir une date",
+        html: `<input type="date" id="gf-swal-date" class="swal2-input" value="${iso ?? ""}" />`,
+        showCancelButton: true,
+        confirmButtonText: "Valider",
+        cancelButtonText: "Annuler",
+        customClass: {
+          popup: "gf-swal-popup",
+          title: "gf-swal-title",
+          htmlContainer: "gf-swal-text",
+          confirmButton: "gf-swal-btn",
+          cancelButton: "gf-swal-btn gf-swal-btn-secondary",
+        },
+        buttonsStyling: false,
+        preConfirm: () => {
+          const picker = document.getElementById("gf-swal-date");
+          return picker ? picker.value : "";
+        },
+      });
+
+      const selected = String(result.value || "").trim();
+      if (result.isConfirmed && selected) {
+        textInput.value = toFrDate(selected);
+      }
+    };
+
+    openBtn.addEventListener("mousedown", (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+    });
+    openBtn.addEventListener("click", () => {
+      void openPicker();
+    });
+    textInput.addEventListener("keydown", (event) => {
+      if (event.altKey && event.key === "ArrowDown") {
+        event.preventDefault();
+        void openPicker();
+      }
+    });
   }
 
   function escapeHtml(value) {
@@ -28,6 +111,31 @@ const GerantFermeturesPanel = (() => {
 
   function sortRows(rows) {
     rows.sort((a, b) => String(a.date).localeCompare(String(b.date)));
+  }
+
+  function normalizeRow(raw) {
+    return {
+      id: Number(raw?.id_fermeture ?? raw?.id ?? 0),
+      date: String(raw?.date_fermeture ?? raw?.date ?? ""),
+      motif: String(raw?.motif ?? ""),
+    };
+  }
+
+  async function loadRows(id, root) {
+    const state = panelStates.get(id);
+    if (!state) return;
+
+    try {
+      const rows = await Requetes.getFermetures();
+      state.rows = (Array.isArray(rows) ? rows : [])
+        .map(normalizeRow)
+        .filter((row) => row.id > 0 && row.date && row.motif);
+      sortRows(state.rows);
+      renderTable(root, state.rows);
+    } catch (error) {
+      renderTable(root, []);
+      Toast.err(error.message || "Chargement des fermetures impossible");
+    }
   }
 
   function renderTable(root, rows) {
@@ -86,7 +194,18 @@ const GerantFermeturesPanel = (() => {
             <form class="gf-form" data-gf-form novalidate>
               <label class="gf-field">
                 <span>Date :</span>
-                <input type="date" name="date" required />
+                <div class="gf-date-wrap">
+                  <input
+                    type="text"
+                    name="date"
+                    data-gf-date-input
+                    required
+                    maxlength="10"
+                    inputmode="numeric"
+                    placeholder="jj/mm/aaaa"
+                  />
+                  <button type="button" class="gf-date-btn" data-gf-date-btn aria-label="Ouvrir le calendrier"></button>
+                </div>
               </label>
 
               <label class="gf-field">
@@ -113,45 +232,76 @@ const GerantFermeturesPanel = (() => {
     if (!root) return;
 
     const state = {
-      rows: getInitialRows(),
-      nextId: 4,
+      rows: [],
     };
-    sortRows(state.rows);
     panelStates.set(id, state);
     renderTable(root, state.rows);
+    void loadRows(id, root);
 
     const form = root.querySelector("[data-gf-form]");
-    form?.addEventListener("submit", (event) => {
+    const dateInput = root.querySelector('input[name="date"]');
+    applyDateMask(dateInput);
+    initNativeDatePicker(root);
+
+    form?.addEventListener("submit", async (event) => {
       event.preventDefault();
 
       const current = panelStates.get(id);
       if (!current) return;
 
       const data = new FormData(form);
-      const date = String(data.get("date") || "").trim();
+      const dateRaw = String(data.get("date") || "").trim();
       const motif = String(data.get("motif") || "").trim();
+      const date = toIsoDate(dateRaw);
 
-      if (!date || !motif) {
+      if (!dateRaw || !motif) {
         Toast.warn("Veuillez renseigner la date et le motif");
         return;
       }
 
-      const duplicate = current.rows.some(
+      if (!date) {
+        Toast.warn("Format de date invalide (jj/mm/aaaa)");
+        return;
+      }
+
+      const duplicateLocal = current.rows.some(
         (row) => row.date === date && row.motif.toLowerCase() === motif.toLowerCase(),
       );
-      if (duplicate) {
+      if (duplicateLocal) {
         Toast.warn("Ce jour de fermeture existe déjà");
         return;
       }
 
-      current.rows.push({ id: current.nextId++, date, motif });
-      sortRows(current.rows);
-      renderTable(root, current.rows);
-      form.reset();
-      Toast.ok("Jour de fermeture ajouté");
+      const submitButton = form.querySelector(".gf-submit-btn");
+      if (submitButton) {
+        submitButton.disabled = true;
+      }
+
+      try {
+        const created = await Requetes.createFermeture({
+          date_fermeture: date,
+          motif,
+        });
+        const row = normalizeRow(created?.fermeture ?? created);
+        if (row.id > 0) {
+          current.rows.push(row);
+          sortRows(current.rows);
+          renderTable(root, current.rows);
+        } else {
+          await loadRows(id, root);
+        }
+        form.reset();
+        Toast.ok("Jour de fermeture ajouté");
+      } catch (error) {
+        Toast.err(error.message || "Ajout impossible");
+      } finally {
+        if (submitButton) {
+          submitButton.disabled = false;
+        }
+      }
     });
 
-    root.addEventListener("click", (event) => {
+    root.addEventListener("click", async (event) => {
       const button = event.target.closest("[data-gf-delete]");
       if (!button) return;
 
@@ -161,10 +311,15 @@ const GerantFermeturesPanel = (() => {
       const rowId = Number(button.dataset.gfDelete || 0);
       if (rowId <= 0) return;
 
-      current.rows = current.rows.filter((row) => row.id !== rowId);
-      panelStates.set(id, current);
-      renderTable(root, current.rows);
-      Toast.ok("Jour de fermeture supprimé");
+      try {
+        await Requetes.deleteFermeture(rowId);
+        current.rows = current.rows.filter((row) => row.id !== rowId);
+        panelStates.set(id, current);
+        renderTable(root, current.rows);
+        Toast.ok("Jour de fermeture supprimé");
+      } catch (error) {
+        Toast.err(error.message || "Suppression impossible");
+      }
     });
   }
 

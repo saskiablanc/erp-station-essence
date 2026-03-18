@@ -8,6 +8,7 @@ use App\Controllers\CceController;
 use App\Controllers\PompeController;
 use App\Controllers\ReapproController;
 use App\Controllers\CceParamsController;
+use App\Controllers\FermetureController;
 
 $uri = $_SERVER['REQUEST_URI'] ?? '';
 if (str_contains($uri, '/json/')) {
@@ -89,6 +90,9 @@ $router->get( 'json/transactions',              [new CaisseController(), 'getTra
 $router->get( 'json/transactions/{id}',         [new CaisseController(), 'getTransaction']);
 $router->post('json/transactions/{id}/annuler', [new CaisseController(), 'annulerTransaction']);
 $router->post('json/recus',                     [new CaisseController(), 'creerRecus']);
+$router->get( 'json/fermetures',                [new FermetureController(), 'all']);
+$router->post('json/fermetures',                [new FermetureController(), 'create']);
+$router->post('json/fermetures/{id}/suppr',     [new FermetureController(), 'delete']);
 
 $router->get( 'json/pompes',                    [new PompeController(),  'getAll']);
 $router->post('json/pompes/{id}/activer',       [new PompeController(),  'activer']);
