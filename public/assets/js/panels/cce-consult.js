@@ -117,6 +117,13 @@ const CceConsultPanel = (() => {
     });
   }
 
+  function resetConsultation(root) {
+    root._cceCurrent = null;
+    root._cceCurrentId = null;
+    setSelectedCard(null);
+    renderScannerState(root, 'Cliquez sur "Scanner CCE" pour sélectionner une carte.');
+  }
+
   async function refresh(root, idCarte = null) {
     if (!idCarte || Number(idCarte) <= 0) {
       renderScannerState(root, 'Cliquez sur "Scanner CCE" pour sélectionner une carte.');
@@ -244,7 +251,7 @@ const CceConsultPanel = (() => {
         <div class="ticket-pay-choice-total">Montant à recharger : <strong>${formatMoney(montant)}</strong></div>
         <div class="ticket-pay-choice-grid ticket-pay-choice-grid--two">
           <button type="button" class="ticket-pay-choice-btn" data-payment-method="cb">Carte bleue</button>
-          <button type="button" class="ticket-pay-choice-btn" data-payment-method="espece">Espèce</button>
+          <button type="button" class="ticket-pay-choice-btn" data-payment-method="especes">Espèces</button>
         </div>
         <button type="button" class="ticket-pay-choice-btn ticket-pay-choice-btn-cancel" data-payment-cancel>
           Annuler
@@ -255,7 +262,7 @@ const CceConsultPanel = (() => {
       allowOutsideClick: false,
       allowEscapeKey: true,
       customClass: {
-        popup: 'cce-swal-popup',
+        popup: 'cce-swal-popup cce-swal-popup-recharge-choice',
         title: 'cce-swal-title',
         htmlContainer: 'cce-swal-text',
       },
@@ -489,14 +496,38 @@ const CceConsultPanel = (() => {
   }
 
   async function openRechargePopup(root, cce) {
+    let cceCourante = cce;
+    try {
+      cceCourante = await Requetes.getCCE(Number(cce?.id_carte_CE || 0));
+    } catch (_) {
+      cceCourante = cce;
+    }
+
     const montant = await promptRechargeAmount();
     if (!montant || montant <= 0) return;
+    const montantMin = Number(cceCourante?.montant_min ?? 0);
+    if (Number.isFinite(montantMin) && montantMin > 0 && montant < montantMin) {
+      await Swal.fire({
+        title: 'Montant insuffisant',
+        text: `Le montant minimum de rechargement est de ${formatMoney(montantMin)}.`,
+        icon: 'warning',
+        customClass: {
+          popup: 'cce-swal-popup',
+          title: 'cce-swal-title',
+          htmlContainer: 'cce-swal-text',
+          confirmButton: 'cce-swal-btn',
+        },
+        buttonsStyling: false,
+        confirmButtonText: 'Fermer',
+      });
+      return;
+    }
 
     const method = await chooseRechargeMethod(montant);
     if (!method) return;
 
     let cashDetails = null;
-    if (method === 'espece') {
+    if (method === 'especes') {
       cashDetails = await promptCashAmount(montant);
       if (!cashDetails) return;
     } else {
@@ -517,21 +548,28 @@ const CceConsultPanel = (() => {
     }
 
     try {
-      await Requetes.rechargerCCE(Number(cce.id_carte_CE), montant);
-      await refresh(root, Number(cce.id_carte_CE));
+      const rechargeResult = await Requetes.rechargerCCE(Number(cceCourante.id_carte_CE), montant);
+      const rechargeInfo = rechargeResult?.cce?.rechargement || rechargeResult?.rechargement || null;
+      const bonusApplique = Number(rechargeInfo?.bonus_applique ?? 0);
+      const montantCredite = Number(rechargeInfo?.montant_credite ?? montant);
+      await refresh(root, Number(cceCourante.id_carte_CE));
       await Swal.fire({
         title: 'Paiement accepté',
         html: `
-          ${method === 'espece' && cashDetails
+          ${method === 'especes' && cashDetails
             ? `<div>Montant reçu : <strong>${formatMoney(cashDetails.given)}</strong></div>
                ${cashDetails.change > 0 ? `<div>Trop-perçu : <strong>${formatMoney(cashDetails.change)}</strong></div>` : ''}`
             : ''}
-          <div style="margin-top:${method === 'espece' ? '8px' : '0'};">
+          ${bonusApplique > 0
+            ? `<div style="margin-top:8px;">Bonus CCE appliqué : <strong>${formatMoney(bonusApplique)}</strong></div>
+               <div>Montant crédité : <strong>${formatMoney(montantCredite)}</strong></div>`
+            : ''}
+          <div style="margin-top:${method === 'especes' ? '8px' : '0'};">
             Rechargement CCE effectué avec succès.
           </div>
         `,
         icon: 'success',
-        confirmButtonText: method === 'espece' ? 'Valider' : 'Fermer',
+        confirmButtonText: method === 'especes' ? 'Valider' : 'Fermer',
         allowOutsideClick: false,
         customClass: {
           popup: 'cce-swal-popup',
@@ -559,32 +597,93 @@ const CceConsultPanel = (() => {
   }
 
   async function openActionsPopup(root, cce) {
-    const result = await Swal.fire({
+    let cceCourante = cce;
+    try {
+      cceCourante = await Requetes.getCCE(Number(cce?.id_carte_CE || 0));
+      root._cceCurrent = cceCourante;
+      root._cceCurrentId = Number(cceCourante?.id_carte_CE || 0) || null;
+    } catch (_) {
+      cceCourante = cce;
+    }
+
+    let action = null;
+    await Swal.fire({
       title: 'Actions',
-      text: `Carte #${cce.id_carte_CE}`,
-      showDenyButton: true,
+      html: `
+        <div class="cce-actions-card">Carte #${escapeHtml(cceCourante.id_carte_CE)}</div>
+        <div class="cce-actions-grid">
+          <button type="button" class="cce-actions-btn" data-cce-action="recharge">Recharger CCE</button>
+          <button type="button" class="cce-actions-btn" data-cce-action="transactions">Consulter transactions</button>
+          <button type="button" class="cce-actions-btn" data-cce-action="bonus">Informations bonus</button>
+          <button type="button" class="cce-actions-btn" data-cce-action="end">Fin consultation</button>
+        </div>
+      `,
+      allowOutsideClick: false,
+      showConfirmButton: false,
       showCancelButton: false,
       showCloseButton: true,
-      confirmButtonText: 'Recharger CCE',
-      denyButtonText: 'Consulter transactions',
-      allowOutsideClick: false,
       customClass: {
         popup: 'cce-swal-popup cce-swal-popup-actions',
         title: 'cce-swal-title',
         htmlContainer: 'cce-swal-text',
-        actions: 'cce-swal-actions-two',
-        confirmButton: 'cce-swal-btn',
-        denyButton: 'cce-swal-btn',
       },
-      buttonsStyling: false,
+      didOpen: (popup) => {
+        popup.querySelectorAll('[data-cce-action]').forEach((button) => {
+          button.addEventListener('click', () => {
+            action = String(button.dataset.cceAction || '').toLowerCase();
+            Swal.close();
+          });
+        });
+      },
     });
 
-    if (result.isConfirmed) {
-      await openRechargePopup(root, cce);
+    if (action === 'recharge') {
+      await openRechargePopup(root, cceCourante);
       return;
     }
-    if (result.isDenied) {
-      await openTransactionsPopup(cce);
+    if (action === 'transactions') {
+      await openTransactionsPopup(cceCourante);
+      return;
+    }
+    if (action === 'bonus') {
+      const rulesRaw = Array.isArray(cceCourante?.bonus_rules) ? cceCourante.bonus_rules : [];
+      const rules = rulesRaw
+        .map((rule) => ({
+          tranche: Number(rule?.tranche ?? 0),
+          montant_bonus: Number(rule?.montant_bonus ?? 0),
+        }))
+        .filter((rule) => Number.isFinite(rule.tranche) && rule.tranche > 0 && Number.isFinite(rule.montant_bonus))
+        .sort((a, b) => a.tranche - b.tranche);
+
+      const bonusHtml = rules.length > 0
+        ? rules
+          .map((rule) => `
+            <div class="cce-bonus-line">
+              Bonus à partir de ${rule.tranche.toFixed(2)} EUR : <strong>${formatMoney(rule.montant_bonus)}</strong>
+            </div>
+          `)
+          .join('')
+        : `
+          <div class="cce-bonus-line">Bonus à partir de 100 EUR : <strong>${formatMoney(Number(cceCourante?.bonus_100 ?? 0))}</strong></div>
+          <div class="cce-bonus-line">Bonus à partir de 200 EUR : <strong>${formatMoney(Number(cceCourante?.bonus_200 ?? 0))}</strong></div>
+        `;
+
+      await Swal.fire({
+        title: 'Informations bonus',
+        html: bonusHtml,
+        customClass: {
+          popup: 'cce-swal-popup',
+          title: 'cce-swal-title',
+          htmlContainer: 'cce-swal-text',
+          confirmButton: 'cce-swal-btn',
+        },
+        buttonsStyling: false,
+        confirmButtonText: 'Fermer',
+      });
+      return;
+    }
+    if (action === 'end') {
+      resetConsultation(root);
     }
   }
 
@@ -652,6 +751,7 @@ const CceConsultPanel = (() => {
     if (listeners.has(id)) {
       window.removeEventListener('cce:created', listeners.get(id).created);
       window.removeEventListener('cce:updated', listeners.get(id).updated);
+      window.removeEventListener('caisse:payment:success', listeners.get(id).payment);
       listeners.delete(id);
     }
 
@@ -660,6 +760,7 @@ const CceConsultPanel = (() => {
       if (!currentRoot || !document.body.contains(currentRoot)) {
         window.removeEventListener('cce:created', onCreated);
         window.removeEventListener('cce:updated', onUpdated);
+        window.removeEventListener('caisse:payment:success', onPaymentSuccess);
         listeners.delete(id);
         return;
       }
@@ -673,6 +774,7 @@ const CceConsultPanel = (() => {
       if (!currentRoot || !document.body.contains(currentRoot)) {
         window.removeEventListener('cce:created', onCreated);
         window.removeEventListener('cce:updated', onUpdated);
+        window.removeEventListener('caisse:payment:success', onPaymentSuccess);
         listeners.delete(id);
         return;
       }
@@ -683,9 +785,23 @@ const CceConsultPanel = (() => {
       }
     };
 
+    const onPaymentSuccess = () => {
+      const currentRoot = document.getElementById('win-' + id);
+      if (!currentRoot || !document.body.contains(currentRoot)) {
+        window.removeEventListener('cce:created', onCreated);
+        window.removeEventListener('cce:updated', onUpdated);
+        window.removeEventListener('caisse:payment:success', onPaymentSuccess);
+        listeners.delete(id);
+        return;
+      }
+
+      resetConsultation(currentRoot);
+    };
+
     window.addEventListener('cce:created', onCreated);
     window.addEventListener('cce:updated', onUpdated);
-    listeners.set(id, { created: onCreated, updated: onUpdated });
+    window.addEventListener('caisse:payment:success', onPaymentSuccess);
+    listeners.set(id, { created: onCreated, updated: onUpdated, payment: onPaymentSuccess });
   }
 
   function buildHTML() {

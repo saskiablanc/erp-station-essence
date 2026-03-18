@@ -131,6 +131,16 @@ $router->post('json/cce/{id}/recharger',        [new CceController(),       'rec
 $router->post('json/cce/{id}/debiter',          [new CceController(),       'debiter']);
 
 // ── Réapprovisionnement — Sprint 4 ───────────────────────
+// CCE ───────────────────────────────────────
+$router->get( 'json/cce',                      [new CceController(),    'all']);
+$router->get( 'json/cce/latest',               [new CceController(),    'latest']);
+$router->get( 'json/cce/{id}/transactions',    [new CceController(),    'transactions']);
+$router->get( 'json/cce/{id}',                  [new CceController(),    'get']);
+$router->post('json/cce/check-duplicate',      [new CceController(),    'checkDuplicate']);
+$router->post('json/cce',                       [new CceController(),    'create']);
+$router->post('json/cce/{id}/recharger',        [new CceController(),    'recharger']);
+$router->post('json/cce/{id}/debiter',          [new CceController(),    'debiter']);
+// Réapprovisionnement — Sprint 4 (US20/21/22/23)
 $router->get( 'json/reappros/articles',              [new ReapproController(), 'getArticles']);
 $router->get( 'json/reappros/valeurs-defaut',        [new ReapproController(), 'getValeursDefaut']);
 $router->post('json/reappros/valeurs-defaut-type',   [new ReapproController(), 'updateValeursDefautType']);

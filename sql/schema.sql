@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Hôte : localhost
--- Généré le : mar. 17 mars 2026 à 21:26
+-- Généré le : mer. 18 mars 2026 à 15:54
 -- Version du serveur : 11.8.6-MariaDB-0+deb13u1 from Debian
 -- Version de PHP : 8.4.16
 
@@ -85,7 +85,7 @@ CREATE TABLE `BonusCCE` (
 --
 
 INSERT INTO `BonusCCE` (`id_bonus`, `tranche`, `montant_bonus`) VALUES
-(1, 100.00, 10.00),
+(1, 100.00, 11.00),
 (2, 200.00, 25.00);
 
 -- --------------------------------------------------------
@@ -140,7 +140,8 @@ INSERT INTO `CarteCE` (`id_carte_CE`, `id_client`, `code_secret`, `solde_client`
 (4, 4, 4850, 0.000, '2026-03-14', 0),
 (5, 5, 2019, 225.000, '2026-03-17', 200),
 (10, 10, 4665, 433.460, '2026-03-17', 200),
-(12, 12, 4931, 0.000, '2026-03-17', 0);
+(12, 12, 4931, 268.900, '2026-03-18', 52),
+(13, 13, 8207, 7.580, '2026-03-18', 8);
 
 -- --------------------------------------------------------
 
@@ -167,7 +168,8 @@ INSERT INTO `Client` (`id_client`, `nom`, `prenom`, `email`, `num_tel`) VALUES
 (4, 'Bachov', 'Steven', 's.bach@mail.com', '+0766161603'),
 (5, 'bachova', 'camilia', 'c.bachova@mail.com', '+0766161604'),
 (10, 'Mongrandi', 'Lenny', 'lenny21@gmail.com', '+33618212121'),
-(12, 'Blanc', 'Saskia', 'saskia@gmail.com', '+33677777777');
+(12, 'Blanc', 'Saskia', 'saskia@gmail.com', '+33677777777'),
+(13, 'alrawahi', 'aser', 'aaa@mail.com', '+99199191199');
 
 -- --------------------------------------------------------
 
@@ -251,6 +253,13 @@ CREATE TABLE `FicheIncident` (
   `solution` text NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
 
+--
+-- Déchargement des données de la table `FicheIncident`
+--
+
+INSERT INTO `FicheIncident` (`id_ref_unique`, `date_creation`, `heure_creation`, `type_incident`, `detail_tech`, `solution`) VALUES
+(1, '2026-03-18', '00:28:41', 'Burnout', 'trop de travail peu de sommeil..', 'dormir et des bons repas');
+
 -- --------------------------------------------------------
 
 --
@@ -265,6 +274,19 @@ CREATE TABLE `Horaire` (
   `est_ferme` tinyint(1) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
 
+--
+-- Déchargement des données de la table `Horaire`
+--
+
+INSERT INTO `Horaire` (`id_horaire`, `id_jour`, `heure_ouverture`, `heure_fermeture`, `est_ferme`) VALUES
+(1, 1, '14:00:00', '22:00:00', 0),
+(2, 2, '14:00:00', '22:00:00', 1),
+(3, 3, '09:00:00', '23:00:00', 1),
+(4, 4, '11:00:00', '23:00:00', 1),
+(5, 5, '09:00:00', '23:00:00', 0),
+(6, 6, '09:00:00', '23:00:00', 0),
+(7, 7, '11:00:00', '23:00:00', 0);
+
 -- --------------------------------------------------------
 
 --
@@ -277,6 +299,13 @@ CREATE TABLE `JourFermeture` (
   `motif` varchar(100) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
 
+--
+-- Déchargement des données de la table `JourFermeture`
+--
+
+INSERT INTO `JourFermeture` (`id_fermeture`, `date_fermeture`, `motif`) VALUES
+(1, '2026-12-25', 'Noël');
+
 -- --------------------------------------------------------
 
 --
@@ -287,6 +316,19 @@ CREATE TABLE `JourSemaine` (
   `id_jour` bigint(20) UNSIGNED NOT NULL,
   `libelle` varchar(10) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
+
+--
+-- Déchargement des données de la table `JourSemaine`
+--
+
+INSERT INTO `JourSemaine` (`id_jour`, `libelle`) VALUES
+(1, 'Lundi'),
+(2, 'Mardi'),
+(3, 'Mercredi'),
+(4, 'Jeudi'),
+(5, 'Vendredi'),
+(6, 'Samedi'),
+(7, 'Dimanche');
 
 -- --------------------------------------------------------
 
@@ -336,7 +378,7 @@ CREATE TABLE `ParametresCCE` (
 --
 
 INSERT INTO `ParametresCCE` (`id_parametre`, `montant_min`) VALUES
-(1, 50.00);
+(1, 51.00);
 
 -- --------------------------------------------------------
 
@@ -470,7 +512,10 @@ INSERT INTO `Recu` (`id_recu`, `id_transaction`, `num_carte`, `horodatage`) VALU
 (10, 35, 200035, '2026-03-14 15:49:59'),
 (11, 36, 100036, '2026-03-14 15:56:50'),
 (12, 37, 100037, '2026-03-14 23:41:18'),
-(13, 48, 100048, '2026-03-17 14:34:03');
+(13, 48, 100048, '2026-03-17 14:34:03'),
+(14, 56, 200056, '2026-03-18 13:21:19'),
+(15, 57, 100057, '2026-03-18 16:34:37'),
+(16, 58, 300058, '2026-03-18 16:35:24');
 
 -- --------------------------------------------------------
 
@@ -490,23 +535,23 @@ CREATE TABLE `Stock` (
 --
 
 INSERT INTO `Stock` (`id_stock`, `id_article`, `quantite_stock`, `type_quantite`) VALUES
-(1, 8, 97, 'unite'),
+(1, 8, 96, 'unite'),
 (2, 9, 96, 'unite'),
-(3, 10, 91, 'unite'),
+(3, 10, 90, 'unite'),
 (4, 11, 97, 'unite'),
 (5, 12, 98, 'unite'),
 (6, 13, 96, 'unite'),
-(7, 14, 94, 'unite'),
+(7, 14, 92, 'unite'),
 (8, 15, 97, 'unite'),
 (9, 16, 93, 'unite'),
 (10, 17, 95, 'unite'),
-(11, 18, 91, 'unite'),
+(11, 18, 90, 'unite'),
 (12, 19, 98, 'unite'),
 (13, 20, 96, 'unite'),
 (14, 21, 96, 'unite'),
 (15, 22, 99, 'unite'),
-(16, 23, 95, 'unite'),
-(17, 24, 98, 'unite'),
+(16, 23, 94, 'unite'),
+(17, 24, 97, 'unite'),
 (18, 25, 95, 'unite'),
 (19, 26, 97, 'unite'),
 (20, 27, 94, 'unite'),
@@ -567,7 +612,10 @@ INSERT INTO `Transaction` (`id_transaction`, `prix_total`, `date_heure`) VALUES
 (52, 8.830, '2026-03-17 15:36:59'),
 (53, 7.170, '2026-03-17 18:29:45'),
 (54, 9.960, '2026-03-17 18:47:43'),
-(55, 11.580, '2026-03-17 21:43:35');
+(55, 11.580, '2026-03-17 21:43:35'),
+(56, 17.760, '2026-03-18 13:21:12'),
+(57, 2.190, '2026-03-18 16:34:24'),
+(58, 3.080, '2026-03-18 16:35:20');
 
 -- --------------------------------------------------------
 
@@ -587,7 +635,8 @@ CREATE TABLE `TransactionCCE` (
 INSERT INTO `TransactionCCE` (`id_transaction`, `id_carte_CE`) VALUES
 (53, 3),
 (54, 10),
-(55, 10);
+(55, 10),
+(56, 12);
 
 -- --------------------------------------------------------
 
@@ -724,7 +773,14 @@ INSERT INTO `TransactionProduit` (`id_transaction_produit`, ` id_transaction`, `
 (85, 54, 3560070976843, 1),
 (86, 54, 3245390214017, 1),
 (87, 55, 9771950123005, 1),
-(88, 55, 3571090000148, 1);
+(88, 55, 3571090000148, 1),
+(89, 56, 7622210449283, 1),
+(90, 56, 3175680091680, 1),
+(91, 56, 3571090000148, 1),
+(92, 56, 3017620425035, 1),
+(93, 57, 5449000214911, 1),
+(94, 58, 5449000214911, 1),
+(95, 58, 3228882010053, 1);
 
 -- --------------------------------------------------------
 
@@ -971,7 +1027,7 @@ ALTER TABLE `Article`
 -- AUTO_INCREMENT pour la table `BonusCCE`
 --
 ALTER TABLE `BonusCCE`
-  MODIFY `id_bonus` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
+  MODIFY `id_bonus` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
 
 --
 -- AUTO_INCREMENT pour la table `Carburant`
@@ -983,13 +1039,13 @@ ALTER TABLE `Carburant`
 -- AUTO_INCREMENT pour la table `CarteCE`
 --
 ALTER TABLE `CarteCE`
-  MODIFY `id_carte_CE` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=13;
+  MODIFY `id_carte_CE` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=14;
 
 --
 -- AUTO_INCREMENT pour la table `Client`
 --
 ALTER TABLE `Client`
-  MODIFY `id_client` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=13;
+  MODIFY `id_client` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=14;
 
 --
 -- AUTO_INCREMENT pour la table `Connexion`
@@ -1013,25 +1069,25 @@ ALTER TABLE `Energie`
 -- AUTO_INCREMENT pour la table `FicheIncident`
 --
 ALTER TABLE `FicheIncident`
-  MODIFY `id_ref_unique` bigint(20) NOT NULL AUTO_INCREMENT;
+  MODIFY `id_ref_unique` bigint(20) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
 
 --
 -- AUTO_INCREMENT pour la table `Horaire`
 --
 ALTER TABLE `Horaire`
-  MODIFY `id_horaire` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
+  MODIFY `id_horaire` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
 
 --
 -- AUTO_INCREMENT pour la table `JourFermeture`
 --
 ALTER TABLE `JourFermeture`
-  MODIFY `id_fermeture` bigint(20) NOT NULL AUTO_INCREMENT;
+  MODIFY `id_fermeture` bigint(20) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
 
 --
 -- AUTO_INCREMENT pour la table `JourSemaine`
 --
 ALTER TABLE `JourSemaine`
-  MODIFY `id_jour` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
+  MODIFY `id_jour` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
 
 --
 -- AUTO_INCREMENT pour la table `ParametresCCE`
@@ -1061,7 +1117,7 @@ ALTER TABLE `Reapprovisionnement`
 -- AUTO_INCREMENT pour la table `Recu`
 --
 ALTER TABLE `Recu`
-  MODIFY `id_recu` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=14;
+  MODIFY `id_recu` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=17;
 
 --
 -- AUTO_INCREMENT pour la table `Stock`
@@ -1073,7 +1129,7 @@ ALTER TABLE `Stock`
 -- AUTO_INCREMENT pour la table `Transaction`
 --
 ALTER TABLE `Transaction`
-  MODIFY `id_transaction` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=56;
+  MODIFY `id_transaction` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=59;
 
 --
 -- AUTO_INCREMENT pour la table `TransactionEnergie`
@@ -1085,7 +1141,7 @@ ALTER TABLE `TransactionEnergie`
 -- AUTO_INCREMENT pour la table `TransactionProduit`
 --
 ALTER TABLE `TransactionProduit`
-  MODIFY `id_transaction_produit` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=89;
+  MODIFY `id_transaction_produit` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=96;
 
 --
 -- AUTO_INCREMENT pour la table `ValeursDefautReappro`

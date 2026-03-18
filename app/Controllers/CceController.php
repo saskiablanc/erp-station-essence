@@ -8,21 +8,51 @@ use App\Models\Cce;
 
 class CceController extends Controller
 {
+    private function buildDuplicateResponse(array $existing): array
+    {
+        $duplicateEmail = (bool) ($existing['duplicate_email'] ?? false);
+        $duplicateTelephone = (bool) ($existing['duplicate_telephone'] ?? false);
+
+        $message = 'Coordonnées déjà utilisées';
+        if ($duplicateEmail && $duplicateTelephone) {
+            $message = "L'adresse mail et le numéro de téléphone sont déjà utilisés";
+        } elseif ($duplicateEmail) {
+            $message = "L'adresse mail est déjà utilisée";
+        } elseif ($duplicateTelephone) {
+            $message = 'Le numéro de téléphone est déjà utilisé';
+        }
+
+        return [
+            'error' => true,
+            'duplicate' => true,
+            'message' => $message,
+            'client' => $existing,
+            'conflicts' => [
+                'email' => $duplicateEmail,
+                'telephone' => $duplicateTelephone,
+            ],
+        ];
+    }
+
     public function checkDuplicate(): void
     {
         $this->requireAuth();
         $model = new Cce();
+        $body = $this->body();
 
         try {
-            $duplicate = $model->findDuplicateClient($this->body());
+            $existing = $model->findDuplicateClient($body);
         } catch (\Throwable $e) {
             $this->jsonError($e->getMessage(), 400);
         }
 
+        if ($existing) {
+            $this->json($this->buildDuplicateResponse($existing), 409);
+        }
+
         $this->json([
             'success' => true,
-            'duplicate' => $duplicate !== null,
-            'client' => $duplicate,
+            'duplicate' => false,
         ]);
     }
 
@@ -84,23 +114,15 @@ class CceController extends Controller
         $this->requireAuth();
         $model = new Cce();
         $body = $this->body();
-        $forcerCreation = !empty($body['forcer_creation']);
 
-        if (!$forcerCreation) {
-            try {
-                $existing = $model->findDuplicateClient($body);
-            } catch (\Throwable $e) {
-                $this->jsonError($e->getMessage(), 400);
-            }
+        try {
+            $existing = $model->findDuplicateClient($body);
+        } catch (\Throwable $e) {
+            $this->jsonError($e->getMessage(), 400);
+        }
 
-            if ($existing) {
-                $this->json([
-                    'error' => true,
-                    'duplicate' => true,
-                    'message' => 'Les informations du clients sont déjà enregistrées',
-                    'client' => $existing,
-                ], 409);
-            }
+        if ($existing) {
+            $this->json($this->buildDuplicateResponse($existing), 409);
         }
 
         try {
@@ -143,10 +165,14 @@ class CceController extends Controller
         $this->requireAuth();
         $body = $this->body();
         $montant = (float) ($body['montant'] ?? 0);
+        $idTransactions = $body['id_transactions'] ?? [];
+        if (!is_array($idTransactions)) {
+            $idTransactions = [];
+        }
         $model = new Cce();
 
         try {
-            $cce = $model->debiter((int) $id, $montant);
+            $cce = $model->debiter((int) $id, $montant, $idTransactions);
         } catch (\Throwable $e) {
             $code = str_contains(strtolower($e->getMessage()), 'insuffisant') ? 409 : 400;
             $this->jsonError($e->getMessage(), $code);

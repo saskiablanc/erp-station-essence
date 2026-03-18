@@ -11,6 +11,7 @@ class Cce
 {
     private Database $db;
     private ?bool $hasTransactionCardLink = null;
+    private ?array $cachedSettings = null;
 
     public function __construct()
     {
@@ -23,6 +24,23 @@ class Cce
         $prenom = $this->normalizeName((string) ($data['prenom'] ?? ''), 'prenom');
         $email = $this->normalizeEmail((string) ($data['email'] ?? ''));
         $telephone = $this->normalizeTelephone((string) ($data['telephone'] ?? ''));
+        $duplicate = $this->findDuplicateByContact($email, $telephone);
+        if ($duplicate) {
+            $duplicateEmail = (bool) ($duplicate['duplicate_email'] ?? false);
+            $duplicateTelephone = (bool) ($duplicate['duplicate_telephone'] ?? false);
+            if ($duplicateEmail && $duplicateTelephone) {
+                throw new RuntimeException("L'adresse mail et le numéro de téléphone sont déjà utilisés");
+            }
+            if ($duplicateEmail) {
+                throw new RuntimeException("L'adresse mail est déjà utilisée");
+            }
+            if ($duplicateTelephone) {
+                throw new RuntimeException('Le numéro de téléphone est déjà utilisé');
+            }
+            throw new RuntimeException('Coordonnées déjà utilisées');
+        }
+        // Vérifie que la configuration CCE globale existe avant de créer la carte.
+        $this->getGlobalSettings();
         $dateApport = date('Y-m-d');
         $montantApport = 0;
         $soldeClient = 0.0;
@@ -69,7 +87,7 @@ class Cce
 
             $this->db->commit();
 
-            return [
+            $created = [
                 'id_carte_CE' => $idCarte,
                 'id_client' => $idClient,
                 'nom' => $nom,
@@ -81,6 +99,8 @@ class Cce
                 'date_dernier_apport' => $dateApport,
                 'montant_dernier_apport' => $montantApport,
             ];
+
+            return $this->attachCceSettings($created);
         } catch (\Throwable $e) {
             if ($this->db->getConnection()->inTransaction()) {
                 $this->db->rollBack();
@@ -91,34 +111,10 @@ class Cce
 
     public function findDuplicateClient(array $data): ?array
     {
-        $nom = $this->normalizeName((string) ($data['nom'] ?? ''), 'nom');
-        $prenom = $this->normalizeName((string) ($data['prenom'] ?? ''), 'prenom');
         $email = $this->normalizeEmail((string) ($data['email'] ?? ''));
         $telephone = $this->normalizeTelephone((string) ($data['telephone'] ?? ''));
 
-        $stmt = $this->db->query(
-            'SELECT
-                id_client,
-                nom,
-                prenom,
-                email,
-                num_tel
-             FROM `Client`
-             WHERE nom = :nom
-               AND prenom = :prenom
-               AND email = :email
-               AND num_tel = :num_tel
-             LIMIT 1',
-            [
-                'nom' => $nom,
-                'prenom' => $prenom,
-                'email' => $email,
-                'num_tel' => $telephone,
-            ]
-        );
-
-        $row = $stmt->fetch(PDO::FETCH_ASSOC);
-        return $row ?: null;
+        return $this->findDuplicateByContact($email, $telephone);
     }
 
     public function findById(int $idCarte): ?array
@@ -143,7 +139,11 @@ class Cce
         );
 
         $row = $stmt->fetch(PDO::FETCH_ASSOC);
-        return $row ?: null;
+        if (!$row) {
+            return null;
+        }
+
+        return $this->attachCceSettings($row);
     }
 
     public function findOverviewById(int $idCarte): ?array
@@ -181,7 +181,7 @@ class Cce
             return null;
         }
 
-        return $this->withTransactions($row);
+        return $this->withTransactions($this->attachCceSettings($row));
     }
 
     public function findAllForScan(): array
@@ -203,36 +203,73 @@ class Cce
     public function recharger(int $idCarte, float $montant): ?array
     {
         if ($montant <= 0) {
-            throw new RuntimeException('Le montant doit être superieur à 0');
+            throw new RuntimeException('Le montant doit être supérieur à 0');
         }
 
         $arrondi = round($montant, 3);
+        $exists = $this->db->query(
+            'SELECT 1 FROM `CarteCE` WHERE id_carte_CE = :id LIMIT 1',
+            ['id' => $idCarte]
+        )->fetchColumn();
+        if (!$exists) {
+            return null;
+        }
+
+        $settings = $this->getGlobalSettings();
+        $montantMinimum = (float) ($settings['montant_min'] ?? 0);
+        if ($arrondi < $montantMinimum) {
+            throw new RuntimeException(
+                sprintf('Le montant minimum de rechargement est de %.2f EUR', $montantMinimum)
+            );
+        }
+
+        $bonusRule = $this->resolveBonusForAmount(
+            $arrondi,
+            is_array($settings['bonus_rules'] ?? null) ? $settings['bonus_rules'] : []
+        );
+        $bonus = (float) ($bonusRule['bonus'] ?? 0.0);
+        $trancheBonus = (float) ($bonusRule['tranche'] ?? 0.0);
+
+        $montantCredite = round($arrondi + $bonus, 3);
         $dateApport = date('Y-m-d');
 
         $this->db->execute(
             'UPDATE `CarteCE`
-             SET solde_client = solde_client + :montant,
+             SET solde_client = solde_client + :montant_credite,
                  date_dernier_apport = :date_dernier_apport,
                  montant_dernier_apport = :montant_entier
              WHERE id_carte_CE = :id',
             [
-                'montant' => $arrondi,
+                'montant_credite' => $montantCredite,
                 'date_dernier_apport' => $dateApport,
                 'montant_entier' => (int) round($montant),
                 'id' => $idCarte,
             ]
         );
 
-        return $this->findOverviewById($idCarte);
+        $cce = $this->findOverviewById($idCarte);
+        if (!$cce) {
+            return null;
+        }
+
+        $cce['rechargement'] = [
+            'montant_saisi' => $arrondi,
+            'bonus_applique' => $bonus,
+            'tranche_bonus' => $trancheBonus > 0 ? $trancheBonus : null,
+            'montant_credite' => $montantCredite,
+        ];
+
+        return $cce;
     }
 
-    public function debiter(int $idCarte, float $montant): ?array
+    public function debiter(int $idCarte, float $montant, array $idTransactions = []): ?array
     {
         if ($montant <= 0) {
             throw new RuntimeException('Le montant doit être supérieur à 0');
         }
 
         $arrondi = round($montant, 3);
+        $idTransactions = $this->normalizeTransactionIds($idTransactions);
 
         $this->db->beginTransaction();
         try {
@@ -264,6 +301,23 @@ class Cce
                 ]
             );
 
+            if ($idTransactions !== []) {
+                if (!$this->hasTransactionCardLink()) {
+                    throw new RuntimeException('Table TransactionCCE introuvable');
+                }
+
+                foreach ($idTransactions as $idTransaction) {
+                    $this->db->execute(
+                        'INSERT IGNORE INTO `TransactionCCE` (`id_transaction`, `id_carte_CE`)
+                         VALUES (:id_transaction, :id_carte_CE)',
+                        [
+                            'id_transaction' => $idTransaction,
+                            'id_carte_CE' => $idCarte,
+                        ]
+                    );
+                }
+            }
+
             $this->db->commit();
         } catch (\Throwable $e) {
             if ($this->db->getConnection()->inTransaction()) {
@@ -276,47 +330,66 @@ class Cce
     }
 
     /**
+     * @param array<int, mixed> $ids
+     * @return array<int, int>
+     */
+    private function normalizeTransactionIds(array $ids): array
+    {
+        $normalized = [];
+
+        foreach ($ids as $id) {
+            $current = (int) $id;
+            if ($current > 0) {
+                $normalized[] = $current;
+            }
+        }
+
+        return array_values(array_unique($normalized));
+    }
+
+    /**
      * @return array{columns: string[], rows: array<int, array<string, mixed>>}
      */
     public function findTransactionCceForCard(int $idCarte): array
     {
+        if (!$this->hasTransactionCardLink()) {
+            throw new RuntimeException('Table TransactionCCE introuvable');
+        }
+
         $columnsStmt = $this->db->query('SHOW COLUMNS FROM `Transaction`');
         $columns = $columnsStmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
         if ($columns === []) {
             return ['columns' => [], 'rows' => []];
         }
 
-        $cardColumn = null;
-        $idColumnToSkip = null;
+        $transactionPk = null;
         $selectedColumns = [];
 
-        foreach ($columns as $index => $column) {
+        foreach ($columns as $column) {
             $field = trim((string) ($column['Field'] ?? ''));
             if ($field === '') {
                 continue;
             }
 
-            if (strcasecmp($field, 'id_carte_CE') === 0) {
-                $cardColumn = $field;
-            }
-
             $extra = strtolower(trim((string) ($column['Extra'] ?? '')));
-            if ($idColumnToSkip === null && str_contains($extra, 'auto_increment')) {
-                $idColumnToSkip = $field;
+            if ($transactionPk === null && str_contains($extra, 'auto_increment')) {
+                $transactionPk = $field;
             }
 
             $selectedColumns[] = $field;
         }
 
-        if ($cardColumn === null) {
-            throw new RuntimeException('Colonne id_carte_CE introuvable dans Transaction');
+        if ($transactionPk === null) {
+            foreach ($selectedColumns as $column) {
+                if (strcasecmp($column, 'id_transaction') === 0) {
+                    $transactionPk = $column;
+                    break;
+                }
+            }
         }
 
-        if ($idColumnToSkip !== null) {
-            $selectedColumns = array_values(array_filter(
-                $selectedColumns,
-                static fn (string $column): bool => strcasecmp($column, $idColumnToSkip) !== 0
-            ));
+        if ($transactionPk === null) {
+            throw new RuntimeException('Colonne id_transaction introuvable dans Transaction');
         }
 
         if ($selectedColumns === []) {
@@ -326,7 +399,11 @@ class Cce
         $selectSql = implode(
             ', ',
             array_map(
-                static fn (string $column): string => sprintf('`%s`', str_replace('`', '``', $column)),
+                static fn (string $column): string => sprintf(
+                    't.`%s` AS `%s`',
+                    str_replace('`', '``', $column),
+                    str_replace('`', '``', $column)
+                ),
                 $selectedColumns
             )
         );
@@ -343,12 +420,13 @@ class Cce
 
         $query = sprintf(
             'SELECT %s
-             FROM `Transaction`
-             WHERE `%s` = :id_carte%s',
+             FROM `Transaction` t
+             INNER JOIN `TransactionCCE` tcce ON tcce.id_transaction = t.`%s`
+             WHERE tcce.id_carte_CE = :id_carte%s',
             $selectSql,
-            str_replace('`', '``', $cardColumn),
+            str_replace('`', '``', $transactionPk),
             $orderColumn !== null
-                ? sprintf(' ORDER BY `%s` DESC', str_replace('`', '``', $orderColumn))
+                ? sprintf(' ORDER BY t.`%s` DESC', str_replace('`', '``', $orderColumn))
                 : ''
         );
 
@@ -395,18 +473,170 @@ class Cce
         $value = preg_replace('/\s+/', '', trim($value));
 
         if ($value === '') {
-            throw new RuntimeException('Le numéro de telephone est requis');
+            throw new RuntimeException('Le numéro de téléphone est requis');
         }
 
         if (!preg_match('/^\+?[0-9().-]{6,20}$/', $value)) {
-            throw new RuntimeException('Numéro de telephone invalide');
+            throw new RuntimeException('Numéro de téléphone invalide');
         }
 
         if (strlen($value) > 20) {
-            throw new RuntimeException('Numéro de telephone trop long');
+            throw new RuntimeException('Numéro de téléphone trop long');
         }
 
         return $value;
+    }
+
+    private function findDuplicateByContact(string $email, string $telephone): ?array
+    {
+        $stmt = $this->db->query(
+            'SELECT
+                id_client,
+                nom,
+                prenom,
+                email,
+                num_tel
+             FROM `Client`
+             WHERE email = :email
+                OR num_tel = :num_tel
+             ORDER BY id_client ASC',
+            [
+                'email' => $email,
+                'num_tel' => $telephone,
+            ]
+        );
+
+        $rows = $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+        if ($rows === []) {
+            return null;
+        }
+
+        $duplicateEmail = false;
+        $duplicateTelephone = false;
+
+        foreach ($rows as $row) {
+            if (strcasecmp((string) ($row['email'] ?? ''), $email) === 0) {
+                $duplicateEmail = true;
+            }
+            if ((string) ($row['num_tel'] ?? '') === $telephone) {
+                $duplicateTelephone = true;
+            }
+        }
+
+        $first = $rows[0];
+        $first['duplicate_email'] = $duplicateEmail;
+        $first['duplicate_telephone'] = $duplicateTelephone;
+
+        return $first;
+    }
+
+    private function getGlobalSettings(): array
+    {
+        if ($this->cachedSettings !== null) {
+            return $this->cachedSettings;
+        }
+
+        $stmt = $this->db->query(
+            'SELECT id_parametre, montant_min
+             FROM `ParametresCCE`
+             ORDER BY id_parametre ASC
+             LIMIT 1'
+        );
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+        if (!$row) {
+            throw new RuntimeException('Aucun paramètre CCE disponible');
+        }
+
+        $rules = $this->findBonusRules();
+        $settings = [
+            'id_parametre' => (int) ($row['id_parametre'] ?? 0),
+            'montant_min' => (float) ($row['montant_min'] ?? 0),
+            'bonus_rules' => $rules,
+            // Compatibilité front existant.
+            'bonus_100' => $this->findBonusForTranche($rules, 100.0),
+            'bonus_200' => $this->findBonusForTranche($rules, 200.0),
+        ];
+
+        $this->cachedSettings = $settings;
+        return $settings;
+    }
+
+    /**
+     * @return array<int, array{tranche: float, montant_bonus: float}>
+     */
+    private function findBonusRules(): array
+    {
+        $stmt = $this->db->query(
+            'SELECT
+                tranche,
+                montant_bonus
+             FROM `BonusCCE`
+             ORDER BY tranche ASC, id_bonus ASC'
+        );
+
+        $rows = $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+        $rules = [];
+        foreach ($rows as $row) {
+            $tranche = round((float) ($row['tranche'] ?? 0), 2);
+            $montantBonus = round((float) ($row['montant_bonus'] ?? 0), 2);
+            if ($tranche <= 0 || $montantBonus < 0) {
+                continue;
+            }
+
+            $rules[] = [
+                'tranche' => $tranche,
+                'montant_bonus' => $montantBonus,
+            ];
+        }
+
+        return $rules;
+    }
+
+    private function findBonusForTranche(array $rules, float $target): float
+    {
+        foreach ($rules as $rule) {
+            if (abs(((float) ($rule['tranche'] ?? 0)) - $target) < 0.0001) {
+                return (float) ($rule['montant_bonus'] ?? 0);
+            }
+        }
+
+        return 0.0;
+    }
+
+    /**
+     * @param array<int, array{tranche: float, montant_bonus: float}> $rules
+     * @return array{tranche: float, bonus: float}
+     */
+    private function resolveBonusForAmount(float $amount, array $rules): array
+    {
+        $selectedTranche = 0.0;
+        $selectedBonus = 0.0;
+
+        foreach ($rules as $rule) {
+            $tranche = (float) ($rule['tranche'] ?? 0);
+            $bonus = (float) ($rule['montant_bonus'] ?? 0);
+
+            if ($amount >= $tranche && $tranche >= $selectedTranche) {
+                $selectedTranche = $tranche;
+                $selectedBonus = $bonus;
+            }
+        }
+
+        return [
+            'tranche' => round($selectedTranche, 2),
+            'bonus' => round($selectedBonus, 3),
+        ];
+    }
+
+    private function attachCceSettings(array $cce): array
+    {
+        $settings = $this->getGlobalSettings();
+        $cce['id_parametre'] = $settings['id_parametre'] ?? null;
+        $cce['montant_min'] = $settings['montant_min'] ?? 0.0;
+        $cce['bonus_100'] = $settings['bonus_100'] ?? 0.0;
+        $cce['bonus_200'] = $settings['bonus_200'] ?? 0.0;
+        $cce['bonus_rules'] = $settings['bonus_rules'] ?? [];
+        return $cce;
     }
 
     private function generateUniqueCodeSecret(): int
@@ -445,12 +675,13 @@ class Cce
 
         $stmt = $this->db->query(
             'SELECT
-                id_transaction,
-                prix_total,
-                date_heure
-             FROM `Transaction`
-             WHERE id_carte_CE = :id_carte_CE
-             ORDER BY date_heure DESC, id_transaction DESC',
+                t.id_transaction,
+                t.prix_total,
+                t.date_heure
+             FROM `Transaction` t
+             INNER JOIN `TransactionCCE` tcce ON tcce.id_transaction = t.id_transaction
+             WHERE tcce.id_carte_CE = :id_carte_CE
+             ORDER BY t.date_heure DESC, t.id_transaction DESC',
             ['id_carte_CE' => $idCarte]
         );
 
@@ -463,18 +694,9 @@ class Cce
             return $this->hasTransactionCardLink;
         }
 
-        $stmt = $this->db->query('SHOW COLUMNS FROM `Transaction`');
-        $columns = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-        foreach ($columns as $column) {
-            if (trim((string) ($column['Field'] ?? '')) === 'id_carte_CE') {
-                $this->hasTransactionCardLink = true;
-                return true;
-            }
-        }
-
-        $this->hasTransactionCardLink = false;
-        return false;
+        $stmt = $this->db->query("SHOW TABLES LIKE 'TransactionCCE'");
+        $this->hasTransactionCardLink = (bool) $stmt->fetchColumn();
+        return $this->hasTransactionCardLink;
     }
 
 }

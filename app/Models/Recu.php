@@ -67,6 +67,7 @@ final class Recu
         $mode = strtolower(trim($modePaiement));
         $prefix = match ($mode) {
             'cce' => 2,
+            'especes' => 3,
             'espece' => 3,
             default => 1, // cb
         };

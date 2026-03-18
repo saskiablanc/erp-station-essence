@@ -282,7 +282,7 @@
   margin-top: 8px;
 }
 
-/* Choix des modes de paiement (CB / CCE / Espèce) */
+/* Choix des modes de paiement (CB / CCE / Espèces) */
 .ticket-pay-choice-total {
   margin-bottom: 10px;
   color: var(--text);

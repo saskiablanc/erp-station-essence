@@ -98,6 +98,11 @@
   text-align: right;
 }
 
+.stock-table thead th:not(:last-child),
+.stock-table tbody td:not(:last-child) {
+  border-right: 1px solid var(--border);
+}
+
 .stock-head-qty,
 .stock-head-threshold {
   text-align: right !important;
