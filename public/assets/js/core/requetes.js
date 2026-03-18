@@ -111,10 +111,16 @@ const Requetes = (() => {
     updateBonus: (id, t, b) =>
       appel("POST", `/json/cce/bonus/${id}`, { tranche: t, montant_bonus: b }),
     deleteBonus: (id) => appel("POST", `/json/cce/bonus/${id}/suppr`),
+<<<<<<< HEAD
 
     // ── Sprint 6 — Jours de fermetures (US15) ─────────────
     getFermetures: () => appel("GET", "/json/fermetures"),
     createFermeture: (data) => appel("POST", "/json/fermetures", data),
     deleteFermeture: (id) => appel("POST", `/json/fermetures/${id}/suppr`),
+=======
+    getHorairesBoutique: () => appel("GET", "/json/horaires/boutique"),
+    updateHorairesBoutique: (horaires) =>
+      appel("POST", "/json/horaires/boutique", { horaires }),
+>>>>>>> eca4750acf494c59819cddf0d262f44b9d626c20
   };
 })();

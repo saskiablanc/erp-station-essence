@@ -18,4 +18,9 @@
 @import url("./panels/reappro.css");
 @import url("./panels/cce_params.css");
 @import url("./panels/prix.css");
+<<<<<<< HEAD
 @import url("./panels/fermetures.css");
+=======
+@import url("./panels/horaires.css");
+@import url("./panels/incidents.css");
+>>>>>>> eca4750acf494c59819cddf0d262f44b9d626c20

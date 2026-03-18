@@ -10,6 +10,9 @@ use App\Controllers\ReapproController;
 use App\Controllers\CceParamsController;
 use App\Controllers\CarburantPrixController;
 use App\Controllers\FermetureController;
+use App\Controllers\HorairesBoutiqueController;
+use App\Controllers\IncidentController;
+
 
 $uri = $_SERVER['REQUEST_URI'] ?? '';
 if (str_contains($uri, '/json/')) {
@@ -104,6 +107,10 @@ $router->post('json/pompes/{id}/encaisser',     [new PompeController(),  'encais
 // ── Prix carburant — Sprint 6 (US12 + US13) ──────────────
 $router->get( 'json/carburants/prix',  [new CarburantPrixController(), 'get']);
 $router->post('json/carburants/prix',  [new CarburantPrixController(), 'update']);
+
+// ── Fiches incident — Sprint 6 (US11) ─────────────────────
+$router->get( 'json/incidents',        [new IncidentController(), 'getAll']);
+$router->post('json/incidents',        [new IncidentController(), 'create']);
  
 // ── CCE  ────────
 $router->get( 'json/cce',                       [new CceController(),       'all']);
@@ -132,6 +139,10 @@ $router->post('json/reappros',                       [new ReapproController(), '
 $router->get( 'json/reappros/{id}',                  [new ReapproController(), 'getById']);
 $router->post('json/reappros/{id}/statut',           [new ReapproController(), 'updateStatut']);
 $router->post('json/reappros/{id}/annuler',          [new ReapproController(), 'annuler']);
+
+// ── Horaires boutique — Sprint 6 / US15 ──────────────────
+$router->get( 'json/horaires/boutique',              [new HorairesBoutiqueController(), 'get']);
+$router->post('json/horaires/boutique',              [new HorairesBoutiqueController(), 'update']);
 
 // ════════════════════════════════════════════════════════
 $page = (string) ($_GET['page'] ?? '');

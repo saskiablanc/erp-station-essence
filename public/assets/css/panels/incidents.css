@@ -1,0 +1,234 @@
+/* Panel fiches incident */
+.fi-panel {
+  height: calc(100% + 24px);
+  margin: -12px;
+  display: flex;
+  flex-direction: column;
+  background: rgba(255, 255, 255, 0.74);
+  border: 2px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.fi-table-wrap {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  background: rgba(255, 255, 255, 0.64);
+}
+
+.fi-table {
+  width: 100%;
+  min-width: 690px;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+.fi-col,
+.fi-cell {
+  padding: 9px 8px;
+  border-right: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  color: var(--text);
+  font-size: 11px;
+  vertical-align: middle;
+}
+
+.fi-col:last-child,
+.fi-cell:last-child {
+  border-right: 0;
+}
+
+.fi-col {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: rgba(255, 255, 255, 0.92);
+  font-family: var(--display);
+  font-size: 12px;
+  font-weight: 700;
+  text-align: center;
+}
+
+.fi-table tbody tr:nth-child(odd) {
+  background: rgba(255, 255, 255, 0.76);
+}
+
+.fi-table tbody tr:nth-child(even) {
+  background: rgba(244, 242, 254, 0.52);
+}
+
+.fi-col--num,
+.fi-cell--num {
+  width: 66px;
+  text-align: center;
+}
+
+.fi-col--date {
+  width: 108px;
+}
+
+.fi-col--time {
+  width: 94px;
+}
+
+.fi-col--type,
+.fi-cell--type {
+  width: 128px;
+}
+
+.fi-cell--truncate {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.fi-state {
+  padding: 16px;
+  color: var(--text-dim);
+  font-size: 12px;
+  text-align: center;
+}
+
+.fi-state--error {
+  color: var(--danger);
+}
+
+.fi-footer {
+  padding: 9px 10px;
+  border-top: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.82);
+  display: flex;
+  justify-content: flex-end;
+}
+
+.fi-create-btn {
+  min-height: 30px;
+  padding: 0 14px;
+  border: 2px solid var(--border);
+  border-radius: 12px;
+  background: var(--btn-grad);
+  box-shadow: var(--shadow-soft);
+  color: var(--accent);
+  font-size: 11px;
+}
+
+.fi-create-btn:disabled {
+  cursor: wait;
+  opacity: 0.75;
+}
+
+/* Popups fiches incident */
+.swal2-popup.fi-swal-popup {
+  width: min(34rem, 94vw);
+  border-radius: 22px;
+  border: 2px solid var(--border);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.96) 0%, rgba(245, 247, 255, 0.96) 100%);
+  box-shadow: 0 24px 60px rgba(99, 102, 241, 0.25);
+  padding: 1.2rem 1.2rem 1.15rem;
+}
+
+.swal2-html-container.fi-swal-text {
+  margin: 0;
+}
+
+.swal2-title.fi-swal-title {
+  color: var(--text);
+  font-family: var(--display);
+  font-size: 1.8rem;
+  font-weight: 700;
+  margin-bottom: 0.35rem;
+}
+
+.swal2-confirm.fi-swal-btn,
+.swal2-cancel.fi-swal-btn {
+  border-radius: 12px;
+  border: 2px solid var(--border);
+  padding: 0.58rem 1.3rem;
+  font-size: 1rem;
+  font-family: var(--mono);
+  box-shadow: var(--shadow-soft);
+}
+
+.swal2-confirm.fi-swal-btn {
+  background: var(--btn-grad);
+  color: var(--accent);
+}
+
+.swal2-cancel.fi-swal-btn.fi-swal-btn--secondary {
+  background: rgba(255, 255, 255, 0.96);
+  color: var(--text-mid);
+}
+
+.fi-swal-popup .swal2-close {
+  width: 30px;
+  height: 30px;
+  margin-top: 2px;
+  margin-right: 2px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--danger);
+  font-size: 1.5rem;
+  line-height: 28px;
+}
+
+.fi-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-top: 8px;
+}
+
+.fi-form-row {
+  display: grid;
+  grid-template-columns: 120px minmax(0, 1fr);
+  align-items: start;
+  gap: 10px;
+}
+
+.fi-form-row--textarea {
+  align-items: stretch;
+}
+
+.fi-form-label {
+  align-self: center;
+  color: var(--text);
+  font-size: 1rem;
+  line-height: 1.15;
+}
+
+.fi-form-input,
+.fi-form-textarea {
+  width: 100%;
+  border: 2px solid var(--border);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: var(--shadow-soft);
+  color: var(--text);
+  font-size: 1rem;
+  outline: none;
+}
+
+.fi-form-input {
+  height: 44px;
+  padding: 0 12px;
+}
+
+.fi-form-textarea {
+  min-height: 90px;
+  padding: 10px 12px;
+  resize: vertical;
+}
+
+.fi-form-input:focus,
+.fi-form-textarea:focus {
+  border-color: var(--border-active);
+  box-shadow:
+    var(--shadow-soft),
+    0 0 0 3px rgba(129, 140, 248, 0.14);
+}
+
+.fi-form-input--readonly {
+  color: var(--text-mid);
+  background: rgba(244, 242, 254, 0.74);
+}
