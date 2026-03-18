@@ -9,26 +9,21 @@ const WM = (() => {
   const HAND_STORAGE_KEY = "caisse_hand_v2";
   const flipHand = (hand) => (hand === "left" ? "right" : "left");
 
-  // Ajuste ces ratios pour coller exactement à la maquette
   const LAYOUT_METRICS = {
     margin: 6,
     gap: 6,
-    mainAreaPct: 0.86, // largeur du bloc gauche+centre (hors colonne CCE)
-    topSplitPct: 0.66, // répartition haut : ticket vs stock dans le bloc principal
-    rowTopPct: 0.56, // hauteur ligne du haut
+    mainAreaPct: 0.86,
+    topSplitPct: 0.66,
+    rowTopPct: 0.56,
   };
 
-  // ── Layout maquette (positions fixes initiales) ──────
-  // Maquette : Panier grand gauche | Stocks haut centre | CCE création haut droit
-  //            Pompes bas gauche+centre | CCE consultation bas droit
   const BASE_LAYOUTS = {
     right: {
-      ticket: { x: 10, y: 10, w: 520, h: 420 }, // Panier — haut gauche
-      stock: { x: 536, y: 10, w: 268, h: 420 }, // Stocks — haut centre
-      pompes: { x: 10, y: 440, w: 794, h: 320 }, // Pompes — bas gauche+centre
-      cce_create: { x: 810, y: 10, w: 160, h: 420 }, // Créer CCE — haut droite
-      cce_consult: { x: 810, y: 440, w: 160, h: 320 }, // Consulter CCE — bas droite
-      // Panels secondaires (taskbar, pas sur canvas par défaut)
+      ticket: { x: 10, y: 10, w: 520, h: 420 },
+      stock: { x: 536, y: 10, w: 268, h: 420 },
+      pompes: { x: 10, y: 440, w: 794, h: 320 },
+      cce_create: { x: 810, y: 10, w: 160, h: 420 },
+      cce_consult: { x: 810, y: 440, w: 160, h: 320 },
       clavier: { x: 620, y: 10, w: 260, h: 310 },
       paiement: { x: 620, y: 330, w: 260, h: 280 },
       transactions: { x: 900, y: 10, w: 280, h: 380 },
@@ -67,7 +62,6 @@ const WM = (() => {
     return computeLayoutEmploye(hand);
   }
 
-  // ── Compute layout dynamique gérant (12 panels, maquette) ──
   function computeLayoutGerant() {
     const canvas = document.getElementById("canvas");
     if (!canvas) return {};
@@ -80,7 +74,6 @@ const WM = (() => {
     const g = 5;
     const totalH = H - m * 2 - g * 2;
 
-    // ── Rangées ──
     const row1H = Math.round(totalH * 0.4104);
     const row2H = Math.round(totalH * 0.3281);
     const row3H = totalH - row1H - row2H;
@@ -88,7 +81,6 @@ const WM = (() => {
     const y1 = y0 + row1H + g;
     const y2 = y1 + row2H + g;
 
-    // ── Row 1 : positions absolues en % de W ──
     const r1ReapW = Math.round(W * 0.3824);
     const r1IncW = Math.round(W * 0.2243);
     const r1DefW = W - m * 2 - g * 2 - r1ReapW - r1IncW;
@@ -96,7 +88,6 @@ const WM = (() => {
     const xDef = xReap + r1ReapW + g;
     const xInc = xDef + r1DefW + g;
 
-    // ── Row 2 : positions absolues en % de W ──
     const xPrix = m;
     const xCce = Math.round(W * 0.2345);
     const xMan = Math.round(W * 0.439);
@@ -110,7 +101,6 @@ const WM = (() => {
     const rcDocsH = Math.round(row2H * 0.49);
     const rcDirH = row2H - rcDocsH - g;
 
-    // ── Row 3 : positions absolues en % de W ──
     const r3FermW = Math.round(W * 0.3211);
     const r3HorW = Math.round(W * 0.2918);
     const r3BddW = W - m * 2 - g * 2 - r3FermW - r3HorW;
@@ -134,7 +124,6 @@ const WM = (() => {
     };
   }
 
-  // ── Compute layout dynamique employé ──────────────────
   function computeLayoutEmploye(hand) {
     const canvas = document.getElementById("canvas");
     if (!canvas) return BASE_LAYOUTS[hand];
@@ -174,8 +163,6 @@ const WM = (() => {
     return { ...base, ...computed };
   }
 
-  // Panels affichés par défaut sur le canvas (ordre maquette)
-  // En mode gérant, on n'affiche pas les panels employé par défaut
   const DEFAULT_VISIBLE_EMPLOYE = [
     "ticket",
     "stock",
@@ -209,6 +196,54 @@ const WM = (() => {
     PANELS[id] = def;
   }
 
+  // ── Maximize / Restore ───────────────────────────────────
+  function maximize(id) {
+    const el = document.getElementById("win-" + id);
+    if (!el) return;
+
+    const canvas = document.getElementById("canvas");
+    const w = State.all().windows[id] || {};
+
+    if (el.classList.contains("maximized")) {
+      // Restaure l'état précédent
+      el.classList.remove("maximized");
+      if (w._prevStyle) {
+        el.style.cssText = w._prevStyle;
+        el.dataset.x = w._prevDx || 0;
+        el.dataset.y = w._prevDy || 0;
+      }
+      const btn = el.querySelector(".wc.max");
+      if (btn) {
+        btn.setAttribute("title", "Agrandir");
+        btn.classList.remove("active");
+      }
+    } else {
+      // Sauvegarde l'état courant
+      w._prevStyle = el.style.cssText;
+      w._prevDx = el.dataset.x || 0;
+      w._prevDy = el.dataset.y || 0;
+      State.all().windows[id] = w;
+
+      const rect = canvas.getBoundingClientRect();
+      el.style.cssText = [
+        "left:0px",
+        "top:0px",
+        `width:${rect.width}px`,
+        `height:${rect.height}px`,
+        `z-index:${++State.all().zTop}`,
+        "transform:none",
+      ].join(";");
+      el.dataset.x = 0;
+      el.dataset.y = 0;
+      el.classList.add("maximized");
+      const btn = el.querySelector(".wc.max");
+      if (btn) {
+        btn.setAttribute("title", "Restaurer");
+        btn.classList.add("active");
+      }
+    }
+  }
+
   function create(id) {
     const def = PANELS[id];
     if (!def) return;
@@ -229,11 +264,20 @@ const WM = (() => {
       `animation:winIn .2s cubic-bezier(.25,.46,.45,.94)`,
     ].join(";");
 
+    // SVG plein-écran (4 coins pointant vers l'extérieur)
+    const SVG_MAX = `<svg viewBox="0 0 10 10" width="9" height="9" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+      <polyline points="1,4 1,1 4,1"/>
+      <polyline points="6,1 9,1 9,4"/>
+      <polyline points="9,6 9,9 6,9"/>
+      <polyline points="4,9 1,9 1,6"/>
+    </svg>`;
+
     el.innerHTML = `
       <div class="win-title" id="wt-${id}">
         <span class="win-icon">${def.icon}</span>
         <span class="win-label">${def.label}</span>
         <div class="win-controls">
+          <button class="wc max" type="button" title="Agrandir">${SVG_MAX}</button>
           <button class="wc min" type="button" title="Réduire">-</button>
         </div>
       </div>
@@ -250,6 +294,13 @@ const WM = (() => {
 
     document.getElementById("canvas").appendChild(el);
     el.addEventListener("mousedown", () => focus(id));
+
+    el.querySelector(".wc.max")?.addEventListener("click", (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      maximize(id);
+    });
+
     el.querySelector(".wc.min")?.addEventListener("click", (event) => {
       event.preventDefault();
       event.stopPropagation();
@@ -267,9 +318,11 @@ const WM = (() => {
       ],
       listeners: {
         start() {
+          if (el.classList.contains("maximized")) return false;
           el.classList.add("dragging");
         },
         move(e) {
+          if (el.classList.contains("maximized")) return;
           const x = (parseFloat(el.dataset.x) || 0) + e.dx;
           const y = (parseFloat(el.dataset.y) || 0) + e.dy;
           el.style.transform = `translate(${x}px,${y}px)`;
@@ -290,24 +343,21 @@ const WM = (() => {
         right: ".win-resize-right, .win-resize-tr, .win-resize-br",
       },
       modifiers: [
-        interact.modifiers.restrictEdges({
-          outer: "#canvas",
-          endOnly: true,
-        }),
+        interact.modifiers.restrictEdges({ outer: "#canvas", endOnly: true }),
         interact.modifiers.restrictSize({ min: { width: 220, height: 140 } }),
       ],
       listeners: {
         start() {
+          if (el.classList.contains("maximized")) return false;
           const w = State.all().windows[id];
-          if (w?.minimized) {
-            minimize(id);
-          }
+          if (w?.minimized) minimize(id);
           el.classList.add("resizing");
           document.body.classList.add("is-resizing");
           const sel = window.getSelection?.();
           if (sel && sel.removeAllRanges) sel.removeAllRanges();
         },
         move(e) {
+          if (el.classList.contains("maximized")) return;
           const x = (parseFloat(el.dataset.x) || 0) + e.deltaRect.left;
           const y = (parseFloat(el.dataset.y) || 0) + e.deltaRect.top;
           el.style.width = e.rect.width + "px";
@@ -349,6 +399,9 @@ const WM = (() => {
     const el = document.getElementById("win-" + id);
     if (!el) return;
 
+    // Quitte le mode maximisé avant de réduire
+    if (el.classList.contains("maximized")) maximize(id);
+
     const w = State.all().windows[id] || { minimized: false, visible: true };
     w.minimized = !w.minimized;
     w.visible = true;
@@ -377,11 +430,9 @@ const WM = (() => {
       b.classList.toggle("active", b.dataset.hand === hand);
     });
 
-    // Vider le canvas
     document.querySelectorAll(".win").forEach((w) => w.remove());
     State.all().windows = {};
 
-    // Charger disposition sauvegardée ou défaut
     const layoutHand = flipHand(hand);
     const saved = JSON.parse(
       localStorage.getItem(
@@ -477,6 +528,7 @@ const WM = (() => {
     open,
     close,
     minimize,
+    maximize,
     focus,
     applyLayout,
     saveLayout,

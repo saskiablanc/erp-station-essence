@@ -12,6 +12,8 @@ use App\Controllers\CarburantPrixController;
 use App\Controllers\FermetureController;
 use App\Controllers\HorairesBoutiqueController;
 use App\Controllers\IncidentController;
+use App\Controllers\BddController;
+
 
 $uri = $_SERVER['REQUEST_URI'] ?? '';
 if (str_contains($uri, '/json/')) {
@@ -148,6 +150,14 @@ $router->post('json/reappros/{id}/annuler',        [new ReapproController(), 'an
 // ── Horaires boutique — Sprint 6 (US15) ──────────────────
 $router->get( 'json/horaires/boutique', [new HorairesBoutiqueController(), 'get']);
 $router->post('json/horaires/boutique', [new HorairesBoutiqueController(), 'update']);
+
+$bdd = new BddController();
+ 
+$router->get( 'json/bdd/{table}',            [$bdd, 'getTable']);
+$router->post('json/bdd/{table}',            [$bdd, 'addTable']);
+$router->post('json/bdd/{table}/{id}/suppr', [$bdd, 'delTable']);
+$router->post('json/bdd/{table}/{id}',       [$bdd, 'putTable']);
+ 
 
 // ════════════════════════════════════════════════════════
 $page = (string) ($_GET['page'] ?? '');
