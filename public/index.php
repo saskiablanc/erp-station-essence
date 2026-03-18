@@ -123,6 +123,7 @@ $router->post('json/cce/bonus',                 [new CceParamsController(), 'add
 $router->post('json/cce/bonus/{id}/suppr',      [new CceParamsController(), 'deleteBonus']);
 $router->post('json/cce/bonus/{id}',            [new CceParamsController(), 'updateBonus']);
 // Routes CCE dynamiques 
+$router->post('json/cce/check-duplicate',       [new CceController(),       'checkDuplicate']);
 $router->get( 'json/cce/{id}/transactions',     [new CceController(),       'transactions']);
 $router->get( 'json/cce/{id}',                  [new CceController(),       'get']);
 $router->post('json/cce',                       [new CceController(),       'create']);

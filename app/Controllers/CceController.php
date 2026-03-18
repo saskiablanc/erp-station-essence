@@ -8,6 +8,24 @@ use App\Models\Cce;
 
 class CceController extends Controller
 {
+    public function checkDuplicate(): void
+    {
+        $this->requireAuth();
+        $model = new Cce();
+
+        try {
+            $duplicate = $model->findDuplicateClient($this->body());
+        } catch (\Throwable $e) {
+            $this->jsonError($e->getMessage(), 400);
+        }
+
+        $this->json([
+            'success' => true,
+            'duplicate' => $duplicate !== null,
+            'client' => $duplicate,
+        ]);
+    }
+
     public function all(): void
     {
         $this->requireAuth();
