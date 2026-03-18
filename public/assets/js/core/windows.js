@@ -78,89 +78,59 @@ const WM = (() => {
 
     const m = 6;
     const g = 5;
-
-    // Colonnes : zone gauche (73%) + colonne droite (27%)
-    const rightColW = Math.round(W * 0.27);
-    const leftZoneW = W - m * 2 - g - rightColW;
-
-    // 3 rangées : 40% / 33% / 27%
     const totalH = H - m * 2 - g * 2;
-    const row1H = Math.round(totalH * 0.4);
-    const row2H = Math.round(totalH * 0.33);
-    const row3H = totalH - row1H - row2H;
 
-    const x0 = m;
-    const xR = m + leftZoneW + g;
+    // ── Rangées ──
+    const row1H = Math.round(totalH * 0.4104);
+    const row2H = Math.round(totalH * 0.3281);
+    const row3H = totalH - row1H - row2H;
     const y0 = m;
     const y1 = y0 + row1H + g;
     const y2 = y1 + row2H + g;
 
-    // Row 1 : 2 panels dans la zone gauche
-    const r1LeftW = Math.round(leftZoneW * 0.55);
-    const r1RightW = leftZoneW - r1LeftW - g;
+    // ── Row 1 : positions absolues en % de W ──
+    const r1ReapW = Math.round(W * 0.3824);
+    const r1IncW = Math.round(W * 0.2243);
+    const r1DefW = W - m * 2 - g * 2 - r1ReapW - r1IncW;
+    const xReap = m;
+    const xDef = xReap + r1ReapW + g;
+    const xInc = xDef + r1DefW + g;
 
-    // Row 2 : 3 panels dans la zone gauche
-    const r2ColW = Math.round((leftZoneW - g * 2) / 3);
-    const r2Col3W = leftZoneW - r2ColW * 2 - g * 2;
+    // ── Row 2 : positions absolues en % de W ──
+    const xPrix = m;
+    const xCce = Math.round(W * 0.2345);
+    const xMan = Math.round(W * 0.439);
+    const xVal = Math.round(W * 0.6823);
+    const xDoc = Math.round(W * 0.8269);
+    const r2PrixW = xCce - g - xPrix;
+    const r2CceW = xMan - g - xCce;
+    const r2ManW = xVal - g - xMan;
+    const r2ValW = xDoc - g - xVal;
+    const r2DocW = W - m - xDoc;
+    const rcDocsH = Math.round(row2H * 0.49);
+    const rcDirH = row2H - rcDocsH - g;
 
-    // Row 3 : 2 panels dans la zone gauche
-    const r3LeftW = Math.round(leftZoneW * 0.42);
-    const r3RightW = leftZoneW - r3LeftW - g;
-
-    // Colonne droite : incidents (haut 42%), milieu (validation+docs+directives), bdd (bas 15%)
-    const rcIncH = Math.round(totalH * 0.42);
-    const rcBddH = Math.round(totalH * 0.15);
-    const rcMidH = totalH - rcIncH - rcBddH - g * 2;
-
-    // Milieu droite : validation (gauche 55%) | docs+directives (droite 45%)
-    const rcMidLeftW = Math.round((rightColW - g) * 0.55);
-    const rcMidRightW = rightColW - rcMidLeftW - g;
-    const rcDocsH = Math.round(rcMidH * 0.45);
-    const rcDirH = rcMidH - rcDocsH - g;
+    // ── Row 3 : positions absolues en % de W ──
+    const r3FermW = Math.round(W * 0.3211);
+    const r3HorW = Math.round(W * 0.2918);
+    const r3BddW = W - m * 2 - g * 2 - r3FermW - r3HorW;
+    const xFerm = m;
+    const xHor = xFerm + r3FermW + g;
+    const xBdd = xHor + r3HorW + g;
 
     return {
-      gerant_reappro: { x: x0, y: y0, w: r1LeftW, h: row1H },
-      gerant_reappro_defauts: {
-        x: x0 + r1LeftW + g,
-        y: y0,
-        w: r1RightW,
-        h: row1H,
-      },
-      gerant_prix: { x: x0, y: y1, w: r2ColW, h: row2H },
-      gerant_cce_params: { x: x0 + r2ColW + g, y: y1, w: r2ColW, h: row2H },
-      gerant_reappro_manuel: {
-        x: x0 + r2ColW * 2 + g * 2,
-        y: y1,
-        w: r2Col3W,
-        h: row2H,
-      },
-      gerant_fermetures: { x: x0, y: y2, w: r3LeftW, h: row3H },
-      gerant_horaires: { x: x0 + r3LeftW + g, y: y2, w: r3RightW, h: row3H },
-      gerant_incidents: { x: xR, y: y0, w: rightColW, h: rcIncH },
-      gerant_validation: {
-        x: xR,
-        y: y0 + rcIncH + g,
-        w: rcMidLeftW,
-        h: rcMidH,
-      },
-      gerant_docs_gestion: {
-        x: xR + rcMidLeftW + g,
-        y: y0 + rcIncH + g,
-        w: rcMidRightW,
-        h: rcDocsH,
-      },
-      gerant_directives: {
-        x: xR + rcMidLeftW + g,
-        y: y0 + rcIncH + g + rcDocsH + g,
-        w: rcMidRightW,
-        h: rcDirH,
-      },
-      gerant_bdd: {
-        x: xR,
-        y: y0 + rcIncH + g + rcMidH + g,
-        w: rightColW,
-        h: rcBddH,
-      },
+      gerant_reappro: { x: xReap, y: y0, w: r1ReapW, h: row1H },
+      gerant_reappro_defauts: { x: xDef, y: y0, w: r1DefW, h: row1H },
+      gerant_incidents: { x: xInc, y: y0, w: r1IncW, h: row1H },
+      gerant_prix: { x: xPrix, y: y1, w: r2PrixW, h: row2H },
+      gerant_cce_params: { x: xCce, y: y1, w: r2CceW, h: row2H },
+      gerant_reappro_manuel: { x: xMan, y: y1, w: r2ManW, h: row2H },
+      gerant_validation: { x: xVal, y: y1, w: r2ValW, h: row2H },
+      gerant_docs_gestion: { x: xDoc, y: y1, w: r2DocW, h: rcDocsH },
+      gerant_directives: { x: xDoc, y: y1 + rcDocsH + g, w: r2DocW, h: rcDirH },
+      gerant_fermetures: { x: xFerm, y: y2, w: r3FermW, h: row3H },
+      gerant_horaires: { x: xHor, y: y2, w: r3HorW, h: row3H },
+      gerant_bdd: { x: xBdd, y: y2, w: r3BddW, h: row3H },
     };
   }
 
