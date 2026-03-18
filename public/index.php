@@ -13,7 +13,6 @@ use App\Controllers\FermetureController;
 use App\Controllers\HorairesBoutiqueController;
 use App\Controllers\IncidentController;
 
-
 $uri = $_SERVER['REQUEST_URI'] ?? '';
 if (str_contains($uri, '/json/')) {
     ini_set('display_errors', '0');
@@ -61,10 +60,10 @@ $router = new Router();
 // ════════════════════════════════════════════════════════
 //  Routes HTML
 // ════════════════════════════════════════════════════════
-$router->get('/',           [new AuthController(),   'showLogin']);
-$router->get('connexion',   [new AuthController(),   'showLogin']);
-$router->post('connexion',  [new AuthController(),   'login']);
-$router->post('deconnexion',[new AuthController(),   'logout']);
+$router->get('/',            [new AuthController(), 'showLogin']);
+$router->get('connexion',    [new AuthController(), 'showLogin']);
+$router->post('connexion',   [new AuthController(), 'login']);
+$router->post('deconnexion', [new AuthController(), 'logout']);
 
 $router->get('caisse', function () {
     if (empty($_SESSION['employe'])) {
@@ -81,79 +80,74 @@ $router->get('gerant', function () {
 //  Routes JSON
 // ════════════════════════════════════════════════════════
 
-$router->get( 'json/auth/session',              [new AuthController(),   'jsonSession']);
-$router->post('json/auth/logout',               [new AuthController(),   'jsonLogout']);
+// ── Auth ─────────────────────────────────────────────────
+$router->get( 'json/auth/session',  [new AuthController(), 'jsonSession']);
+$router->post('json/auth/logout',   [new AuthController(), 'jsonLogout']);
 
-$router->get( 'json/articles/random',           [new CaisseController(), 'getRandomArticle']);
-$router->get( 'json/articles',                  [new CaisseController(), 'getArticles']);
-$router->get( 'json/articles/{code}',           [new CaisseController(), 'getArticle']);
-$router->get( 'json/stock',                     [new CaisseController(), 'getStock']);
+// ── Articles & stock ─────────────────────────────────────
+$router->get('json/articles/random', [new CaisseController(), 'getRandomArticle']);
+$router->get('json/articles',        [new CaisseController(), 'getArticles']);
+$router->get('json/articles/{code}', [new CaisseController(), 'getArticle']);
+$router->get('json/stock',           [new CaisseController(), 'getStock']);
 
+// ── Transactions ─────────────────────────────────────────
 $router->post('json/transactions',              [new CaisseController(), 'creerTransaction']);
 $router->get( 'json/transactions',              [new CaisseController(), 'getTransactions']);
 $router->get( 'json/transactions/{id}',         [new CaisseController(), 'getTransaction']);
 $router->post('json/transactions/{id}/annuler', [new CaisseController(), 'annulerTransaction']);
 $router->post('json/recus',                     [new CaisseController(), 'creerRecus']);
-$router->get( 'json/fermetures',                [new FermetureController(), 'all']);
-$router->post('json/fermetures',                [new FermetureController(), 'create']);
-$router->post('json/fermetures/{id}/suppr',     [new FermetureController(), 'delete']);
 
-$router->get( 'json/pompes',                    [new PompeController(),  'getAll']);
-$router->post('json/pompes/{id}/activer',       [new PompeController(),  'activer']);
-$router->post('json/pompes/{id}/demarrer',      [new PompeController(),  'demarrer']);
-$router->post('json/pompes/{id}/terminer',      [new PompeController(),  'terminer']);
-$router->post('json/pompes/{id}/encaisser',     [new PompeController(),  'encaisser']);
+// ── Fermetures ───────────────────────────────────────────
+$router->get( 'json/fermetures',            [new FermetureController(), 'all']);
+$router->post('json/fermetures',            [new FermetureController(), 'create']);
+$router->post('json/fermetures/{id}/suppr', [new FermetureController(), 'delete']);
 
-// ── Prix carburant — Sprint 6 (US12 + US13) ──────────────
-$router->get( 'json/carburants/prix',  [new CarburantPrixController(), 'get']);
-$router->post('json/carburants/prix',  [new CarburantPrixController(), 'update']);
+// ── Pompes ───────────────────────────────────────────────
+$router->get( 'json/pompes',                [new PompeController(), 'getAll']);
+$router->post('json/pompes/{id}/activer',   [new PompeController(), 'activer']);
+$router->post('json/pompes/{id}/demarrer',  [new PompeController(), 'demarrer']);
+$router->post('json/pompes/{id}/terminer',  [new PompeController(), 'terminer']);
+$router->post('json/pompes/{id}/encaisser', [new PompeController(), 'encaisser']);
 
-// ── Fiches incident — Sprint 6 (US11) ─────────────────────
-$router->get( 'json/incidents',        [new IncidentController(), 'getAll']);
-$router->post('json/incidents',        [new IncidentController(), 'create']);
- 
-// ── CCE  ────────
-$router->get( 'json/cce',                       [new CceController(),       'all']);
-$router->get( 'json/cce/latest',                [new CceController(),       'latest']);
-// Sprint 6 US14 
-$router->get( 'json/cce/params',                [new CceParamsController(), 'get']);
-$router->post('json/cce/params',                [new CceParamsController(), 'updateMin']);
-// Sprint 6 US14 
-$router->post('json/cce/bonus',                 [new CceParamsController(), 'addBonus']);
-$router->post('json/cce/bonus/{id}/suppr',      [new CceParamsController(), 'deleteBonus']);
-$router->post('json/cce/bonus/{id}',            [new CceParamsController(), 'updateBonus']);
-// Routes CCE dynamiques 
-$router->post('json/cce/check-duplicate',       [new CceController(),       'checkDuplicate']);
-$router->get( 'json/cce/{id}/transactions',     [new CceController(),       'transactions']);
-$router->get( 'json/cce/{id}',                  [new CceController(),       'get']);
-$router->post('json/cce',                       [new CceController(),       'create']);
-$router->post('json/cce/{id}/recharger',        [new CceController(),       'recharger']);
-$router->post('json/cce/{id}/debiter',          [new CceController(),       'debiter']);
+// ── Prix & livraison carburant — Sprint 6 (US12/US13) ────
+$router->get( 'json/carburants/prix', [new CarburantPrixController(), 'get']);
+$router->post('json/carburants/prix', [new CarburantPrixController(), 'update']);
 
-// ── Réapprovisionnement — Sprint 4 ───────────────────────
-// CCE ───────────────────────────────────────
-$router->get( 'json/cce',                      [new CceController(),    'all']);
-$router->get( 'json/cce/latest',               [new CceController(),    'latest']);
-$router->get( 'json/cce/{id}/transactions',    [new CceController(),    'transactions']);
-$router->get( 'json/cce/{id}',                  [new CceController(),    'get']);
-$router->post('json/cce/check-duplicate',      [new CceController(),    'checkDuplicate']);
-$router->post('json/cce',                       [new CceController(),    'create']);
-$router->post('json/cce/{id}/recharger',        [new CceController(),    'recharger']);
-$router->post('json/cce/{id}/debiter',          [new CceController(),    'debiter']);
-// Réapprovisionnement — Sprint 4 (US20/21/22/23)
-$router->get( 'json/reappros/articles',              [new ReapproController(), 'getArticles']);
-$router->get( 'json/reappros/valeurs-defaut',        [new ReapproController(), 'getValeursDefaut']);
-$router->post('json/reappros/valeurs-defaut-type',   [new ReapproController(), 'updateValeursDefautType']);
-$router->post('json/reappros/valeurs-defaut/{id}',   [new ReapproController(), 'updateValeurDefaut']);
-$router->get( 'json/reappros',                       [new ReapproController(), 'getAll']);
-$router->post('json/reappros',                       [new ReapproController(), 'creerManuel']);
-$router->get( 'json/reappros/{id}',                  [new ReapproController(), 'getById']);
-$router->post('json/reappros/{id}/statut',           [new ReapproController(), 'updateStatut']);
-$router->post('json/reappros/{id}/annuler',          [new ReapproController(), 'annuler']);
+// ── Incidents — Sprint 6 (US11) ──────────────────────────
+$router->get( 'json/incidents', [new IncidentController(), 'getAll']);
+$router->post('json/incidents', [new IncidentController(), 'create']);
 
-// ── Horaires boutique — Sprint 6 / US15 ──────────────────
-$router->get( 'json/horaires/boutique',              [new HorairesBoutiqueController(), 'get']);
-$router->post('json/horaires/boutique',              [new HorairesBoutiqueController(), 'update']);
+// ── CCE ──────────────────────────────────────────────────
+$router->get( 'json/cce',                      [new CceController(), 'all']);
+$router->post('json/cce',                      [new CceController(), 'create']);
+$router->get( 'json/cce/latest',               [new CceController(), 'latest']);
+$router->post('json/cce/check-duplicate',      [new CceController(), 'checkDuplicate']);
+// Paramètres CCE — Sprint 6 (US14) — déclarés avant {id} pour éviter le conflit de routing
+$router->get( 'json/cce/params',               [new CceParamsController(), 'get']);
+$router->post('json/cce/params',               [new CceParamsController(), 'updateMin']);
+$router->post('json/cce/bonus',                [new CceParamsController(), 'addBonus']);
+$router->post('json/cce/bonus/{id}/suppr',     [new CceParamsController(), 'deleteBonus']);
+$router->post('json/cce/bonus/{id}',           [new CceParamsController(), 'updateBonus']);
+// Routes dynamiques en dernier
+$router->get( 'json/cce/{id}',                 [new CceController(), 'get']);
+$router->get( 'json/cce/{id}/transactions',    [new CceController(), 'transactions']);
+$router->post('json/cce/{id}/recharger',       [new CceController(), 'recharger']);
+$router->post('json/cce/{id}/debiter',         [new CceController(), 'debiter']);
+
+// ── Réapprovisionnement — Sprint 4 (US20/21/22/23) ───────
+$router->get( 'json/reappros/articles',            [new ReapproController(), 'getArticles']);
+$router->get( 'json/reappros/valeurs-defaut',      [new ReapproController(), 'getValeursDefaut']);
+$router->post('json/reappros/valeurs-defaut-type', [new ReapproController(), 'updateValeursDefautType']);
+$router->post('json/reappros/valeurs-defaut/{id}', [new ReapproController(), 'updateValeurDefaut']);
+$router->get( 'json/reappros',                     [new ReapproController(), 'getAll']);
+$router->post('json/reappros',                     [new ReapproController(), 'creerManuel']);
+$router->get( 'json/reappros/{id}',                [new ReapproController(), 'getById']);
+$router->post('json/reappros/{id}/statut',         [new ReapproController(), 'updateStatut']);
+$router->post('json/reappros/{id}/annuler',        [new ReapproController(), 'annuler']);
+
+// ── Horaires boutique — Sprint 6 (US15) ──────────────────
+$router->get( 'json/horaires/boutique', [new HorairesBoutiqueController(), 'get']);
+$router->post('json/horaires/boutique', [new HorairesBoutiqueController(), 'update']);
 
 // ════════════════════════════════════════════════════════
 $page = (string) ($_GET['page'] ?? '');
