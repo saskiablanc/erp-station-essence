@@ -111,5 +111,10 @@ const Requetes = (() => {
     updateBonus: (id, t, b) =>
       appel("POST", `/json/cce/bonus/${id}`, { tranche: t, montant_bonus: b }),
     deleteBonus: (id) => appel("POST", `/json/cce/bonus/${id}/suppr`),
+
+    // ── Sprint 6 — Jours de fermetures (US15) ─────────────
+    getFermetures: () => appel("GET", "/json/fermetures"),
+    createFermeture: (data) => appel("POST", "/json/fermetures", data),
+    deleteFermeture: (id) => appel("POST", `/json/fermetures/${id}/suppr`),
   };
 })();
