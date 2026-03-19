@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Hôte : localhost
--- Généré le : mer. 18 mars 2026 à 15:54
+-- Généré le : mer. 18 mars 2026 à 21:14
 -- Version du serveur : 11.8.6-MariaDB-0+deb13u1 from Debian
 -- Version de PHP : 8.4.16
 
@@ -85,7 +85,7 @@ CREATE TABLE `BonusCCE` (
 --
 
 INSERT INTO `BonusCCE` (`id_bonus`, `tranche`, `montant_bonus`) VALUES
-(1, 100.00, 11.00),
+(1, 100.00, 10.00),
 (2, 200.00, 25.00);
 
 -- --------------------------------------------------------
@@ -141,7 +141,9 @@ INSERT INTO `CarteCE` (`id_carte_CE`, `id_client`, `code_secret`, `solde_client`
 (5, 5, 2019, 225.000, '2026-03-17', 200),
 (10, 10, 4665, 433.460, '2026-03-17', 200),
 (12, 12, 4931, 268.900, '2026-03-18', 52),
-(13, 13, 8207, 7.580, '2026-03-18', 8);
+(13, 13, 8207, 7.580, '2026-03-18', 8),
+(14, 14, 4343, 0.000, '2026-03-18', 0),
+(15, 15, 8937, 0.000, '2026-03-18', 0);
 
 -- --------------------------------------------------------
 
@@ -169,7 +171,10 @@ INSERT INTO `Client` (`id_client`, `nom`, `prenom`, `email`, `num_tel`) VALUES
 (5, 'bachova', 'camilia', 'c.bachova@mail.com', '+0766161604'),
 (10, 'Mongrandi', 'Lenny', 'lenny21@gmail.com', '+33618212121'),
 (12, 'Blanc', 'Saskia', 'saskia@gmail.com', '+33677777777'),
-(13, 'alrawahi', 'aser', 'aaa@mail.com', '+99199191199');
+(13, 'alrawahi', 'aser', 'aaa@mail.com', '+99199191199'),
+(14, 'daddy', 'aser', 'aser@gmail.com', '+33754323655'),
+(15, 'Lassauniere', 'Nathan', 'nathan@gmail.com', '0651766318'),
+(16, 'Montariol', 'Gillis', 'gigi@gmail.com', '0768211715');
 
 -- --------------------------------------------------------
 
@@ -304,7 +309,10 @@ CREATE TABLE `JourFermeture` (
 --
 
 INSERT INTO `JourFermeture` (`id_fermeture`, `date_fermeture`, `motif`) VALUES
-(1, '2026-12-25', 'Noël');
+(1, '2026-12-25', 'Noël'),
+(2, '2026-06-02', 'Jour férié'),
+(4, '2026-03-26', 'Fêtes des bulgares'),
+(5, '2026-11-21', 'Fêtes de Twenty One Pilots');
 
 -- --------------------------------------------------------
 
@@ -378,7 +386,7 @@ CREATE TABLE `ParametresCCE` (
 --
 
 INSERT INTO `ParametresCCE` (`id_parametre`, `montant_min`) VALUES
-(1, 51.00);
+(1, 50.00);
 
 -- --------------------------------------------------------
 
@@ -833,6 +841,19 @@ INSERT INTO `ValeursDefautReappro` (`id_valeur_reappro_defaut`, `id_article`, `s
 (29, 29, 4.000, 15.000, 5, 'jour'),
 (30, 30, 6.000, 20.000, 5, 'jour');
 
+-- --------------------------------------------------------
+
+--
+-- Structure de la table `ValidationJournee`
+--
+
+CREATE TABLE `ValidationJournee` (
+  `id_journee_validee` bigint(20) UNSIGNED NOT NULL,
+  `date_jour` date NOT NULL,
+  `est_valide` tinyint(1) NOT NULL,
+  `date_validation` datetime NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
+
 --
 -- Index pour les tables déchargées
 --
@@ -1014,6 +1035,12 @@ ALTER TABLE `ValeursDefautReappro`
   ADD UNIQUE KEY `uk_article` (`id_article`);
 
 --
+-- Index pour la table `ValidationJournee`
+--
+ALTER TABLE `ValidationJournee`
+  ADD PRIMARY KEY (`id_journee_validee`);
+
+--
 -- AUTO_INCREMENT pour les tables déchargées
 --
 
@@ -1039,13 +1066,13 @@ ALTER TABLE `Carburant`
 -- AUTO_INCREMENT pour la table `CarteCE`
 --
 ALTER TABLE `CarteCE`
-  MODIFY `id_carte_CE` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=14;
+  MODIFY `id_carte_CE` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=16;
 
 --
 -- AUTO_INCREMENT pour la table `Client`
 --
 ALTER TABLE `Client`
-  MODIFY `id_client` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=14;
+  MODIFY `id_client` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=17;
 
 --
 -- AUTO_INCREMENT pour la table `Connexion`
@@ -1081,7 +1108,7 @@ ALTER TABLE `Horaire`
 -- AUTO_INCREMENT pour la table `JourFermeture`
 --
 ALTER TABLE `JourFermeture`
-  MODIFY `id_fermeture` bigint(20) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `id_fermeture` bigint(20) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
 
 --
 -- AUTO_INCREMENT pour la table `JourSemaine`
@@ -1148,6 +1175,12 @@ ALTER TABLE `TransactionProduit`
 --
 ALTER TABLE `ValeursDefautReappro`
   MODIFY `id_valeur_reappro_defaut` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=31;
+
+--
+-- AUTO_INCREMENT pour la table `ValidationJournee`
+--
+ALTER TABLE `ValidationJournee`
+  MODIFY `id_journee_validee` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
 
 --
 -- Contraintes pour les tables déchargées

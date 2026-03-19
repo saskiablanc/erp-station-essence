@@ -125,5 +125,13 @@ const Requetes = (() => {
     getHorairesBoutique: () => appel("GET", "/json/horaires/boutique"),
     updateHorairesBoutique: (horaires) =>
       appel("POST", "/json/horaires/boutique", { horaires }),
+
+    // ── Sprint 6 — Validation journalière (US16) ──────────
+    getValidationJournee: (date = "") =>
+      appel(
+        "GET",
+        "/json/validation/journee" +
+          (date ? `?date=${encodeURIComponent(date)}` : ""),
+      ),
   };
 })();

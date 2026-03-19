@@ -12,6 +12,7 @@ use App\Controllers\CarburantPrixController;
 use App\Controllers\FermetureController;
 use App\Controllers\HorairesBoutiqueController;
 use App\Controllers\IncidentController;
+use App\Controllers\ValidationController;
 
 $uri = $_SERVER['REQUEST_URI'] ?? '';
 if (str_contains($uri, '/json/')) {
@@ -148,6 +149,9 @@ $router->post('json/reappros/{id}/annuler',        [new ReapproController(), 'an
 // ── Horaires boutique — Sprint 6 (US15) ──────────────────
 $router->get( 'json/horaires/boutique', [new HorairesBoutiqueController(), 'get']);
 $router->post('json/horaires/boutique', [new HorairesBoutiqueController(), 'update']);
+
+// ── Validation journalière — Sprint 6 (US16) ─────────────
+$router->get('json/validation/journee', [new ValidationController(), 'getJournee']);
 
 // ════════════════════════════════════════════════════════
 $page = (string) ($_GET['page'] ?? '');
