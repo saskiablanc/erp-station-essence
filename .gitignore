@@ -13,3 +13,6 @@ Thumbs.db
 # logs
 /storage
 
+# Config db
+
+config/database.php
