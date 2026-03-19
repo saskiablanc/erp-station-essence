@@ -72,7 +72,8 @@ const Requetes = (() => {
     getCCELatest: () => appel("GET", "/json/cce/latest"),
     getCCETransactions: (id) => appel("GET", `/json/cce/${id}/transactions`),
     getCCE: (id) => appel("GET", `/json/cce/${id}`),
-    checkCCEDuplicate: (data) => appel("POST", "/json/cce/check-duplicate", data),
+    checkCCEDuplicate: (data) =>
+      appel("POST", "/json/cce/check-duplicate", data),
     creerCCE: (data) => appel("POST", "/json/cce", data),
     rechargerCCE: (id, mont) =>
       appel("POST", `/json/cce/${id}/recharger`, { montant: mont }),
@@ -101,12 +102,13 @@ const Requetes = (() => {
     updateValeursDefautType: (d) =>
       appel("POST", "/json/reappros/valeurs-defaut-type", d),
 
-    // ── Sprint 6 — Gérant ───────────────────────────────
+    // ── Sprint 6 — Gérant ────────────────────────────────
     getPrix: () => appel("GET", "/json/carburants/prix"),
     modifierPrix: (d) => appel("POST", "/json/carburants/prix", d),
     getIncidents: () => appel("GET", "/json/incidents"),
     creerIncident: (d) => appel("POST", "/json/incidents", d),
-    // ── Sprint 6 — Paramètres CCE (US14) ─────────────────────
+
+    // ── Sprint 6 — Paramètres CCE (US14) ─────────────────
     getCceParams: () => appel("GET", "/json/cce/params"),
     updateMontantMin: (montant) =>
       appel("POST", "/json/cce/params", { montant_min: montant }),
@@ -133,5 +135,11 @@ const Requetes = (() => {
         "/json/validation/journee" +
           (date ? `?date=${encodeURIComponent(date)}` : ""),
       ),
+    // ── Sprint 6 — Base de données (US19) ─────────────────
+    // 4 méthodes génériques — la table est passée en paramètre
+    bddGet: (table) => appel("GET", `/json/bdd/${table}`),
+    bddPost: (table, d) => appel("POST", `/json/bdd/${table}`, d),
+    bddPut: (table, id, d) => appel("POST", `/json/bdd/${table}/${id}`, d),
+    bddDel: (table, id) => appel("POST", `/json/bdd/${table}/${id}/suppr`),
   };
 })();

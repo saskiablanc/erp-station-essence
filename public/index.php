@@ -13,6 +13,8 @@ use App\Controllers\FermetureController;
 use App\Controllers\HorairesBoutiqueController;
 use App\Controllers\IncidentController;
 use App\Controllers\ValidationController;
+use App\Controllers\BddController;
+
 
 $uri = $_SERVER['REQUEST_URI'] ?? '';
 if (str_contains($uri, '/json/')) {
@@ -152,6 +154,13 @@ $router->post('json/horaires/boutique', [new HorairesBoutiqueController(), 'upda
 
 // ── Validation journalière — Sprint 6 (US16) ─────────────
 $router->get('json/validation/journee', [new ValidationController(), 'getJournee']);
+$bdd = new BddController();
+ 
+$router->get( 'json/bdd/{table}',            [$bdd, 'getTable']);
+$router->post('json/bdd/{table}',            [$bdd, 'addTable']);
+$router->post('json/bdd/{table}/{id}/suppr', [$bdd, 'delTable']);
+$router->post('json/bdd/{table}/{id}',       [$bdd, 'putTable']);
+ 
 
 // ════════════════════════════════════════════════════════
 $page = (string) ($_GET['page'] ?? '');
