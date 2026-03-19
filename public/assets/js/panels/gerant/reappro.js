@@ -89,7 +89,8 @@ WM.register("gerant_reappro", {
           statutCls +
           '">' +
           '<td class="ra-cell-id">' +
-          "#" + r.id_reappro +
+          "#" +
+          r.id_reappro +
           "</td>" +
           "<td>" +
           (l ? l.nom_article || "—" : "—") +
@@ -162,5 +163,9 @@ WM.register("gerant_reappro", {
     });
 
     charger();
+
+    // Permet aux autres panels de déclencher un rechargement
+    window.ReapproEvents = window.ReapproEvents || {};
+    window.ReapproEvents.refresh = charger;
   },
 });

@@ -265,6 +265,11 @@ WM.register("gerant_reappro_manuel", {
         chargerProchainNumero();
         selectArticle.value = "";
         inputQty.value = 1;
+
+        // Rafraîchir le panel de consultation si ouvert
+        if (window.ReapproEvents && window.ReapproEvents.refresh) {
+          window.ReapproEvents.refresh();
+        }
       } catch (err) {
         Toast.err(err.message || "Erreur lors de l'envoi");
       }
