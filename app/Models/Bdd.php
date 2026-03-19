@@ -383,6 +383,42 @@ class Bdd
     }
 
     // ═══════════════════════════════════════════════════════
+    //  TransactionCCE
+    // ═══════════════════════════════════════════════════════
+    public function getTransactionCCE(): array
+    {
+        return $this->rows("SELECT id_transaction,id_carte_CE FROM TransactionCCE ORDER BY id_transaction DESC LIMIT 500");
+    }
+
+    public function addTransactionCCE(array $d): array
+    {
+        $idT = (int)($d['id_transaction'] ?? 0);
+        $idC = (int)($d['id_carte_CE'] ?? 0);
+        if ($idT <= 0 || $idC <= 0) throw new RuntimeException('Données invalides');
+        $this->db->execute(
+            "INSERT INTO TransactionCCE(id_transaction,id_carte_CE) VALUES(:t,:c)",
+            [':t' => $idT, ':c' => $idC]
+        );
+        return $this->getTransactionCCE();
+    }
+
+    public function updateTransactionCCE(int $id, array $d): array
+    {
+        $idC = (int)($d['id_carte_CE'] ?? 0);
+        if ($idC <= 0) throw new RuntimeException('id_carte_CE invalide');
+        $this->db->execute(
+            "UPDATE TransactionCCE SET id_carte_CE=:c WHERE id_transaction=:id",
+            [':c' => $idC, ':id' => $id]
+        );
+        return $this->getTransactionCCE();
+    }
+
+    public function deleteTransactionCCE(int $id): void
+    {
+        $this->db->execute("DELETE FROM TransactionCCE WHERE id_transaction=:id", [':id' => $id]);
+    }
+
+    // ═══════════════════════════════════════════════════════
     //  TransactionProduit
     // ═══════════════════════════════════════════════════════
     private function detectTransactionProduitCols(): array
@@ -849,5 +885,55 @@ class Bdd
     public function deleteBonusCCE(int $id): void
     {
         $this->db->execute("DELETE FROM BonusCCE WHERE id_bonus=:id",[':id'=>$id]);
+    }
+
+    // ═══════════════════════════════════════════════════════
+    //  ValidationJournee
+    // ═══════════════════════════════════════════════════════
+    public function getValidationJournee(): array
+    {
+        return $this->rows(
+            "SELECT id_journee_validee,date_jour,est_valide,date_validation
+             FROM ValidationJournee
+             ORDER BY date_jour DESC, id_journee_validee DESC
+             LIMIT 500"
+        );
+    }
+
+    public function addValidationJournee(array $d): array
+    {
+        $dateJour = trim((string)($d['date_jour'] ?? ''));
+        if ($dateJour === '') throw new RuntimeException('date_jour requis');
+        $estValide = (int)($d['est_valide'] ?? 0) ? 1 : 0;
+        $dateValidation = trim((string)($d['date_validation'] ?? date('Y-m-d H:i:s')));
+
+        $this->db->execute(
+            "INSERT INTO ValidationJournee(date_jour,est_valide,date_validation)
+             VALUES(:dj,:v,:dv)",
+            [':dj' => $dateJour, ':v' => $estValide, ':dv' => $dateValidation]
+        );
+        return $this->getValidationJournee();
+    }
+
+    public function updateValidationJournee(int $id, array $d): array
+    {
+        $dateJour = trim((string)($d['date_jour'] ?? ''));
+        if ($dateJour === '') throw new RuntimeException('date_jour requis');
+        $estValide = (int)($d['est_valide'] ?? 0) ? 1 : 0;
+        $dateValidation = trim((string)($d['date_validation'] ?? ''));
+        if ($dateValidation === '') throw new RuntimeException('date_validation requise');
+
+        $this->db->execute(
+            "UPDATE ValidationJournee
+             SET date_jour=:dj, est_valide=:v, date_validation=:dv
+             WHERE id_journee_validee=:id",
+            [':dj' => $dateJour, ':v' => $estValide, ':dv' => $dateValidation, ':id' => $id]
+        );
+        return $this->getValidationJournee();
+    }
+
+    public function deleteValidationJournee(int $id): void
+    {
+        $this->db->execute("DELETE FROM ValidationJournee WHERE id_journee_validee=:id",[':id'=>$id]);
     }
 }

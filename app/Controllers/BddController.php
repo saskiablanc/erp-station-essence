@@ -36,6 +36,7 @@ class BddController extends Controller
             'cce'                 => $this->bdd()->getCarteCCE(),
             'connexion'           => $this->bdd()->getConnexion(),
             'transaction'         => $this->bdd()->getTransaction(),
+            'transaction_cce'     => $this->bdd()->getTransactionCCE(),
             'transaction_produit' => $this->bdd()->getTransactionProduit(),
             'transaction_energie' => $this->bdd()->getTransactionEnergie(),
             'recu'                => $this->bdd()->getRecu(),
@@ -49,6 +50,7 @@ class BddController extends Controller
             'horaire'             => $this->bdd()->getHoraire(),
             'params_cce'          => $this->bdd()->getParamsCCE(),
             'bonus_cce'           => $this->bdd()->getBonusCCE(),
+            'validation_journee'  => $this->bdd()->getValidationJournee(),
             default               => throw new \RuntimeException("Table inconnue: $table"),
         });
     }
@@ -66,6 +68,7 @@ class BddController extends Controller
             'client'              => $this->bdd()->addClient($d),
             'connexion'           => $this->bdd()->addConnexion($d),
             'transaction'         => $this->bdd()->addTransaction($d),
+            'transaction_cce'     => $this->bdd()->addTransactionCCE($d),
             'transaction_produit' => $this->bdd()->addTransactionProduit($d),
             'transaction_energie' => $this->bdd()->addTransactionEnergie($d),
             'recu'                => $this->bdd()->addRecu($d),
@@ -78,6 +81,7 @@ class BddController extends Controller
             'jour_semaine'        => $this->bdd()->addJourSemaine($d),
             'horaire'             => $this->bdd()->addHoraire($d),
             'bonus_cce'           => $this->bdd()->addBonusCCE($d),
+            'validation_journee'  => $this->bdd()->addValidationJournee($d),
             default               => throw new \RuntimeException("Ajout non supporté: $table"),
         });
     }
@@ -96,6 +100,7 @@ class BddController extends Controller
             'cce'                 => $this->bdd()->updateCarteCCE((int)$id, $d),
             'connexion'           => $this->bdd()->updateConnexion((int)$id, $d),
             'transaction'         => $this->bdd()->updateTransaction((int)$id, $d),
+            'transaction_cce'     => $this->bdd()->updateTransactionCCE((int)$id, $d),
             'transaction_produit' => $this->bdd()->updateTransactionProduit((int)$id, $d),
             'transaction_energie' => $this->bdd()->updateTransactionEnergie((int)$id, $d),
             'recu'                => $this->bdd()->updateRecu((int)$id, $d),
@@ -109,6 +114,7 @@ class BddController extends Controller
             'horaire'             => $this->bdd()->updateHoraire((int)$id, $d),
             'params_cce'          => $this->bdd()->updateParamsCCE((int)$id, $d),
             'bonus_cce'           => $this->bdd()->updateBonusCCE((int)$id, $d),
+            'validation_journee'  => $this->bdd()->updateValidationJournee((int)$id, $d),
             default               => throw new \RuntimeException("Modification non supportée: $table"),
         });
     }
@@ -126,6 +132,7 @@ class BddController extends Controller
             'cce'                 => $this->bdd()->deleteCarteCCE((int)$id),
             'connexion'           => $this->bdd()->deleteConnexion((int)$id),
             'transaction'         => $this->bdd()->deleteTransaction((int)$id),
+            'transaction_cce'     => $this->bdd()->deleteTransactionCCE((int)$id),
             'transaction_produit' => $this->bdd()->deleteTransactionProduit((int)$id),
             'transaction_energie' => $this->bdd()->deleteTransactionEnergie((int)$id),
             'recu'                => $this->bdd()->deleteRecu((int)$id),
@@ -138,6 +145,7 @@ class BddController extends Controller
             'jour_semaine'        => $this->bdd()->deleteJourSemaine((int)$id),
             'horaire'             => $this->bdd()->deleteHoraire((int)$id),
             'bonus_cce'           => $this->bdd()->deleteBonusCCE((int)$id),
+            'validation_journee'  => $this->bdd()->deleteValidationJournee((int)$id),
             default               => throw new \RuntimeException("Suppression non supportée: $table"),
         });
     }

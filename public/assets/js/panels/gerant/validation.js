@@ -40,10 +40,8 @@ const GerantValidationPanel = (() => {
           </div>
 
           <div class="gv-row">
-            <label>Tables d’incident</label>
-            <button type="button" class="gv-field gv-action" data-gv-action="incident">
-              Consulter tables d’incident
-            </button>
+            <label>Nombre incidents</label>
+            <input class="gv-input" type="text" data-gv-field="nb_incidents" />
           </div>
         </div>
 
@@ -71,7 +69,7 @@ const GerantValidationPanel = (() => {
       volumeElectricite: root.querySelector('[data-gv-field="volume_electricite"]'),
       montantElectricite: root.querySelector('[data-gv-field="montant_electricite"]'),
       montantTotal: root.querySelector('[data-gv-field="montant_total"]'),
-      incidentButton: root.querySelector('[data-gv-action="incident"]'),
+      nbIncidents: root.querySelector('[data-gv-field="nb_incidents"]'),
       validerButton: root.querySelector('[data-gv-action="valider"]'),
     };
 
@@ -121,14 +119,10 @@ const GerantValidationPanel = (() => {
         fields.montantTotal,
         `${fmtMoney.format(Number(data?.montant_total_eur || 0))} EUR`,
       );
-
-      if (fields.incidentButton) {
-        const nbIncidents = Number(data?.nb_incidents || 0);
-        fields.incidentButton.textContent =
-          nbIncidents > 0
-            ? `Consulter tables d’incident (${nbIncidents})`
-            : "Consulter tables d’incident";
-      }
+      setField(
+        fields.nbIncidents,
+        fmtNumber.format(Number(data?.nb_incidents || 0)),
+      );
 
       if (fields.validerButton) {
         const estValide = Boolean(data?.est_valide);
@@ -155,10 +149,6 @@ const GerantValidationPanel = (() => {
       const action = button.dataset.gvAction;
       if (!action) return;
 
-      if (action === "incident") {
-        Toast?.warn("Consultation des tables d’incident à venir");
-        return;
-      }
       if (action === "releve") {
         Toast?.warn("Consultation des tables relevé à venir");
         return;
