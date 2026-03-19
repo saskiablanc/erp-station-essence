@@ -391,7 +391,7 @@ final class Pompe
         $this->db->beginTransaction();
         try {
             $prixUnitaire = $this->db->query(
-                "SELECT e.type_energie, c.prix_litre, c.stock_litre, el.prix_kwh
+                "SELECT e.type_energie, c.prix_litre, el.prix_kwh
                  FROM Energie e
                  LEFT JOIN Carburant c ON c.id_energie = e.id_energie
                  LEFT JOIN Electricite el ON el.id_energie = e.id_energie
@@ -410,8 +410,17 @@ final class Pompe
             $total = round($qte * $prix, 3);
 
             if ($prixUnitaire['type_energie'] === 'carburant') {
-                $stockLitre = (float) ($prixUnitaire['stock_litre'] ?? 0);
-                if ($stockLitre < $qte) {
+                $stockRow = $this->db->query(
+                    "SELECT s.quantite_stock
+                     FROM Stock s
+                     JOIN Energie e ON e.id_article = s.id_article
+                     WHERE e.id_energie = ?
+                       AND s.type_quantite = 'litre'
+                     LIMIT 1",
+                    [(int) $te['id_energie']]
+                )->fetch();
+
+                if (!$stockRow || (float) ($stockRow['quantite_stock'] ?? 0) < $qte) {
                     throw new RuntimeException('Stock carburant insuffisant pour valider le paiement.', 409);
                 }
             }
@@ -448,21 +457,14 @@ final class Pompe
 
             if ($prixUnitaire['type_energie'] === 'carburant') {
                 $this->db->execute(
-                    "UPDATE Carburant
-                     SET stock_litre = stock_litre - ?
-                     WHERE id_energie = ?",
+                    "UPDATE Stock s
+                     JOIN Energie e ON e.id_article = s.id_article
+                     SET s.quantite_stock = GREATEST(s.quantite_stock - ?, 0)
+                     WHERE e.id_energie = ?
+                       AND s.type_quantite = 'litre'",
                     [$qte, (int) $te['id_energie']]
                 );
             }
-
-            $this->db->execute(
-                "UPDATE Stock s
-                 JOIN Energie e ON e.id_article = s.id_article
-                 SET s.quantite_stock = GREATEST(s.quantite_stock - ?, 0)
-                 WHERE e.id_energie = ?
-                   AND s.type_quantite = 'litre'",
-                [(int) floor($qte), (int) $te['id_energie']]
-            );
             $this->db->execute(
                 "UPDATE Pompe
                  SET statut = 'active', date_debut = NULL, id_transaction_energie = NULL

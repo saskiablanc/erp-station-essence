@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Hôte : localhost
--- Généré le : mer. 18 mars 2026 à 21:14
+-- Généré le : jeu. 19 mars 2026 à 12:23
 -- Version du serveur : 11.8.6-MariaDB-0+deb13u1 from Debian
 -- Version de PHP : 8.4.16
 
@@ -98,7 +98,6 @@ CREATE TABLE `Carburant` (
   `id_carburant` bigint(20) UNSIGNED NOT NULL,
   `id_energie` bigint(20) UNSIGNED NOT NULL,
   `prix_litre` decimal(10,3) NOT NULL,
-  `stock_litre` decimal(10,3) NOT NULL,
   `livraison_min` decimal(10,3) NOT NULL DEFAULT 5.000,
   `libelle` varchar(50) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
@@ -107,12 +106,12 @@ CREATE TABLE `Carburant` (
 -- Déchargement des données de la table `Carburant`
 --
 
-INSERT INTO `Carburant` (`id_carburant`, `id_energie`, `prix_litre`, `stock_litre`, `livraison_min`, `libelle`) VALUES
-(1, 1, 1.799, 4951.072, 30.000, 'SP95'),
-(2, 2, 1.897, 2874.944, 30.000, 'SP98'),
-(3, 3, 1.699, 6879.483, 20.000, 'GAZOLE'),
-(4, 4, 1.759, 4432.688, 30.000, 'E10'),
-(5, 5, 0.999, 1967.319, 10.000, 'E85');
+INSERT INTO `Carburant` (`id_carburant`, `id_energie`, `prix_litre`, `livraison_min`, `libelle`) VALUES
+(1, 1, 1.799, 30.000, 'SP95'),
+(2, 2, 1.897, 30.000, 'SP98'),
+(3, 3, 1.699, 20.000, 'GAZOLE'),
+(4, 4, 1.759, 30.000, 'E10'),
+(5, 5, 0.999, 10.000, 'E85');
 
 -- --------------------------------------------------------
 
@@ -140,7 +139,7 @@ INSERT INTO `CarteCE` (`id_carte_CE`, `id_client`, `code_secret`, `solde_client`
 (4, 4, 4850, 0.000, '2026-03-14', 0),
 (5, 5, 2019, 225.000, '2026-03-17', 200),
 (10, 10, 4665, 433.460, '2026-03-17', 200),
-(12, 12, 4931, 268.900, '2026-03-18', 52),
+(12, 12, 4931, 260.370, '2026-03-18', 52),
 (13, 13, 8207, 7.580, '2026-03-18', 8),
 (14, 14, 4343, 0.000, '2026-03-18', 0),
 (15, 15, 8937, 0.000, '2026-03-18', 0);
@@ -168,13 +167,12 @@ INSERT INTO `Client` (`id_client`, `nom`, `prenom`, `email`, `num_tel`) VALUES
 (2, 'Martin', 'Sophie', 'sophie.martin@email.com', '612345678'),
 (3, 'Durand', 'Pierre', 'pierre.durand@email.com', '698765432'),
 (4, 'Bachov', 'Steven', 's.bach@mail.com', '+0766161603'),
-(5, 'bachova', 'camilia', 'c.bachova@mail.com', '+0766161604'),
+(5, 'Bachova', 'camilia', 'c.bachova@mail.com', '+0766161604'),
 (10, 'Mongrandi', 'Lenny', 'lenny21@gmail.com', '+33618212121'),
 (12, 'Blanc', 'Saskia', 'saskia@gmail.com', '+33677777777'),
-(13, 'alrawahi', 'aser', 'aaa@mail.com', '+99199191199'),
+(13, 'Alrawahi', 'Aser', 'aaa@mail.com', '+99199191199'),
 (14, 'daddy', 'aser', 'aser@gmail.com', '+33754323655'),
-(15, 'Lassauniere', 'Nathan', 'nathan@gmail.com', '0651766318'),
-(16, 'Montariol', 'Gillis', 'gigi@gmail.com', '0768211715');
+(15, 'Lassauniere', 'Nathan', 'nathan@gmail.com', '0651766318');
 
 -- --------------------------------------------------------
 
@@ -435,7 +433,6 @@ CREATE TABLE `Produit` (
   `code_barres` bigint(20) UNSIGNED NOT NULL,
   `id_article` bigint(20) UNSIGNED NOT NULL,
   `libelle_produit` varchar(255) NOT NULL,
-  `quantite_produit` int(10) NOT NULL,
   `prix` decimal(10,3) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
 
@@ -443,30 +440,30 @@ CREATE TABLE `Produit` (
 -- Déchargement des données de la table `Produit`
 --
 
-INSERT INTO `Produit` (`code_barres`, `id_article`, `libelle_produit`, `quantite_produit`, `prix`) VALUES
-(3014760032112, 11, 'Chewing-gum Freedent White 10p', 0, 1.390),
-(3017620425035, 8, 'Chips Lay\'s Nature 45g', 1, 1.490),
-(3057640257578, 17, 'Eau Evian 50cl', 0, 1.190),
-(3175680011800, 12, 'Mentos Fruits 38g', 0, 0.990),
-(3175680091680, 23, 'Dégivrant pare-brise 400ml', 0, 4.990),
-(3228882010053, 18, 'Café Expresso capsule x1', 0, 0.890),
-(3245390214017, 21, 'Briquet BIC classique', 1, 1.990),
-(3245390214024, 22, 'Allumettes x40', 1, 0.890),
-(3400930006903, 30, 'Croissant pur beurre', 1, 1.490),
-(3560070976843, 28, 'Sandwich Jambon-Beurre', 1, 3.990),
-(3571090000148, 24, 'Huile moteur 5W40 1L', 1, 9.990),
-(3600522118015, 26, 'Gel hydroalcoolique 100ml', 1, 2.490),
-(3600524068738, 27, 'Paracétamol 500mg x8', 0, 2.990),
-(3760020509015, 29, 'Wrap Poulet-Crudités', 1, 4.290),
-(5000112657920, 16, 'Red Bull 250ml', 1, 2.490),
-(5000159417891, 13, 'KitKat 2 barres 41.5g', 1, 1.350),
-(5000159461121, 9, 'Chips Pringles Original 40g', 0, 1.790),
-(5099576088745, 25, 'Chiffons microfibre x3', 0, 3.490),
-(5449000131836, 15, 'Coca-Cola Zero 50cl', 1, 2.190),
-(5449000214911, 14, 'Coca-Cola 50cl', 0, 2.190),
-(7622210449283, 10, 'Barre Céréales BelVita x2', 0, 1.290),
-(9771950123005, 19, 'L\'Équipe (journal du jour)', 0, 1.590),
-(9772102347008, 20, 'Télé 7 Jours (hebdo)', 1, 2.200);
+INSERT INTO `Produit` (`code_barres`, `id_article`, `libelle_produit`, `prix`) VALUES
+(3014760032112, 11, 'Chewing-gum Freedent White 10p', 1.390),
+(3017620425035, 8, 'Chips Lay\'s Nature 45g', 1.490),
+(3057640257578, 17, 'Eau Evian 50cl', 1.190),
+(3175680011800, 12, 'Mentos Fruits 38g', 0.990),
+(3175680091680, 23, 'Dégivrant pare-brise 400ml', 4.990),
+(3228882010053, 18, 'Café Expresso capsule x1', 0.890),
+(3245390214017, 21, 'Briquet BIC classique', 1.990),
+(3245390214024, 22, 'Allumettes x40', 0.910),
+(3400930006903, 30, 'Croissant pur beurre', 1.490),
+(3560070976843, 28, 'Sandwich Jambon-Beurre', 3.990),
+(3571090000148, 24, 'Huile moteur 5W40 1L', 9.990),
+(3600522118015, 26, 'Gel hydroalcoolique 100ml', 2.490),
+(3600524068738, 27, 'Paracétamol 500mg x8', 2.990),
+(3760020509015, 29, 'Wrap Poulet-Crudités', 4.290),
+(5000112657920, 16, 'Red Bull 250ml', 2.490),
+(5000159417891, 13, 'KitKat 2 barres 41.5g', 1.350),
+(5000159461121, 9, 'Chips Pringles Original 40g', 1.790),
+(5099576088745, 25, 'Chiffons microfibre x3', 3.490),
+(5449000131836, 15, 'Coca-Cola Zero 50cl', 2.190),
+(5449000214911, 14, 'Coca-Cola 50cl', 2.190),
+(7622210449283, 10, 'Barre Céréales BelVita x2', 1.290),
+(9771950123005, 19, 'L\'Équipe (journal du jour)', 1.590),
+(9772102347008, 20, 'Télé 7 Jours (hebdo)', 2.200);
 
 -- --------------------------------------------------------
 
@@ -523,7 +520,8 @@ INSERT INTO `Recu` (`id_recu`, `id_transaction`, `num_carte`, `horodatage`) VALU
 (13, 48, 100048, '2026-03-17 14:34:03'),
 (14, 56, 200056, '2026-03-18 13:21:19'),
 (15, 57, 100057, '2026-03-18 16:34:37'),
-(16, 58, 300058, '2026-03-18 16:35:24');
+(16, 58, 300058, '2026-03-18 16:35:24'),
+(17, 59, 200059, '2026-03-19 00:32:22');
 
 -- --------------------------------------------------------
 
@@ -534,7 +532,7 @@ INSERT INTO `Recu` (`id_recu`, `id_transaction`, `num_carte`, `horodatage`) VALU
 CREATE TABLE `Stock` (
   `id_stock` bigint(20) UNSIGNED NOT NULL,
   `id_article` bigint(20) UNSIGNED NOT NULL,
-  `quantite_stock` int(10) NOT NULL,
+  `quantite_stock` decimal(10,3) NOT NULL,
   `type_quantite` enum('litre','unite') NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
 
@@ -543,29 +541,34 @@ CREATE TABLE `Stock` (
 --
 
 INSERT INTO `Stock` (`id_stock`, `id_article`, `quantite_stock`, `type_quantite`) VALUES
-(1, 8, 96, 'unite'),
-(2, 9, 96, 'unite'),
-(3, 10, 90, 'unite'),
-(4, 11, 97, 'unite'),
-(5, 12, 98, 'unite'),
-(6, 13, 96, 'unite'),
-(7, 14, 92, 'unite'),
-(8, 15, 97, 'unite'),
-(9, 16, 93, 'unite'),
-(10, 17, 95, 'unite'),
-(11, 18, 90, 'unite'),
-(12, 19, 98, 'unite'),
-(13, 20, 96, 'unite'),
-(14, 21, 96, 'unite'),
-(15, 22, 99, 'unite'),
-(16, 23, 94, 'unite'),
-(17, 24, 97, 'unite'),
-(18, 25, 95, 'unite'),
-(19, 26, 97, 'unite'),
-(20, 27, 94, 'unite'),
-(21, 28, 99, 'unite'),
-(22, 29, 98, 'unite'),
-(23, 30, 97, 'unite');
+(1, 8, 96.000, 'unite'),
+(2, 9, 96.000, 'unite'),
+(3, 10, 90.000, 'unite'),
+(4, 11, 97.000, 'unite'),
+(5, 12, 98.000, 'unite'),
+(6, 13, 95.000, 'unite'),
+(7, 14, 91.000, 'unite'),
+(8, 15, 97.000, 'unite'),
+(9, 16, 93.000, 'unite'),
+(10, 17, 95.000, 'unite'),
+(11, 18, 90.000, 'unite'),
+(12, 19, 98.000, 'unite'),
+(13, 20, 96.000, 'unite'),
+(14, 21, 96.000, 'unite'),
+(15, 22, 99.000, 'unite'),
+(16, 23, 93.000, 'unite'),
+(17, 24, 97.000, 'unite'),
+(18, 25, 95.000, 'unite'),
+(19, 26, 97.000, 'unite'),
+(20, 27, 94.000, 'unite'),
+(21, 28, 99.000, 'unite'),
+(22, 29, 98.000, 'unite'),
+(23, 30, 97.000, 'unite'),
+(24, 1, 4951.072, 'litre'),
+(25, 2, 2874.944, 'litre'),
+(26, 3, 6879.483, 'litre'),
+(27, 4, 4432.688, 'litre'),
+(28, 5, 1948.797, 'litre');
 
 -- --------------------------------------------------------
 
@@ -623,7 +626,9 @@ INSERT INTO `Transaction` (`id_transaction`, `prix_total`, `date_heure`) VALUES
 (55, 11.580, '2026-03-17 21:43:35'),
 (56, 17.760, '2026-03-18 13:21:12'),
 (57, 2.190, '2026-03-18 16:34:24'),
-(58, 3.080, '2026-03-18 16:35:20');
+(58, 3.080, '2026-03-18 16:35:20'),
+(59, 8.530, '2026-03-19 00:32:19'),
+(60, 18.503, '2026-03-19 07:46:11');
 
 -- --------------------------------------------------------
 
@@ -644,7 +649,8 @@ INSERT INTO `TransactionCCE` (`id_transaction`, `id_carte_CE`) VALUES
 (53, 3),
 (54, 10),
 (55, 10),
-(56, 12);
+(56, 12),
+(59, 12);
 
 -- --------------------------------------------------------
 
@@ -676,7 +682,8 @@ INSERT INTO `TransactionEnergie` (` id_transaction_energie`, `id_transaction`, `
 (23, 27, 2, 16.303, '00:00:00', 'payee', 2),
 (24, 34, 3, 32.867, '00:00:00', 'payee', 2),
 (25, 36, 4, 14.040, '00:00:00', 'payee', 2),
-(26, 49, 5, 11.431, '00:00:00', 'payee', 1);
+(26, 49, 5, 11.431, '00:00:00', 'payee', 1),
+(27, 60, 5, 18.522, '00:00:00', 'payee', 1);
 
 -- --------------------------------------------------------
 
@@ -788,7 +795,10 @@ INSERT INTO `TransactionProduit` (`id_transaction_produit`, ` id_transaction`, `
 (92, 56, 3017620425035, 1),
 (93, 57, 5449000214911, 1),
 (94, 58, 5449000214911, 1),
-(95, 58, 3228882010053, 1);
+(95, 58, 3228882010053, 1),
+(96, 59, 5000159417891, 1),
+(97, 59, 5449000214911, 1),
+(98, 59, 3175680091680, 1);
 
 -- --------------------------------------------------------
 
@@ -1144,31 +1154,31 @@ ALTER TABLE `Reapprovisionnement`
 -- AUTO_INCREMENT pour la table `Recu`
 --
 ALTER TABLE `Recu`
-  MODIFY `id_recu` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=17;
+  MODIFY `id_recu` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=18;
 
 --
 -- AUTO_INCREMENT pour la table `Stock`
 --
 ALTER TABLE `Stock`
-  MODIFY `id_stock` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=24;
+  MODIFY `id_stock` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=31;
 
 --
 -- AUTO_INCREMENT pour la table `Transaction`
 --
 ALTER TABLE `Transaction`
-  MODIFY `id_transaction` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=59;
+  MODIFY `id_transaction` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=61;
 
 --
 -- AUTO_INCREMENT pour la table `TransactionEnergie`
 --
 ALTER TABLE `TransactionEnergie`
-  MODIFY ` id_transaction_energie` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=27;
+  MODIFY ` id_transaction_energie` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=28;
 
 --
 -- AUTO_INCREMENT pour la table `TransactionProduit`
 --
 ALTER TABLE `TransactionProduit`
-  MODIFY `id_transaction_produit` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=96;
+  MODIFY `id_transaction_produit` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=99;
 
 --
 -- AUTO_INCREMENT pour la table `ValeursDefautReappro`

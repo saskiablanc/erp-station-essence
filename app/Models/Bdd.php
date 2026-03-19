@@ -81,7 +81,7 @@ class Bdd
         try {
             $this->db->execute("INSERT INTO Article(type_article) VALUES('produit')");
             $idA = (int)$this->db->lastInsertId();
-            $this->db->execute("INSERT INTO Produit(code_barres,id_article,libelle_produit,quantite_produit,prix) VALUES(:c,:a,:l,0,:p)",[':c'=>$code,':a'=>$idA,':l'=>$lib,':p'=>$prix]);
+            $this->db->execute("INSERT INTO Produit(code_barres,id_article,libelle_produit,prix) VALUES(:c,:a,:l,:p)",[':c'=>$code,':a'=>$idA,':l'=>$lib,':p'=>$prix]);
             $this->db->execute("INSERT INTO Stock(id_article,quantite_stock,type_quantite) VALUES(:a,0,'unite')",[':a'=>$idA]);
             $this->db->commit();
         } catch(\Throwable $e) { $this->db->rollBack(); throw new RuntimeException($e->getMessage()); }
@@ -140,22 +140,100 @@ class Bdd
     // ═══════════════════════════════════════════════════════
     public function getCarburant(): array
     {
-        return $this->rows("SELECT id_carburant,id_energie,libelle,prix_litre,stock_litre,livraison_min FROM Carburant ORDER BY libelle ASC");
+        return $this->rows(
+            "SELECT c.id_carburant,
+                    c.id_energie,
+                    c.libelle,
+                    c.prix_litre,
+                    c.livraison_min,
+                    COALESCE(s.quantite_stock, 0) AS quantite_stock
+             FROM Carburant c
+             JOIN Energie e ON e.id_energie = c.id_energie
+             LEFT JOIN Stock s
+               ON s.id_article = e.id_article
+              AND s.type_quantite = 'litre'
+             ORDER BY c.libelle ASC"
+        );
     }
     public function addCarburant(array $d): array
     {
         $idE=(int)($d['id_energie']??0); $lib=trim((string)($d['libelle']??''));
-        $prix=(float)($d['prix_litre']??0); $stk=(float)($d['stock_litre']??0); $lmin=(float)($d['livraison_min']??0);
+        $prix=(float)($d['prix_litre']??0);
+        $stk=(float)($d['quantite_stock'] ?? 0);
+        $lmin=(float)($d['livraison_min']??0);
         if ($idE<=0||$lib===''||$prix<=0) throw new RuntimeException('Données invalides');
-        $this->db->execute("INSERT INTO Carburant(id_energie,libelle,prix_litre,stock_litre,livraison_min) VALUES(:e,:l,:p,:s,:m)",[':e'=>$idE,':l'=>$lib,':p'=>$prix,':s'=>$stk,':m'=>$lmin]);
+        $energie = $this->db->query(
+            "SELECT id_article FROM Energie WHERE id_energie = :id LIMIT 1",
+            [':id' => $idE]
+        )->fetch(PDO::FETCH_ASSOC);
+        if (!$energie) throw new RuntimeException('Énergie introuvable');
+
+        $idA = (int)($energie['id_article'] ?? 0);
+        if ($idA <= 0) throw new RuntimeException('Article énergie introuvable');
+
+        $this->db->beginTransaction();
+        try {
+            $this->db->execute(
+                "INSERT INTO Carburant(id_energie,libelle,prix_litre,livraison_min)
+                 VALUES(:e,:l,:p,:m)",
+                [':e'=>$idE,':l'=>$lib,':p'=>$prix,':m'=>$lmin]
+            );
+            $this->db->execute(
+                "INSERT INTO Stock(id_article,quantite_stock,type_quantite)
+                 VALUES(:a,:q,'litre')
+                 ON DUPLICATE KEY UPDATE quantite_stock = VALUES(quantite_stock), type_quantite = 'litre'",
+                [':a' => $idA, ':q' => $stk]
+            );
+            $this->db->commit();
+        } catch(\Throwable $e) {
+            $this->db->rollBack();
+            throw new RuntimeException($e->getMessage());
+        }
         return $this->getCarburant();
     }
     public function updateCarburant(int $id, array $d): array
     {
         $lib=trim((string)($d['libelle']??'')); $prix=(float)($d['prix_litre']??0);
-        $stk=(float)($d['stock_litre']??0); $lmin=(float)($d['livraison_min']??0);
+        $lmin=(float)($d['livraison_min']??0);
+        $hasStock = array_key_exists('quantite_stock', $d);
+        $stk=(float)($d['quantite_stock'] ?? 0);
         if ($lib===''||$prix<=0) throw new RuntimeException('Données invalides');
-        $this->db->execute("UPDATE Carburant SET libelle=:l,prix_litre=:p,stock_litre=:s,livraison_min=:m WHERE id_carburant=:id",[':l'=>$lib,':p'=>$prix,':s'=>$stk,':m'=>$lmin,':id'=>$id]);
+
+        $this->db->beginTransaction();
+        try {
+            $this->db->execute(
+                "UPDATE Carburant
+                 SET libelle=:l,prix_litre=:p,livraison_min=:m
+                 WHERE id_carburant=:id",
+                [':l'=>$lib,':p'=>$prix,':m'=>$lmin,':id'=>$id]
+            );
+
+            if ($hasStock) {
+                $row = $this->db->query(
+                    "SELECT e.id_article
+                     FROM Carburant c
+                     JOIN Energie e ON e.id_energie = c.id_energie
+                     WHERE c.id_carburant = :id
+                     LIMIT 1",
+                    [':id' => $id]
+                )->fetch(PDO::FETCH_ASSOC);
+                if (!$row) throw new RuntimeException('Carburant introuvable');
+                $idA = (int)($row['id_article'] ?? 0);
+                if ($idA <= 0) throw new RuntimeException('Article carburant introuvable');
+
+                $this->db->execute(
+                    "INSERT INTO Stock(id_article,quantite_stock,type_quantite)
+                     VALUES(:a,:q,'litre')
+                     ON DUPLICATE KEY UPDATE quantite_stock = VALUES(quantite_stock), type_quantite = 'litre'",
+                    [':a' => $idA, ':q' => $stk]
+                );
+            }
+
+            $this->db->commit();
+        } catch(\Throwable $e) {
+            $this->db->rollBack();
+            throw new RuntimeException($e->getMessage());
+        }
         return $this->getCarburant();
     }
     public function deleteCarburant(int $id): void

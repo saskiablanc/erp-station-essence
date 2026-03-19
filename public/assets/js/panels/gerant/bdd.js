@@ -226,7 +226,7 @@ const BddPanel = (() => {
         { f: "id_energie", label: "id_energie", w: "80px" },
         { f: "libelle", label: "Libellé", w: "" },
         { f: "prix_litre", label: "Prix/L (€)", w: "90px", isPrice: true },
-        { f: "stock_litre", label: "Stock (L)", w: "80px" },
+        { f: "quantite_stock", label: "Stock (L)", w: "90px" },
         { f: "livraison_min", label: "Liv. min", w: "80px" },
       ],
       addFields: [
@@ -252,8 +252,8 @@ const BddPanel = (() => {
           ph: "1.80",
         },
         {
-          id: "bdd-stock_litre",
-          f: "stock_litre",
+          id: "bdd-quantite_stock",
+          f: "quantite_stock",
           label: "Stock (L)",
           type: "number",
           ph: "0",
@@ -269,7 +269,7 @@ const BddPanel = (() => {
       editFields: [
         { f: "libelle", label: "Libellé", type: "text" },
         { f: "prix_litre", label: "Prix/L (€)", type: "number", isPrice: true },
-        { f: "stock_litre", label: "Stock (L)", type: "number" },
+        { f: "quantite_stock", label: "Stock (L)", type: "number" },
         { f: "livraison_min", label: "Liv. min", type: "number" },
       ],
       load: () => Requetes.bddGet("carburant"),
@@ -282,7 +282,7 @@ const BddPanel = (() => {
         esc(r.id_energie),
         esc(r.libelle),
         fmt(r.prix_litre) + "&nbsp;€",
-        fmt(r.stock_litre, 0) + "&nbsp;L",
+        fmt(r.quantite_stock, 3) + "&nbsp;L",
         esc(r.livraison_min),
       ],
     },
