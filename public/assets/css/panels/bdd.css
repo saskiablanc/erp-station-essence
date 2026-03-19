@@ -103,14 +103,13 @@
   flex: 1;
   min-height: 0;
   overflow: auto;
-  /* IMPORTANT : display block (pas flex) pour que margin:auto fonctionne */
   display: block;
+  padding: 0 12px 12px;
 }
 
-/* ── Centrage : max 960px, centré horizontalement ──────── */
+/* ── Conteneur table : s'adapte à la largeur ────────────── */
 .bdd-table-center {
-  max-width: 960px;
-  margin: 0 auto; /* centrage horizontal */
+  width: 100%;
   min-width: min-content;
 }
 
@@ -118,7 +117,7 @@
 .bdd-table {
   width: 100%;
   border-collapse: collapse;
-  table-layout: fixed;
+  table-layout: auto;
 }
 
 /* ── En-têtes ───────────────────────────────────────────── */

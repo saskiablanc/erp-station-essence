@@ -8,68 +8,77 @@ WM.register("gerant_reappro_manuel", {
   buildHTML() {
     return `
       <div class="rm-panel">
-        <div class="rm-form" id="rm-form">
-          <div class="rm-row">
-            <label class="rm-label">N° Ordre</label>
-            <input type="text" class="rm-input" id="rm-num" value="Chargement..." disabled>
+
+        <!-- En-tête : N° ordre + date souhaitée -->
+        <div class="rm-header">
+          <div class="rm-header-row">
+            <span class="rm-header-label">N° Ordre</span>
+            <span class="rm-header-val" id="rm-num">…</span>
           </div>
-          <div class="rm-row">
-            <label class="rm-label">Nom Article</label>
-            <select id="rm-article" class="rm-input rm-input--select">
-              <option value="">Chargement...</option>
-            </select>
-          </div>
-          <div class="rm-row">
-            <label class="rm-label">Quantité</label>
-            <input type="number" class="rm-input" id="rm-qty" min="1" value="1">
-          </div>
-          <div class="rm-row">
-            <label class="rm-label">Statut</label>
-            <input type="text" class="rm-input" value="En cours" disabled>
-          </div>
-          <div class="rm-row">
-            <label class="rm-label">Date de Création</label>
-            <input type="text" class="rm-input" id="rm-date-creation" disabled>
-          </div>
-          <div class="rm-row">
-            <label class="rm-label">Date souhaitée</label>
-            <input type="date" class="rm-input" id="rm-date-souhaitee">
-          </div>
-          <div class="rm-row">
-            <label class="rm-label">Date d'arrivée</label>
-            <input type="text" class="rm-input" value="—" disabled>
-          </div>
-          <div class="rm-actions">
-            <button class="rm-btn rm-btn--cancel" id="rm-cancel">Annuler</button>
-            <button class="rm-btn rm-btn--send" id="rm-send">Envoyer</button>
+          <div class="rm-header-row">
+            <span class="rm-header-label">Date souhaitée</span>
+            <input type="date" class="rm-date-input" id="rm-date-souhaitee">
           </div>
         </div>
+
+        <!-- Formulaire ajout ligne -->
+        <div class="rm-add-row">
+          <select id="rm-article" class="rm-sel">
+            <option value="">Chargement…</option>
+          </select>
+          <input type="number" id="rm-qty" class="rm-qty-input" min="1" value="1" placeholder="Qté">
+          <button class="rm-btn-add" id="rm-add">+ Ajouter</button>
+        </div>
+
+        <!-- Panier de lignes -->
+        <div class="rm-lines-wrap">
+          <table class="rm-lines-table" id="rm-lines-table">
+            <thead>
+              <tr>
+                <th>Article</th>
+                <th class="rm-th-qty">Qté</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="rm-lines-body">
+              <tr id="rm-empty-row">
+                <td colspan="3" class="rm-empty">Aucun article ajouté</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Actions -->
+        <div class="rm-footer">
+          <button class="rm-btn rm-btn--cancel" id="rm-cancel">Réinitialiser</button>
+          <button class="rm-btn rm-btn--send" id="rm-send" disabled>Envoyer la commande</button>
+        </div>
+
       </div>
     `;
   },
 
   onMount() {
-    var inputNum = document.getElementById("rm-num");
     var selectArticle = document.getElementById("rm-article");
     var inputQty = document.getElementById("rm-qty");
-    var inputDateSouhaitee = document.getElementById("rm-date-souhaitee");
-    var inputDateCreation = document.getElementById("rm-date-creation");
+    var inputDate = document.getElementById("rm-date-souhaitee");
+    var spanNum = document.getElementById("rm-num");
+    var btnAdd = document.getElementById("rm-add");
     var btnSend = document.getElementById("rm-send");
     var btnCancel = document.getElementById("rm-cancel");
+    var tbody = document.getElementById("rm-lines-body");
+    var emptyRow = document.getElementById("rm-empty-row");
 
-    function setNumeroOrdre(id) {
-      inputNum.value = id ? "#" + id : "AUTO";
-    }
-
-    // Date de création = aujourd'hui
-    var today = new Date().toISOString().split("T")[0];
-    inputDateCreation.value = today;
+    // Panier local : [{id_article, nom_article, quantite}]
+    var lignes = [];
+    var articlesMap = {}; // id_article -> nom_article
 
     // Date souhaitée par défaut : demain
     var demain = new Date();
     demain.setDate(demain.getDate() + 1);
-    inputDateSouhaitee.value = demain.toISOString().split("T")[0];
+    inputDate.value = demain.toISOString().split("T")[0];
 
+    // ── Numéro d'ordre estimé ────────────────────────────────
     async function chargerProchainNumero() {
       try {
         var reappros = await Requetes.getReappros();
@@ -77,29 +86,37 @@ WM.register("gerant_reappro_manuel", {
         reappros.forEach(function (r) {
           maxId = Math.max(maxId, parseInt(r.id_reappro, 10) || 0);
         });
-        setNumeroOrdre(maxId + 1);
+        spanNum.textContent = "#" + (maxId + 1);
       } catch (_) {
-        setNumeroOrdre(null);
+        spanNum.textContent = "AUTO";
       }
     }
 
-    // Charger les articles
+    // ── Chargement articles ──────────────────────────────────
     async function chargerArticles() {
       try {
         var articles = await Requetes.getArticlesReappro();
+        articlesMap = {};
+        articles.forEach(function (a) {
+          articlesMap[a.id_article] = a.nom_article;
+        });
         selectArticle.innerHTML =
           '<option value="">— Choisir un article —</option>' +
           articles
             .map(function (a) {
+              var type = String(a.type_article || "").replace(
+                /^./,
+                function (c) {
+                  return c.toUpperCase();
+                },
+              );
               return (
                 '<option value="' +
                 a.id_article +
                 '">' +
                 a.nom_article +
                 " (" +
-                String(a.type_article || "").replace(/^./, function (c) {
-                  return c.toUpperCase();
-                }) +
+                type +
                 ")</option>"
               );
             })
@@ -109,39 +126,125 @@ WM.register("gerant_reappro_manuel", {
       }
     }
 
-    function resetForm() {
-      selectArticle.value = "";
-      inputQty.value = "1";
-      inputDateSouhaitee.value = demain.toISOString().split("T")[0];
-      chargerProchainNumero();
+    // ── Rendu du tableau de lignes ───────────────────────────
+    function renderLignes() {
+      // Supprimer toutes les lignes sauf emptyRow (on le retire puis remet)
+      while (tbody.firstChild) tbody.removeChild(tbody.firstChild);
+
+      if (lignes.length === 0) {
+        tbody.appendChild(emptyRow);
+        btnSend.disabled = true;
+        return;
+      }
+
+      btnSend.disabled = false;
+      lignes.forEach(function (ligne, idx) {
+        var tr = document.createElement("tr");
+        tr.className = "rm-line-row";
+        tr.innerHTML =
+          '<td class="rm-line-nom">' +
+          ligne.nom_article +
+          "</td>" +
+          '<td class="rm-line-qty">' +
+          '<input type="number" class="rm-qty-inline" min="1" value="' +
+          ligne.quantite +
+          '" data-idx="' +
+          idx +
+          '">' +
+          "</td>" +
+          '<td class="rm-line-del"><button class="rm-del" data-idx="' +
+          idx +
+          '">✕</button></td>';
+        tbody.appendChild(tr);
+      });
+
+      // Listeners dynamiques sur les inputs et boutons de suppression
+      tbody.querySelectorAll(".rm-qty-inline").forEach(function (inp) {
+        inp.addEventListener("change", function () {
+          var i = parseInt(this.getAttribute("data-idx"), 10);
+          var v = parseInt(this.value, 10);
+          if (v > 0) lignes[i].quantite = v;
+          else this.value = lignes[i].quantite;
+        });
+      });
+      tbody.querySelectorAll(".rm-del").forEach(function (btn) {
+        btn.addEventListener("click", function () {
+          var i = parseInt(this.getAttribute("data-idx"), 10);
+          lignes.splice(i, 1);
+          renderLignes();
+        });
+      });
     }
 
-    // US21 critère 2 : lancer le réapprovisionnement
-    btnSend.addEventListener("click", async function () {
-      var idArticle = parseInt(selectArticle.value);
-      var qty = parseInt(inputQty.value);
-      var dateSouhaitee = inputDateSouhaitee.value || null;
+    // ── Ajout d'une ligne ────────────────────────────────────
+    btnAdd.addEventListener("click", function () {
+      var idArticle = parseInt(selectArticle.value, 10);
+      var qty = parseInt(inputQty.value, 10);
+      var nom = articlesMap[idArticle];
 
       if (!idArticle) {
         Toast.warn("Sélectionne un article");
         return;
       }
-      if (!qty || qty <= 0) {
+      if (!qty || qty < 1) {
         Toast.warn("Quantité invalide");
         return;
       }
 
-      // US21 critère 3 : formulaire articles + quantités
+      // US21 : on peut commander plusieurs articles en même temps
+      // Si l'article est déjà dans le panier, on cumule les quantités
+      var existant = null;
+      lignes.forEach(function (l) {
+        if (l.id_article === idArticle) existant = l;
+      });
+
+      if (existant) {
+        existant.quantite += qty;
+      } else {
+        lignes.push({ id_article: idArticle, nom_article: nom, quantite: qty });
+      }
+
+      // Remettre le sélecteur à zéro et la quantité à 1
+      selectArticle.value = "";
+      inputQty.value = 1;
+      renderLignes();
+    });
+
+    // ── Envoi ────────────────────────────────────────────────
+    btnSend.addEventListener("click", async function () {
+      if (lignes.length === 0) {
+        Toast.warn("Aucune ligne à commander");
+        return;
+      }
+
+      var payload = {
+        date_souhaitee: inputDate.value || null,
+        lignes: lignes.map(function (l) {
+          return { id_article: l.id_article, quantite: l.quantite };
+        }),
+      };
+
       try {
-        var res = await Requetes.creerReappro({
-          date_souhaitee: dateSouhaitee,
-          lignes: [{ id_article: idArticle, quantite: qty }],
-        });
+        // US21 critère 2 : lancer le réapprovisionnement
+        var res = await Requetes.creerReappro(payload);
 
         // US21 critère 4 : confirmation avec numéro d'ordre, statut, date/heure
+        var today = new Date().toLocaleDateString("fr-FR");
+        var lignesHtml = lignes
+          .map(function (l) {
+            return (
+              "<tr><td>" +
+              l.nom_article +
+              '</td><td style="text-align:right;padding-left:12px">' +
+              l.quantite +
+              "</td></tr>"
+            );
+          })
+          .join("");
+
         await Swal.fire({
           icon: "success",
-          title: "Réapprovisionnement créé",
+          title: "Commande envoyée",
           html:
             '<div style="text-align:left;font-size:13px;">' +
             "<b>N° Ordre :</b> #" +
@@ -149,20 +252,37 @@ WM.register("gerant_reappro_manuel", {
             "<br>" +
             "<b>Statut :</b> En cours<br>" +
             "<b>Date :</b> " +
-            (res.reappro ? res.reappro.date_reappro : today) +
-            "</div>",
+            today +
+            "<br><br>" +
+            '<table style="width:100%;font-size:12px;">' +
+            '<tr><th style="text-align:left">Article</th><th style="text-align:right">Qté</th></tr>' +
+            lignesHtml +
+            "</table></div>",
         });
 
-        setNumeroOrdre((parseInt(res.id_reappro, 10) || 0) + 1);
-        resetForm();
+        lignes = [];
+        renderLignes();
+        chargerProchainNumero();
+        selectArticle.value = "";
+        inputQty.value = 1;
       } catch (err) {
-        Toast.err(err.message);
+        Toast.err(err.message || "Erreur lors de l'envoi");
       }
     });
 
-    btnCancel.addEventListener("click", resetForm);
+    // ── Réinitialiser ────────────────────────────────────────
+    btnCancel.addEventListener("click", function () {
+      lignes = [];
+      renderLignes();
+      selectArticle.value = "";
+      inputQty.value = 1;
+      inputDate.value = demain.toISOString().split("T")[0];
+      chargerProchainNumero();
+    });
 
+    // ── Init ─────────────────────────────────────────────────
     chargerArticles();
     chargerProchainNumero();
+    renderLignes();
   },
 });
