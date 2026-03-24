@@ -153,7 +153,11 @@ $router->get( 'json/horaires/boutique', [new HorairesBoutiqueController(), 'get'
 $router->post('json/horaires/boutique', [new HorairesBoutiqueController(), 'update']);
 
 // ── Validation journalière — Sprint 6 (US16) ─────────────
-$router->get('json/validation/journee', [new ValidationController(), 'getJournee']);
+$router->get( 'json/validation/journee',              [new ValidationController(), 'getJournee']);
+$router->post('json/validation/journee',              [new ValidationController(), 'postJournee']);
+$router->get( 'json/validation/journees-validees',    [new ValidationController(), 'getJourneesValidees']);
+$router->get( 'json/validation/transactions',         [new ValidationController(), 'getTransactionsJour']);
+$router->get( 'json/validation/incidents',            [new ValidationController(), 'getIncidentsJour']);
 $bdd = new BddController();
  
 $router->get( 'json/bdd/{table}',            [$bdd, 'getTable']);

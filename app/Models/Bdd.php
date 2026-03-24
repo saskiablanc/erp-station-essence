@@ -387,6 +387,80 @@ class Bdd
         $this->db->execute("DELETE FROM Connexion WHERE id_connexion=:id",[':id'=>$id]);
     }
 
+    /**
+     * Vérifie si la journée d'une date donnée est verrouillée (validée par le gérant).
+     */
+    private function isJourneeTxValidee(string $dateJour): bool
+    {
+        $row = $this->db->query(
+            'SELECT est_valide FROM `ValidationTransactions`
+             WHERE date_jour = :d ORDER BY id_validation_tx DESC LIMIT 1',
+            ['d' => $dateJour]
+        )->fetch(\PDO::FETCH_ASSOC);
+        return $row && (int)$row['est_valide'] === 1;
+    }
+
+    private function isJourneeIncValidee(string $dateJour): bool
+    {
+        $row = $this->db->query(
+            'SELECT est_valide FROM `ValidationIncidents`
+             WHERE date_jour = :d ORDER BY id_validation_inc DESC LIMIT 1',
+            ['d' => $dateJour]
+        )->fetch(\PDO::FETCH_ASSOC);
+        return $row && (int)$row['est_valide'] === 1;
+    }
+
+    private function guardTransaction(int $id): void
+    {
+        $row = $this->db->query(
+            'SELECT DATE(date_heure) AS jour FROM `Transaction` WHERE id_transaction = :id LIMIT 1',
+            ['id' => $id]
+        )->fetch(\PDO::FETCH_ASSOC);
+        if ($row && $this->isJourneeTxValidee($row['jour'])) {
+            throw new RuntimeException('Transactions du ' . $row['jour'] . ' déjà validées — modification impossible');
+        }
+    }
+
+    private function guardTransactionProduit(int $id): void
+    {
+        $row = $this->db->query(
+            'SELECT DATE(t.date_heure) AS jour
+             FROM TransactionProduit tp
+             JOIN `Transaction` t ON t.id_transaction = tp.`' . ' id_transaction' . '`
+             WHERE tp.id_transaction_produit = :id LIMIT 1',
+            ['id' => $id]
+        )->fetch(\PDO::FETCH_ASSOC);
+        if ($row && $this->isJourneeTxValidee($row['jour'])) {
+            throw new RuntimeException('Transactions du ' . $row['jour'] . ' déjà validées — modification impossible');
+        }
+    }
+
+    private function guardTransactionEnergie(int $id): void
+    {
+        $pkQ = '`' . self::TE_PK . '`';
+        $row = $this->db->query(
+            "SELECT DATE(t.date_heure) AS jour
+             FROM TransactionEnergie te
+             JOIN `Transaction` t ON t.id_transaction = te.id_transaction
+             WHERE te.{$pkQ} = :id LIMIT 1",
+            ['id' => $id]
+        )->fetch(\PDO::FETCH_ASSOC);
+        if ($row && $this->isJourneeTxValidee($row['jour'])) {
+            throw new RuntimeException('Transactions du ' . $row['jour'] . ' déjà validées — modification impossible');
+        }
+    }
+
+    private function guardIncident(int $id): void
+    {
+        $row = $this->db->query(
+            'SELECT date_creation AS jour FROM `FicheIncident` WHERE id_ref_unique = :id LIMIT 1',
+            ['id' => $id]
+        )->fetch(\PDO::FETCH_ASSOC);
+        if ($row && $this->isJourneeIncValidee($row['jour'])) {
+            throw new RuntimeException('Incidents du ' . $row['jour'] . ' déjà validés — modification impossible');
+        }
+    }
+
     // ═══════════════════════════════════════════════════════
     //  Transaction
     // ═══════════════════════════════════════════════════════
@@ -403,6 +477,7 @@ class Bdd
     }
     public function updateTransaction(int $id, array $d): array
     {
+        $this->guardTransaction($id);
         $prix=(float)($d['prix_total']??0); $date=trim((string)($d['date_heure']??''));
         if ($date==='') throw new RuntimeException('date_heure requise');
         $this->db->execute("UPDATE `Transaction` SET prix_total=:p,date_heure=:d WHERE id_transaction=:id",[':p'=>$prix,':d'=>$date,':id'=>$id]);
@@ -410,6 +485,7 @@ class Bdd
     }
     public function deleteTransaction(int $id): void
     {
+        $this->guardTransaction($id);
         $this->db->execute("DELETE FROM `Transaction` WHERE id_transaction=:id",[':id'=>$id]);
     }
 
@@ -471,12 +547,14 @@ class Bdd
     }
     public function updateTransactionProduit(int $id, array $d): array
     {
+        $this->guardTransactionProduit($id);
         $qty=(int)($d['quantite_produit_totale']??0);
         $this->db->execute("UPDATE TransactionProduit SET quantite_produit_totale=:q WHERE id_transaction_produit=:id",[':q'=>$qty,':id'=>$id]);
         return $this->getTransactionProduit();
     }
     public function deleteTransactionProduit(int $id): void
     {
+        $this->guardTransactionProduit($id);
         $this->db->execute("DELETE FROM TransactionProduit WHERE id_transaction_produit=:id",[':id'=>$id]);
     }
 
@@ -514,6 +592,7 @@ class Bdd
     }
     public function updateTransactionEnergie(int $id, array $d): array
     {
+        $this->guardTransactionEnergie($id);
         $pkQ = '`' . self::TE_PK . '`';
         $qty=(float)($d['quantite_delivree']??0); $tps=trim((string)($d['temps_charge']??''));
         $statut=trim((string)($d['statut']??''));
@@ -525,6 +604,7 @@ class Bdd
     }
     public function deleteTransactionEnergie(int $id): void
     {
+        $this->guardTransactionEnergie($id);
         $pkQ = '`' . self::TE_PK . '`';
         $this->db->execute("DELETE FROM TransactionEnergie WHERE {$pkQ}=:id",[':id'=>$id]);
     }
@@ -715,6 +795,7 @@ class Bdd
     }
     public function updateFicheIncident(int $id, array $d): array
     {
+        $this->guardIncident($id);
         $type=trim((string)($d['type_incident']??'')); $det=trim((string)($d['detail_tech']??'')); $sol=trim((string)($d['solution']??''));
         if ($type===''||$det===''||$sol==='') throw new RuntimeException('Champs requis');
         $this->db->execute("UPDATE FicheIncident SET type_incident=:t,detail_tech=:dt,solution=:s WHERE id_ref_unique=:id",[':t'=>$type,':dt'=>$det,':s'=>$sol,':id'=>$id]);
@@ -722,6 +803,7 @@ class Bdd
     }
     public function deleteFicheIncident(int $id): void
     {
+        $this->guardIncident($id);
         $this->db->execute("DELETE FROM FicheIncident WHERE id_ref_unique=:id",[':id'=>$id]);
     }
 

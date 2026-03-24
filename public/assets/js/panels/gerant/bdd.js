@@ -22,6 +22,54 @@ const BddPanel = (() => {
     <line x1="13" y1="3" x2="3" y2="13" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"></line>
   </svg>`;
 
+  const ICON_LOCK = `<svg class="bdd-icon bdd-icon--lock" viewBox="0 0 16 16" fill="none">
+    <rect x="3" y="7" width="10" height="7" rx="1.5" stroke="currentColor" stroke-width="1.4"/>
+    <path d="M5 7V5a3 3 0 0 1 6 0v2" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+  </svg>`;
+
+  // Tables dont les lignes peuvent être verrouillées par journée validée
+  const LOCKED_TABLES = new Set([
+    "transaction",
+    "transaction_produit",
+    "transaction_energie",
+    "fiche_incident",
+  ]);
+
+  // Cache des dates verrouillées — 2 sets séparés
+  let _lockedTx = null;
+  let _lockedInc = null;
+  let _lockedDatesPromise = null;
+
+  async function getLockedDates() {
+    if (_lockedTx !== null) return { tx: _lockedTx, inc: _lockedInc };
+    if (_lockedDatesPromise) return _lockedDatesPromise;
+    _lockedDatesPromise = Requetes.getJourneesValidees()
+      .then(function (d) {
+        _lockedTx = new Set(d.dates_tx || []);
+        _lockedInc = new Set(d.dates_inc || []);
+        _lockedDatesPromise = null;
+        return { tx: _lockedTx, inc: _lockedInc };
+      })
+      .catch(function () {
+        _lockedDatesPromise = null;
+        return { tx: new Set(), inc: new Set() };
+      });
+    return _lockedDatesPromise;
+  }
+
+  function invalidateLockedDates() {
+    _lockedTx = null;
+    _lockedInc = null;
+    _lockedDatesPromise = null;
+  }
+
+  function rowDate(tableId, row) {
+    if (tableId === "transaction") return (row.date_heure || "").slice(0, 10);
+    if (tableId === "transaction_produit") return null; // pas de date dans la row — géré via join côté PHP
+    if (tableId === "transaction_energie") return null;
+    if (tableId === "fiche_incident") return row.date_creation || null;
+    return null;
+  }
   function esc(v) {
     return String(v ?? "")
       .replaceAll("&", "&amp;")
@@ -1370,7 +1418,8 @@ const BddPanel = (() => {
   // ════════════════════════════════════════════════════════
   //  Rendu tableau
   // ════════════════════════════════════════════════════════
-  function renderTable(root, schema, rows) {
+  function renderTable(root, schema, rows, lockedDates) {
+    const tableId = root._bddTable || "produit";
     const thead = root.querySelector(".bdd-thead-row");
     const tbody = root.querySelector(".bdd-tbody");
     if (!thead || !tbody) return;
@@ -1393,13 +1442,33 @@ const BddPanel = (() => {
       .map((r) => {
         const key = schema.rowKey(r);
         const k = esc(String(key));
-        const act = showAct
-          ? `<td class="bdd-td bdd-td--actions">
+
+        // Déterminer si la ligne est verrouillée selon le type de table
+        let locked = false;
+        if (lockedDates && LOCKED_TABLES.has(tableId)) {
+          const d = rowDate(tableId, r);
+          if (d) {
+            if (tableId === "fiche_incident") {
+              locked = lockedDates.inc.has(d);
+            } else {
+              locked = lockedDates.tx.has(d);
+            }
+          }
+          // Pour tx_produit / tx_energie : pas de date dans la row — garde serveur uniquement
+        }
+
+        let act = "";
+        if (showAct) {
+          if (locked) {
+            act = `<td class="bdd-td bdd-td--actions">${ICON_LOCK}</td>`;
+          } else {
+            act = `<td class="bdd-td bdd-td--actions">
         ${schema.canEdit ? `<button class="bdd-action-btn bdd-edit-btn" data-key="${k}" title="Modifier">${ICON_EDIT}</button>` : ""}
         ${schema.canDel ? `<button class="bdd-action-btn bdd-del-btn"  data-key="${k}" title="Supprimer">${ICON_DELETE}</button>` : ""}
-      </td>`
-          : "";
-        return `<tr class="bdd-row" data-key="${k}">${schema
+      </td>`;
+          }
+        }
+        return `<tr class="bdd-row${locked ? " bdd-row--locked" : ""}" data-key="${k}">${schema
           .rowHtml(r)
           .map((c) => `<td class="bdd-td">${c}</td>`)
           .join("")}${act}</tr>`;
@@ -1415,15 +1484,20 @@ const BddPanel = (() => {
 
   async function loadTable(root) {
     const schema = SCHEMAS[root._bddTable || "produit"];
+    const tableId = root._bddTable || "produit";
     const tbody = root.querySelector(".bdd-tbody");
     if (tbody)
       tbody.innerHTML = `<tr><td class="bdd-empty" colspan="10">Chargement…</td></tr>`;
     setLoading(root, true);
     try {
-      const resp = await schema.load();
+      const needsLock = LOCKED_TABLES.has(tableId);
+      const [resp, lockedDates] = await Promise.all([
+        schema.load(),
+        needsLock ? getLockedDates() : Promise.resolve(null),
+      ]);
       const rows = resp[schema.dataKey] || resp.rows || [];
       root._bddRows = rows;
-      renderTable(root, schema, rows);
+      renderTable(root, schema, rows, lockedDates);
     } catch (e) {
       if (tbody)
         tbody.innerHTML = `<tr><td class="bdd-empty bdd-empty--err" colspan="10">${esc(e.message)}</td></tr>`;
@@ -1595,6 +1669,8 @@ const BddPanel = (() => {
       await loadTable(root);
       await ok("Ligne Modifiée");
     } catch (e) {
+      // Si la journée est verrouillée, invalider le cache pour forcer le rechargement du visuel
+      if (e.message && e.message.includes("validée")) invalidateLockedDates();
       await err(e.message || "Erreur modification");
       await loadTable(root);
     }
@@ -1618,7 +1694,9 @@ const BddPanel = (() => {
       await loadTable(root);
       await ok("Ligne Supprimée");
     } catch (e) {
+      if (e.message && e.message.includes("validée")) invalidateLockedDates();
       await err(e.message || "Suppression impossible");
+      await loadTable(root);
     }
   }
 
@@ -1658,7 +1736,7 @@ const BddPanel = (() => {
     void loadTable(root);
   }
 
-  return { buildHTML, onMount };
+  return { buildHTML, onMount, invalidateLockedDates };
 })();
 
 WM.register("gerant_bdd", {

@@ -204,6 +204,182 @@
   }
 }
 
+/* ── Barre de navigation dates ───────────────────────── */
+.gv-datebar {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+  padding: 0 2px;
+}
+
+.gv-date-input {
+  flex: 1;
+  min-width: 0;
+  height: 28px;
+  border: 2px solid var(--border);
+  border-radius: 8px;
+  background: #fff;
+  color: var(--text);
+  font-family: var(--mono);
+  font-size: 11px;
+  padding: 0 6px;
+  text-align: center;
+}
+
+.gv-nav-btn {
+  height: 28px;
+  min-width: 28px;
+  padding: 0 6px;
+  border: 2px solid var(--border);
+  border-radius: 8px;
+  background: #fff;
+  color: var(--text);
+  font-family: var(--mono);
+  font-size: 12px;
+  cursor: pointer;
+  flex-shrink: 0;
+  box-shadow: var(--shadow-soft);
+}
+
+.gv-nav-btn--today {
+  font-size: 10px;
+  padding: 0 7px;
+}
+
+.gv-nav-btn:hover {
+  filter: brightness(0.96);
+}
+
+/* ── Onglets transactions / incidents ────────────────── */
+.gv-tabs {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+  padding: 0 2px;
+}
+
+.gv-tab {
+  flex: 1;
+  height: 26px;
+  border: 2px solid var(--border);
+  border-radius: 8px;
+  background: #fff;
+  color: var(--text-mid);
+  font-family: var(--mono);
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.gv-tab.active {
+  background: var(--btn-grad);
+  color: var(--accent);
+  border-color: var(--border-active);
+}
+
+.gv-tab:hover:not(.active) {
+  filter: brightness(0.97);
+}
+
+/* ── Tables de consultation ──────────────────────────── */
+.gv-list-wrap {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.5);
+}
+
+.gv-list-wrap--hidden {
+  display: none;
+}
+
+.gv-list-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: var(--mono);
+  font-size: 11px;
+}
+
+.gv-list-table thead tr {
+  position: sticky;
+  top: 0;
+  background: var(--surface);
+  z-index: 1;
+}
+
+.gv-list-table th {
+  padding: 4px 8px;
+  text-align: left;
+  color: var(--text-mid);
+  border-bottom: 1px solid var(--border);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.gv-list-row td {
+  padding: 3px 8px;
+  border-bottom: 1px solid var(--border);
+  color: var(--text);
+  vertical-align: middle;
+}
+
+.gv-list-row:last-child td {
+  border-bottom: none;
+}
+
+.gv-list-row:hover td {
+  background: rgba(99, 102, 241, 0.05);
+}
+
+.gv-list-detail {
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.gv-list-empty {
+  padding: 10px 8px;
+  color: var(--text-dim);
+  text-align: center;
+  font-style: italic;
+}
+
+/* ── Statut validation ───────────────────────────────── */
+.gv-status {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--text-mid);
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.gv-status--locked {
+  color: var(--green);
+  font-weight: 600;
+}
+
+/* ── Ligne verrouillée dans bdd.js ───────────────────── */
+.bdd-row--locked {
+  opacity: 0.7;
+}
+
+.bdd-row--locked .bdd-td {
+  color: var(--text-dim);
+}
+
+.bdd-icon--lock {
+  color: var(--text-dim);
+  width: 14px;
+  height: 14px;
+}
+
 #win-gerant_validation .win-body {
   padding: 2px;
 }

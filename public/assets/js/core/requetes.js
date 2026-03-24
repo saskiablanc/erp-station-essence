@@ -135,6 +135,23 @@ const Requetes = (() => {
         "/json/validation/journee" +
           (date ? `?date=${encodeURIComponent(date)}` : ""),
       ),
+    validerJournee: (date, type) =>
+      appel("POST", "/json/validation/journee", {
+        date_jour: date,
+        type: type,
+      }),
+    getJourneesValidees: () =>
+      appel("GET", "/json/validation/journees-validees"),
+    getTransactionsJour: (date) =>
+      appel(
+        "GET",
+        `/json/validation/transactions?date=${encodeURIComponent(date)}`,
+      ),
+    getIncidentsJour: (date) =>
+      appel(
+        "GET",
+        `/json/validation/incidents?date=${encodeURIComponent(date)}`,
+      ),
     // ── Sprint 6 — Base de données (US19) ─────────────────
     // 4 méthodes génériques — la table est passée en paramètre
     bddGet: (table) => appel("GET", `/json/bdd/${table}`),
