@@ -177,18 +177,18 @@ class HorairesBoutique
 
     private function normalizeTimeValue(string $value): string
     {
-        $value = trim($value);
+        $value = \trim($value);
 
-        if (preg_match('/^([01]\d|2[0-3])h([0-5]\d)$/', $value, $matches) === 1) {
-            return sprintf('%02d:%02d:00', (int) $matches[1], (int) $matches[2]);
+        if (\preg_match('/^([01]\d|2[0-3])h([0-5]\d)$/', $value, $matches) === 1) {
+            return \sprintf('%02d:%02d:00', (int) $matches[1], (int) $matches[2]);
         }
 
-        if (preg_match('/^([01]\d|2[0-3]):([0-5]\d)$/', $value, $matches) === 1) {
-            return sprintf('%02d:%02d:00', (int) $matches[1], (int) $matches[2]);
+        if (\preg_match('/^([01]\d|2[0-3]):([0-5]\d)$/', $value, $matches) === 1) {
+            return \sprintf('%02d:%02d:00', (int) $matches[1], (int) $matches[2]);
         }
 
-        if (preg_match('/^([01]\d|2[0-3]):([0-5]\d):([0-5]\d)$/', $value, $matches) === 1) {
-            return sprintf('%02d:%02d:%02d', (int) $matches[1], (int) $matches[2], (int) $matches[3]);
+        if (\preg_match('/^([01]\d|2[0-3]):([0-5]\d):([0-5]\d)$/', $value, $matches) === 1) {
+            return \sprintf('%02d:%02d:%02d', (int) $matches[1], (int) $matches[2], (int) $matches[3]);
         }
 
         throw new InvalidArgumentException('Erreur : Valeurs Incorrectes');
@@ -196,6 +196,6 @@ class HorairesBoutique
 
     private function normalizeLabel(string $label): string
     {
-        return mb_strtolower(trim($label));
+        return \mb_strtolower(\trim($label));
     }
 }
