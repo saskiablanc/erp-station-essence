@@ -217,6 +217,9 @@
   box-shadow: 0 24px 60px rgba(99, 102, 241, 0.25);
   padding: 1.4rem 1.4rem 1.2rem;
 }
+.swal2-popup.ticket-swal-popup.ticket-swal-popup-split {
+  width: min(52rem, 96vw);
+}
 .swal2-title.ticket-swal-title {
   font-family: var(--display);
   color: var(--text);
@@ -284,13 +287,150 @@
 
 /* Choix des modes de paiement (CB / CCE / Espèces) */
 .ticket-pay-choice-total {
-  margin-bottom: 10px;
+  margin-bottom: 12px;
   color: var(--text);
+  text-align: center;
+}
+.ticket-pay-cce-limit {
+  margin-top: -6px;
+  margin-bottom: 2px;
+  text-align: center;
+  color: var(--text-mid);
+  font-size: 0.92rem;
+}
+.ticket-pay-cce-balance {
+  margin-top: -2px;
+  margin-bottom: 4px;
+  text-align: center;
+  color: var(--text-mid);
+  font-size: 0.9rem;
 }
 .ticket-pay-choice-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 10px;
+}
+.ticket-pay-split {
+  display: grid;
+  gap: 10px;
+}
+.ticket-pay-split-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.ticket-pay-split-share {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text);
+  font-weight: 600;
+  user-select: none;
+}
+.ticket-pay-split-share input {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--accent);
+}
+.ticket-pay-split-mode {
+  min-width: 170px;
+  height: 40px;
+  padding: 0 12px;
+  border-radius: 999px;
+  border: 2px solid var(--border);
+  background: rgba(255, 255, 255, 0.95);
+  color: var(--text);
+  font-family: var(--mono);
+  font-size: 0.95rem;
+  box-shadow: var(--shadow-soft);
+}
+.ticket-pay-split-list {
+  border: 2px solid var(--border);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.86);
+  overflow: hidden;
+}
+.ticket-pay-split-row {
+  display: grid;
+  grid-template-columns: minmax(148px, 1fr) minmax(88px, 112px) minmax(92px, 120px) minmax(96px, 112px);
+  align-items: center;
+  gap: 6px;
+  padding: 9px 10px;
+  border-bottom: 1px solid var(--border);
+}
+.ticket-pay-split-row > * {
+  min-width: 0;
+}
+.ticket-pay-split-row:last-child {
+  border-bottom: 0;
+}
+.ticket-pay-split-row.is-disabled {
+  opacity: 0.5;
+}
+.ticket-pay-split-row.is-locked {
+  opacity: 0.42;
+}
+.ticket-pay-split-method {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text);
+  font-size: 1.05rem;
+  user-select: none;
+}
+.ticket-pay-split-method input {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--accent);
+}
+.ticket-pay-split-edit {
+  height: 36px;
+  width: 100%;
+  padding: 0 10px;
+  border-radius: 12px;
+  border: 2px solid var(--border);
+  background: #fff;
+  color: var(--text);
+  font-family: var(--mono);
+  font-size: 0.95rem;
+  box-shadow: var(--shadow-soft);
+}
+.ticket-pay-split-edit.is-hidden {
+  visibility: hidden;
+}
+.ticket-pay-split-amount {
+  text-align: right;
+  color: var(--text);
+  font-family: var(--mono);
+  font-size: 1.15rem;
+  font-weight: 700;
+}
+.ticket-pay-add-rest {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  height: 34px;
+  border-radius: 999px;
+  border: 2px solid var(--border);
+  background: var(--btn-grad);
+  color: var(--accent);
+  font-family: var(--mono);
+  font-size: 0.76rem;
+  box-shadow: var(--shadow-soft);
+  padding: 0 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ticket-pay-add-rest.is-hidden {
+  visibility: hidden;
+}
+.ticket-pay-split-note {
+  min-height: 1.2rem;
+  color: #b91c1c;
+  font-size: 0.9rem;
+  text-align: right;
 }
 .ticket-pay-choice-btn {
   height: 42px;
@@ -380,6 +520,20 @@
 @media (max-width: 560px) {
   .ticket-pay-choice-grid {
     grid-template-columns: 1fr;
+  }
+  .ticket-pay-split-top {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .ticket-pay-split-mode {
+    width: 100%;
+  }
+  .ticket-pay-split-row {
+    grid-template-columns: 1fr;
+    gap: 6px;
+  }
+  .ticket-pay-split-amount {
+    text-align: left;
   }
 }
 
