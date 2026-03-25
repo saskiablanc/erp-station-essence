@@ -347,7 +347,11 @@ final class Pompe
      * Paiement validé : desactivee → active + TransactionEnergie → payee
      * Transaction atomique.
      */
-    public function validerPaiement(int $idPompe, int $idTransactionEnergie): int
+    public function validerPaiement(
+        int $idPompe,
+        int $idTransactionEnergie,
+        ?int $forcedTransactionId = null
+    ): int
     {
         $pompe = $this->findById($idPompe);
         if (!$pompe) {
@@ -425,24 +429,57 @@ final class Pompe
                 }
             }
 
-            $idTransaction = (int) ($te['id_transaction'] ?? 0);
-            if ($idTransaction <= 0) {
-                $this->db->execute(
-                    "INSERT INTO `Transaction` (prix_total, date_heure)
-                     VALUES (?, NOW())",
-                    [$total]
-                );
-                $idTransaction = (int) $this->db->lastInsertId();
-                if ($idTransaction <= 0) {
-                    throw new RuntimeException('Impossible de créer la transaction.', 500);
+            $existingTransactionId = (int) ($te['id_transaction'] ?? 0);
+            $forcedId = ($forcedTransactionId !== null && $forcedTransactionId > 0)
+                ? $forcedTransactionId
+                : 0;
+
+            if ($forcedId > 0) {
+                if ($existingTransactionId > 0 && $existingTransactionId !== $forcedId) {
+                    throw new RuntimeException(
+                        "La transaction énergie $idTransactionEnergie est déjà liée à une autre transaction.",
+                        409
+                    );
                 }
-            } else {
+
+                $exists = $this->db->query(
+                    'SELECT id_transaction
+                     FROM `Transaction`
+                     WHERE id_transaction = ?
+                     LIMIT 1',
+                    [$forcedId]
+                )->fetch();
+                if (!$exists) {
+                    throw new RuntimeException("Transaction $forcedId introuvable.", 404);
+                }
+
                 $this->db->execute(
                     "UPDATE `Transaction`
-                     SET prix_total = ?, date_heure = NOW()
+                     SET prix_total = ROUND(prix_total + ?, 3), date_heure = NOW()
                      WHERE id_transaction = ?",
-                    [$total, $idTransaction]
+                    [$total, $forcedId]
                 );
+                $idTransaction = $forcedId;
+            } else {
+                $idTransaction = $existingTransactionId;
+                if ($idTransaction <= 0) {
+                    $this->db->execute(
+                        "INSERT INTO `Transaction` (prix_total, date_heure)
+                         VALUES (?, NOW())",
+                        [$total]
+                    );
+                    $idTransaction = (int) $this->db->lastInsertId();
+                    if ($idTransaction <= 0) {
+                        throw new RuntimeException('Impossible de créer la transaction.', 500);
+                    }
+                } else {
+                    $this->db->execute(
+                        "UPDATE `Transaction`
+                         SET prix_total = ?, date_heure = NOW()
+                         WHERE id_transaction = ?",
+                        [$total, $idTransaction]
+                    );
+                }
             }
 
             $this->db->execute(

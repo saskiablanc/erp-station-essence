@@ -310,6 +310,132 @@
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 10px;
 }
+.ticket-pay-entry-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+.swal2-popup.ticket-swal-popup.ticket-swal-popup-items {
+  width: min(48rem, 95vw);
+}
+.ticket-pay-item-list {
+  max-height: min(56vh, 500px);
+  overflow: auto;
+  display: grid;
+  gap: 10px;
+  padding: 4px;
+}
+.ticket-pay-item-group {
+  border: 2px solid var(--border);
+  border-radius: 14px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.86);
+}
+.ticket-pay-item-group-title {
+  padding: 7px 12px;
+  border-bottom: 1px solid var(--border);
+  background: rgba(244, 244, 255, 0.92);
+  color: var(--text);
+  font-weight: 700;
+  text-align: left;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.ticket-pay-item-group-count {
+  font-size: 0.78rem;
+  color: var(--text-mid);
+  font-weight: 600;
+  font-family: var(--mono);
+}
+.ticket-pay-item-group-body {
+  display: grid;
+}
+.ticket-pay-item-row {
+  display: grid;
+  grid-template-columns: minmax(210px, 1fr) minmax(170px, 190px) minmax(90px, 130px);
+  align-items: stretch;
+  gap: 8px;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--border);
+}
+.ticket-pay-item-row:last-child {
+  border-bottom: 0;
+}
+.ticket-pay-item-check {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.ticket-pay-item-check input[type='checkbox'] {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--accent);
+}
+.ticket-pay-item-lib {
+  text-align: left;
+  font-size: 0.95rem;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ticket-pay-item-meta {
+  display: grid;
+  align-content: center;
+  justify-items: end;
+  min-width: 0;
+}
+.ticket-pay-item-unit {
+  font-size: 0.8rem;
+  color: var(--text-mid);
+  font-family: var(--mono);
+  white-space: nowrap;
+}
+.ticket-pay-item-total {
+  font-family: var(--mono);
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text);
+  white-space: nowrap;
+}
+.ticket-pay-item-qty {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-mid);
+  font-size: 0.84rem;
+}
+.ticket-pay-item-qty input {
+  width: 100%;
+  height: 30px;
+  border-radius: 10px;
+  border: 2px solid var(--border);
+  background: #fff;
+  color: var(--text);
+  font-family: var(--mono);
+  text-align: center;
+}
+.ticket-pay-item-qty input:disabled {
+  opacity: 0.55;
+}
+.ticket-pay-item-qty-fixed {
+  align-self: center;
+  justify-self: end;
+  font-size: 0.9rem;
+  color: var(--text-mid);
+  font-family: var(--mono);
+}
+.ticket-pay-item-hint {
+  margin-top: 8px;
+  text-align: center;
+  color: var(--text-mid);
+  font-size: 0.9rem;
+}
 .ticket-pay-split {
   display: grid;
   gap: 10px;
@@ -371,6 +497,9 @@
 .ticket-pay-split-row.is-locked {
   opacity: 0.42;
 }
+.ticket-pay-split-row.is-active-edit {
+  background: rgba(129, 140, 248, 0.12);
+}
 .ticket-pay-split-method {
   display: inline-flex;
   align-items: center;
@@ -425,6 +554,53 @@
 }
 .ticket-pay-add-rest.is-hidden {
   visibility: hidden;
+}
+.ticket-pay-keypad {
+  width: min(360px, 100%);
+  margin: 2px auto 0;
+  display: grid;
+  gap: 8px;
+  align-items: start;
+}
+.ticket-pay-keypad.is-hidden {
+  display: none;
+}
+.ticket-pay-keypad-head {
+  text-align: center;
+  color: var(--text-mid);
+  font-size: 0.88rem;
+}
+.ticket-pay-keypad-display-wrap {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #a9a9a9;
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 10px;
+}
+.ticket-pay-keypad-display {
+  text-align: center;
+  color: #1f2937;
+  font-family: var(--mono);
+  font-size: 1.3rem;
+  font-weight: 600;
+}
+.ticket-pay-keypad-grid {
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+.ticket-pay-keypad-grid button {
+  height: 56px;
+  border-radius: 10px;
+  border: 1px solid #9f9f9f;
+  background: #fff;
+  color: #1f2937;
+  font-size: 1.55rem;
+  font-family: var(--mono);
+}
+.ticket-pay-keypad-grid button:focus {
+  outline: 2px solid var(--border-active);
 }
 .ticket-pay-split-note {
   min-height: 1.2rem;
@@ -521,6 +697,9 @@
   .ticket-pay-choice-grid {
     grid-template-columns: 1fr;
   }
+  .ticket-pay-entry-grid {
+    grid-template-columns: 1fr;
+  }
   .ticket-pay-split-top {
     flex-direction: column;
     align-items: stretch;
@@ -534,6 +713,16 @@
   }
   .ticket-pay-split-amount {
     text-align: left;
+  }
+  .ticket-pay-item-row {
+    grid-template-columns: 1fr;
+    gap: 6px;
+  }
+  .ticket-pay-item-meta {
+    justify-items: start;
+  }
+  .ticket-pay-item-qty-fixed {
+    justify-self: start;
   }
 }
 

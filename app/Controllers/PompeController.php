@@ -202,9 +202,19 @@ final class PompeController extends Controller
         if ($idTransactionEnergie <= 0) {
             $this->jsonError('Identifiant de transaction énergie invalide.', 400);
         }
+        $idTransaction = isset($body['id_transaction'])
+            ? (int) $body['id_transaction']
+            : null;
+        if ($idTransaction !== null && $idTransaction <= 0) {
+            $idTransaction = null;
+        }
 
         try {
-            $idTransaction = $this->model->validerPaiement($idPompe, $idTransactionEnergie);
+            $idTransaction = $this->model->validerPaiement(
+                $idPompe,
+                $idTransactionEnergie,
+                $idTransaction
+            );
             $this->json([
                 'success' => true,
                 'id_pompe' => $idPompe,

@@ -66,6 +66,218 @@ window.TicketPayment = (() => {
     }
   }
 
+  function getLineTotal(item) {
+    return Number(item?.prix || 0) * Number(item?.qty || 0);
+  }
+
+  function getItemsTotal(items) {
+    return (items || []).reduce((sum, item) => sum + getLineTotal(item), 0);
+  }
+
+  function getItemsEnergyTotal(items) {
+    return (items || [])
+      .filter((item) => isEnergyItem(item))
+      .reduce((sum, item) => sum + getLineTotal(item), 0);
+  }
+
+  function isEnergyItem(item) {
+    const source = String(item?.source || '').toLowerCase();
+    return source === 'energie' || source === 'carburant' || source === 'electricite';
+  }
+
+  function normalizePaymentPlan(planRaw, fallbackMethod = 'cb') {
+    const paymentOrder = { cce: 1, especes: 2, cb: 3 };
+    const plan = [...(Array.isArray(planRaw) ? planRaw : [])].sort(
+      (a, b) =>
+        (paymentOrder[String(a?.method || '').toLowerCase()] ?? 99) -
+        (paymentOrder[String(b?.method || '').toLowerCase()] ?? 99),
+    );
+    const primaryMethod = String(plan[0]?.method || fallbackMethod || 'cb').toLowerCase();
+    return { plan, primaryMethod };
+  }
+
+  async function chooseEncaissementMode(total) {
+    let mode = null;
+    await Swal.fire({
+      ...swalBase,
+      title: 'Encaissement',
+      html: `
+        <div class="ticket-pay-choice-total">Total à régler : <strong>${formatMoneyEuro(total)}</strong></div>
+        <div class="ticket-pay-entry-grid">
+          <button type="button" class="ticket-pay-choice-btn" data-pay-entry="all">Encaisser tout</button>
+          <button type="button" class="ticket-pay-choice-btn" data-pay-entry="items">Encaisser par article</button>
+        </div>
+      `,
+      showConfirmButton: false,
+      showCancelButton: true,
+      cancelButtonText: 'Annuler',
+      allowOutsideClick: false,
+      allowEscapeKey: true,
+      backdrop: 'rgba(26, 26, 46, 0.45)',
+      didOpen: (popup) => {
+        popup.querySelectorAll('[data-pay-entry]').forEach((button) => {
+          button.addEventListener('click', () => {
+            mode = String(button.dataset.payEntry || '');
+            Swal.close();
+          });
+        });
+      },
+    });
+    if (!mode) return null;
+    return mode === 'items' ? 'items' : 'all';
+  }
+
+  async function chooseItemsToPay(remainingEntries) {
+    const escapeHtml = (value) =>
+      String(value ?? '')
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#39;');
+
+    const renderRows = (entries, isProductSection) =>
+      entries
+        .map(({ key, item, remainingQty }) => {
+          const qtyMax = Math.max(1, Math.trunc(Number(remainingQty || item?.qty || 1)));
+          const unitPrice = Number(item?.prix || 0);
+          const total = unitPrice * qtyMax;
+          const allowQtySelect = isProductSection && qtyMax > 1;
+
+          return `
+            <div class="ticket-pay-item-row" data-pay-item-row="${key}">
+              <label class="ticket-pay-item-check">
+                <input type="checkbox" data-pay-item-check="${key}">
+                <span class="ticket-pay-item-lib">${escapeHtml(item?.libelle || 'Article')}</span>
+              </label>
+              <div class="ticket-pay-item-meta">
+                <span class="ticket-pay-item-unit">${formatMoneyEuro(unitPrice)} / unité</span>
+                <span class="ticket-pay-item-total">${formatMoneyEuro(total)}</span>
+              </div>
+              ${
+                allowQtySelect
+                  ? `<label class="ticket-pay-item-qty">
+                       <span>Qté</span>
+                       <input type="number" min="1" max="${qtyMax}" step="1" value="${qtyMax}" data-pay-item-qty="${key}" disabled>
+                     </label>`
+                  : `<div class="ticket-pay-item-qty-fixed">Qté ${qtyMax}</div>`
+              }
+            </div>
+          `;
+        })
+        .join('');
+
+    const produitsEntries = remainingEntries.filter(({ item }) => !isEnergyItem(item));
+    const carburantEntries = remainingEntries.filter(({ item }) => isEnergyItem(item));
+
+    const sections = [
+      {
+        label: 'Produits',
+        entries: produitsEntries,
+        isProduct: true,
+      },
+      {
+        label: 'Carburants / Énergie',
+        entries: carburantEntries,
+        isProduct: false,
+      },
+    ]
+      .filter((section) => section.entries.length > 0)
+      .map(
+        (section) => `
+          <section class="ticket-pay-item-group">
+            <header class="ticket-pay-item-group-title">
+              <span>${section.label}</span>
+              <span class="ticket-pay-item-group-count">${section.entries.length} ligne(s)</span>
+            </header>
+            <div class="ticket-pay-item-group-body">
+              ${renderRows(section.entries, section.isProduct)}
+            </div>
+          </section>
+        `,
+      )
+      .join('');
+
+    const result = await Swal.fire({
+      ...swalBase,
+      title: 'Encaisser par article',
+      html: `
+        <div class="ticket-pay-item-list">${sections}</div>
+        <div class="ticket-pay-item-hint">Sélectionnez les lignes à encaisser et la quantité des produits.</div>
+      `,
+      customClass: {
+        ...swalBase.customClass,
+        popup: 'ticket-swal-popup ticket-swal-popup-items',
+      },
+      showConfirmButton: true,
+      showCancelButton: true,
+      confirmButtonText: 'Valider',
+      cancelButtonText: 'Annuler',
+      allowOutsideClick: false,
+      didOpen: (popup) => {
+        const syncQtyInput = (checkbox) => {
+          const key = Number(checkbox.dataset.payItemCheck || 0);
+          if (!Number.isInteger(key) || key <= 0) return;
+          const qtyInput = popup.querySelector(`[data-pay-item-qty="${key}"]`);
+          if (qtyInput) {
+            qtyInput.disabled = !checkbox.checked;
+          }
+        };
+
+        popup.querySelectorAll('[data-pay-item-check]').forEach((checkbox) => {
+          syncQtyInput(checkbox);
+          checkbox.addEventListener('change', () => syncQtyInput(checkbox));
+        });
+      },
+      preConfirm: () => {
+        const entryMap = new Map(remainingEntries.map((entry) => [Number(entry.key), entry]));
+        const checks = Array.from(document.querySelectorAll('[data-pay-item-check]:checked'));
+        if (checks.length === 0) {
+          Swal.showValidationMessage('Sélectionnez au moins une ligne.');
+          return false;
+        }
+
+        const selected = [];
+        for (const check of checks) {
+          const key = Number(check.dataset.payItemCheck || 0);
+          const entry = entryMap.get(key);
+          if (!entry || key <= 0) continue;
+
+          const qtyMax = Math.max(
+            1,
+            Math.trunc(Number(entry.remainingQty || entry.item?.qty || 1)),
+          );
+          const isProduit = !isEnergyItem(entry.item);
+          let qty = qtyMax;
+
+          if (isProduit && qtyMax > 1) {
+            const qtyInput = document.querySelector(`[data-pay-item-qty="${key}"]`);
+            const raw = Number.parseInt(String(qtyInput?.value ?? ''), 10);
+            if (!Number.isInteger(raw) || raw < 1 || raw > qtyMax) {
+              Swal.showValidationMessage(
+                `Quantité invalide pour « ${entry.item?.libelle || 'Article'} » (1 à ${qtyMax}).`,
+              );
+              return false;
+            }
+            qty = raw;
+          }
+
+          selected.push({ key, qty });
+        }
+
+        if (selected.length === 0) {
+          Swal.showValidationMessage('Sélectionnez au moins une ligne.');
+          return false;
+        }
+
+        return selected;
+      },
+    });
+
+    if (!result.isConfirmed) return null;
+    return Array.isArray(result.value) ? result.value : null;
+  }
+
   function distributeByWeights(totalCents, methods, weightsByMethod) {
     if (totalCents <= 0 || methods.length === 0) return {};
     const safeMethods = methods.filter((method) => (weightsByMethod[method] ?? 0) > 0);
@@ -120,6 +332,7 @@ window.TicketPayment = (() => {
 
     let computedCents = { cb: 0, cce: 0, especes: 0 };
     let popupRef = null;
+    let activeMethod = methods.find((method) => state.selected[method]) || 'cb';
 
     const html = `
       <div class="ticket-pay-split">
@@ -170,12 +383,37 @@ window.TicketPayment = (() => {
             )
             .join('')}
         </div>
+        <div class="ticket-pay-keypad is-hidden" data-pay-keypad>
+          <div class="ticket-pay-keypad-head">
+            Saisie TPE : <strong data-pay-active-label>Carte bleue</strong>
+          </div>
+          <div class="ticket-pay-keypad-display-wrap">
+            <div class="ticket-pay-keypad-display" data-pay-keypad-display>0,00 €</div>
+          </div>
+          <div class="ticket-pay-keypad-grid">
+            <button type="button" data-pay-key="1">1</button>
+            <button type="button" data-pay-key="2">2</button>
+            <button type="button" data-pay-key="3">3</button>
+            <button type="button" data-pay-key="4">4</button>
+            <button type="button" data-pay-key="5">5</button>
+            <button type="button" data-pay-key="6">6</button>
+            <button type="button" data-pay-key="7">7</button>
+            <button type="button" data-pay-key="8">8</button>
+            <button type="button" data-pay-key="9">9</button>
+            <button type="button" data-pay-action="back">\u2039</button>
+            <button type="button" data-pay-key="0">0</button>
+            <button type="button" data-pay-action="clear">C</button>
+          </div>
+        </div>
         <div class="ticket-pay-split-note" data-pay-note></div>
       </div>
     `;
 
     const readSelectedMethods = () =>
       methods.filter((method) => state.selected[method]);
+
+    const isShareEditMode = () => state.share && state.strategy !== 'equitablement';
+    const isAmountTpeMode = () => state.share && state.strategy === 'montants';
 
     const compute = (strict = false) => {
       const selectedMethods = readSelectedMethods();
@@ -245,6 +483,9 @@ window.TicketPayment = (() => {
       if (!popupRef) return;
       const modeSelect = popupRef.querySelector('[data-pay-strategy]');
       const note = popupRef.querySelector('[data-pay-note]');
+      const keypad = popupRef.querySelector('[data-pay-keypad]');
+      const activeLabel = popupRef.querySelector('[data-pay-active-label]');
+      const keypadDisplay = popupRef.querySelector('[data-pay-keypad-display]');
       modeSelect.disabled = !state.share;
 
       if (!cceEnabled) {
@@ -262,6 +503,9 @@ window.TicketPayment = (() => {
           if (checkbox) checkbox.checked = state.selected[method];
         });
       }
+      if (!selectedMethods.includes(activeMethod)) {
+        activeMethod = selectedMethods[0] || 'cb';
+      }
 
       computedCents = { cb: 0, cce: 0, especes: 0, ...compute(false) };
 
@@ -276,6 +520,10 @@ window.TicketPayment = (() => {
         if (row) {
           row.classList.toggle('is-disabled', !enabled);
           row.classList.toggle('is-locked', !methodAllowed);
+          row.classList.toggle(
+            'is-active-edit',
+            isShareEditMode() && method === activeMethod && enabled && methodAllowed,
+          );
         }
         if (checkbox) checkbox.disabled = !methodAllowed;
 
@@ -307,6 +555,18 @@ window.TicketPayment = (() => {
           addRest.disabled = !showAddRest || !enabled || !methodAllowed;
         }
       });
+
+      if (activeLabel) {
+        activeLabel.textContent = getMethodLabel(activeMethod);
+      }
+      if (keypadDisplay) {
+        const activeAmount = parseEuroInput(state.amounts[activeMethod]);
+        keypadDisplay.textContent = formatMoneyEuro(Number.isFinite(activeAmount) ? activeAmount : 0);
+      }
+
+      if (keypad) {
+        keypad.classList.toggle('is-hidden', !isAmountTpeMode());
+      }
 
       const totalComputedCents = methods.reduce(
         (acc, method) => acc + (state.selected[method] ? Number(computedCents[method] || 0) : 0),
@@ -368,6 +628,14 @@ window.TicketPayment = (() => {
         });
 
         methods.forEach((method) => {
+          popup.querySelector(`[data-pay-row="${method}"]`)?.addEventListener('click', () => {
+            if (!isShareEditMode()) return;
+            if (!state.selected[method]) return;
+            if (method === 'cce' && !cceEnabled) return;
+            activeMethod = method;
+            refresh();
+          });
+
           popup.querySelector(`[data-pay-check="${method}"]`)?.addEventListener('change', (event) => {
             if (method === 'cce' && !cceEnabled) {
               state.selected[method] = false;
@@ -385,6 +653,7 @@ window.TicketPayment = (() => {
               if (method === 'cce') {
                 state.amounts.cce = fromCents(Math.min(totalCents, cceCapCents)).toFixed(2);
               }
+              activeMethod = method;
             } else {
               state.selected[method] = checked;
               if (checked && method === 'cce') {
@@ -393,12 +662,14 @@ window.TicketPayment = (() => {
                 if (!Number.isFinite(current) || current <= 0 || current > maxCce) {
                   state.amounts.cce = maxCce.toFixed(2);
                 }
+                activeMethod = method;
               }
             }
             refresh();
           });
 
           popup.querySelector(`[data-pay-edit="${method}"]`)?.addEventListener('input', (event) => {
+            activeMethod = method;
             const value = String(event.target?.value ?? '');
             if (state.strategy === 'parts') {
               state.parts[method] = value;
@@ -443,6 +714,35 @@ window.TicketPayment = (() => {
             state.amounts[method] = fromCents(target).toFixed(2);
             refresh();
           });
+        });
+
+        popup.querySelector('[data-pay-keypad]')?.addEventListener('click', (event) => {
+          const button = event.target.closest('button');
+          if (!button || !isAmountTpeMode()) return;
+          if (!state.selected[activeMethod]) return;
+          if (activeMethod === 'cce' && !cceEnabled) return;
+
+          const digit = button.dataset.payKey;
+          const action = button.dataset.payAction;
+
+          let digits = String(state.amounts[activeMethod] ?? '').replace(/\D/g, '');
+          if (digit) {
+            if (digits.length >= 7) return;
+            digits += digit;
+          } else if (action === 'back') {
+            digits = digits.slice(0, -1);
+          } else if (action === 'clear') {
+            digits = '';
+          } else {
+            return;
+          }
+
+          let cents = Number.parseInt(digits || '0', 10);
+          if (activeMethod === 'cce') {
+            cents = Math.min(cents, cceCapCents);
+          }
+          state.amounts[activeMethod] = fromCents(cents).toFixed(2);
+          refresh();
         });
 
         refresh();
@@ -645,7 +945,24 @@ window.TicketPayment = (() => {
     return [...new Set(ids)];
   }
 
-  async function ensureCcePaymentReady(amountToDebit) {
+  async function ensureCcePaymentReady(amountToDebit, cceOverride = null) {
+    const overrideId = Number(cceOverride?.idCarte || 0);
+    const overrideSolde = Number(cceOverride?.solde ?? NaN);
+
+    if (overrideId > 0 && Number.isFinite(overrideSolde)) {
+      if (overrideSolde < Number(amountToDebit || 0)) {
+        await Swal.fire({
+          ...swalBase,
+          icon: 'warning',
+          title: 'Solde CCE insuffisant',
+          html: `Solde courant : <strong>${formatMoney(overrideSolde)}</strong><br>Montant CCE : <strong>${formatMoney(amountToDebit)}</strong>`,
+          confirmButtonText: 'Fermer',
+        });
+        return null;
+      }
+      return { idCarte: overrideId };
+    }
+
     const idCarte = getSelectedCceId();
     if (idCarte <= 0) {
       await Swal.fire({
@@ -687,24 +1004,21 @@ window.TicketPayment = (() => {
     return { idCarte };
   }
 
-  async function process(items, total) {
-    const energieTotal = items
-      .filter((item) => String(item?.source || '').toLowerCase() === 'energie')
-      .reduce((sum, item) => sum + (Number(item?.prix || 0) * Number(item?.qty || 0)), 0);
-    const cceInfo = await getScannedCceInfo();
+  async function runPaymentStep(stepItems, cceInfoOverride = null) {
+    const stepTotal = getItemsTotal(stepItems);
+    const energieTotal = getItemsEnergyTotal(stepItems);
 
-    const payment = await choosePaymentPlan(total, { cceMax: energieTotal, cceInfo });
+    const payment = await choosePaymentPlan(stepTotal, {
+      cceMax: energieTotal,
+      cceInfo: cceInfoOverride,
+    });
     if (!payment) {
       return { status: 'cancel' };
     }
-    const planRaw = Array.isArray(payment.plan) ? payment.plan : [];
-    const paymentOrder = { cce: 1, especes: 2, cb: 3 };
-    const plan = [...planRaw].sort(
-      (a, b) =>
-        (paymentOrder[String(a?.method || '').toLowerCase()] ?? 99) -
-        (paymentOrder[String(b?.method || '').toLowerCase()] ?? 99),
-    );
-    const primaryMethod = String(plan[0]?.method || payment.primaryMethod || 'cb').toLowerCase();
+
+    const normalized = normalizePaymentPlan(payment.plan, payment.primaryMethod || 'cb');
+    const plan = normalized.plan;
+    const primaryMethod = normalized.primaryMethod;
 
     const amountByMethod = plan.reduce((acc, entry) => {
       const method = String(entry?.method || '').toLowerCase();
@@ -714,13 +1028,14 @@ window.TicketPayment = (() => {
       return acc;
     }, {});
 
-    let cceContext = null;
+    let cceCardId = Number(cceInfoOverride?.idCarte || 0);
     const cceAmount = Number(amountByMethod.cce || 0);
     if (cceAmount > 0) {
-      cceContext = await ensureCcePaymentReady(cceAmount);
+      const cceContext = await ensureCcePaymentReady(cceAmount, cceInfoOverride);
       if (!cceContext) {
         return { status: 'cancel' };
       }
+      cceCardId = Number(cceContext.idCarte || cceCardId || 0);
 
       Swal.fire({
         ...swalBase,
@@ -757,53 +1072,249 @@ window.TicketPayment = (() => {
       await wait(delay);
     }
 
-    try {
-      const lignesProduits = items
-        .filter((item) => item.source === 'produit')
-        .map((item) => ({
-          code_barres: item.code,
-          quantite: item.qty,
-        }));
+    return {
+      status: 'success',
+      plan,
+      primaryMethod,
+      amountByMethod,
+      cceAmount,
+      cceCardId,
+      cashAmount,
+      cashDetails,
+      cbAmount,
+    };
+  }
 
-      const lignesEnergie = items
-        .filter((item) => item.source === 'energie')
-        .map((item) => ({
-          id_pompe: item.idPompe,
-          id_transaction_energie: item.idTransactionEnergie,
-          quantite: item.qty,
-        }));
+  async function commitTransactions(items, primaryMethod, cceAmount, cceCardId) {
+    const lignesProduits = items
+      .filter((item) => item.source === 'produit')
+      .map((item) => ({
+        code_barres: item.code,
+        quantite: item.qty,
+      }));
 
-      const responses = [];
-      const energieResponses = [];
-      if (lignesProduits.length > 0) {
-        responses.push(await Requetes.creerTransaction({
-          mode_paiement: primaryMethod,
-          lignes: lignesProduits,
-        }));
+    const lignesEnergie = items
+      .filter((item) => item.source === 'energie')
+      .map((item) => ({
+        id_pompe: item.idPompe,
+        id_transaction_energie: item.idTransactionEnergie,
+        quantite: item.qty,
+      }));
+
+    const responses = [];
+    const energieResponses = [];
+    let sharedTransactionId = 0;
+
+    if (lignesProduits.length > 0) {
+      const produitResponse = await Requetes.creerTransaction({
+        mode_paiement: primaryMethod,
+        lignes: lignesProduits,
+      });
+      responses.push(produitResponse);
+      sharedTransactionId = Number(produitResponse?.id_transaction || 0);
+      if (sharedTransactionId <= 0) {
+        throw new Error('Transaction produit invalide.');
+      }
+    }
+
+    for (const ligne of lignesEnergie) {
+      if (!ligne.id_pompe || !ligne.id_transaction_energie) {
+        throw new Error('Ligne énergie invalide');
       }
 
-      for (const ligne of lignesEnergie) {
-        if (!ligne.id_pompe || !ligne.id_transaction_energie) {
-          throw new Error('Ligne énergie invalide');
+      const payload = {
+        id_transaction_energie: ligne.id_transaction_energie,
+        mode_paiement: primaryMethod,
+      };
+      if (sharedTransactionId > 0) {
+        payload.id_transaction = sharedTransactionId;
+      }
+
+      const response = await Requetes.encaisserPompe(ligne.id_pompe, payload);
+      responses.push(response);
+      energieResponses.push(response);
+
+      const currentId = Number(response?.id_transaction || 0);
+      if (currentId > 0) {
+        if (sharedTransactionId > 0 && sharedTransactionId !== currentId) {
+          throw new Error('Incohérence: plusieurs transactions générées pour le même panier.');
         }
-        const response = await Requetes.encaisserPompe(ligne.id_pompe, {
-          id_transaction_energie: ligne.id_transaction_energie,
-          mode_paiement: primaryMethod,
+        sharedTransactionId = currentId;
+      }
+    }
+
+    if ((lignesProduits.length > 0 || lignesEnergie.length > 0) && sharedTransactionId <= 0) {
+      throw new Error('Impossible de déterminer la transaction finale.');
+    }
+
+    if (lignesEnergie.length > 0 && typeof window.PompesPanelRefresh === 'function') {
+      window.PompesPanelRefresh();
+    }
+
+    if (cceAmount > 0) {
+      if (!cceCardId || cceCardId <= 0) {
+        throw new Error('Carte CCE introuvable pour finaliser le paiement.');
+      }
+      const transactionIdsEnergie =
+        sharedTransactionId > 0
+          ? [sharedTransactionId]
+          : collectTransactionIds(energieResponses);
+      await Requetes.debiterCCE(cceCardId, cceAmount, transactionIdsEnergie);
+      window.dispatchEvent(new CustomEvent('cce:updated', { detail: { id_carte_CE: cceCardId } }));
+    }
+
+    const transactionIds =
+      sharedTransactionId > 0
+        ? [sharedTransactionId]
+        : collectTransactionIds(responses);
+
+    return {
+      responses,
+      transactionIds,
+    };
+  }
+
+  function buildBreakdownHtml(methodTotalsCents) {
+    const order = ['cce', 'especes', 'cb'];
+    return order
+      .filter((method) => Number(methodTotalsCents[method] || 0) > 0)
+      .map(
+        (method) =>
+          `<div>${getMethodLabel(method)} : <strong>${formatMoney(fromCents(methodTotalsCents[method]))}</strong></div>`,
+      )
+      .join('');
+  }
+
+  function resolvePrimaryMethodFromTotals(methodTotalsCents) {
+    const order = ['cce', 'especes', 'cb'];
+    return order.find((method) => Number(methodTotalsCents[method] || 0) > 0) || 'cb';
+  }
+
+  async function process(items, total) {
+    const safeItems = Array.isArray(items) ? items.filter(Boolean) : [];
+    if (safeItems.length === 0) {
+      return { status: 'cancel' };
+    }
+
+    const totalPanier = Number(total);
+    const computedTotal = Number.isFinite(totalPanier) && totalPanier > 0
+      ? totalPanier
+      : getItemsTotal(safeItems);
+    if (computedTotal <= 0) {
+      return { status: 'cancel' };
+    }
+
+    const encaissementMode = await chooseEncaissementMode(computedTotal);
+    if (!encaissementMode) {
+      return { status: 'cancel' };
+    }
+
+    const methodTotalsCents = { cb: 0, cce: 0, especes: 0 };
+    const cashTotals = { given: 0, change: 0 };
+    const scannedCce = await getScannedCceInfo();
+    let cceCardId = Number(scannedCce?.idCarte || 0);
+    let cceRemainingCents = scannedCce ? toCents(scannedCce.solde) : null;
+
+    const runStep = async (stepItems) => {
+      const cceInfoForStep =
+        cceCardId > 0 && cceRemainingCents !== null
+          ? { idCarte: cceCardId, solde: fromCents(cceRemainingCents) }
+          : null;
+
+      const step = await runPaymentStep(stepItems, cceInfoForStep);
+      if (step.status !== 'success') {
+        return step;
+      }
+
+      for (const entry of step.plan) {
+        const method = String(entry?.method || '').toLowerCase();
+        const amountCents = toCents(entry?.amount || 0);
+        if (amountCents <= 0) continue;
+        methodTotalsCents[method] = (methodTotalsCents[method] || 0) + amountCents;
+      }
+
+      if (step.cashDetails) {
+        cashTotals.given += Number(step.cashDetails.given || 0);
+        cashTotals.change += Number(step.cashDetails.change || 0);
+      }
+
+      const cceStepAmountCents = toCents(step.cceAmount || 0);
+      if (cceStepAmountCents > 0) {
+        cceCardId = Number(step.cceCardId || cceCardId || 0);
+        if (cceRemainingCents !== null) {
+          cceRemainingCents = Math.max(0, cceRemainingCents - cceStepAmountCents);
+        }
+      }
+
+      return step;
+    };
+
+    if (encaissementMode === 'all') {
+      const singleStep = await runStep(safeItems);
+      if (singleStep.status !== 'success') {
+        return { status: 'cancel' };
+      }
+    } else {
+      let remainingEntries = safeItems.map((item, index) => ({
+        key: index + 1,
+        item,
+        remainingQty: Math.max(1, Math.trunc(Number(item?.qty || 1))),
+      }));
+
+      while (remainingEntries.length > 0) {
+        const selectedItems = await chooseItemsToPay(remainingEntries);
+        if (!selectedItems) {
+          return { status: 'cancel' };
+        }
+
+        const selectedByKey = new Map();
+        selectedItems.forEach((entry) => {
+          const key = Number(entry?.key || 0);
+          const qty = Math.max(1, Math.trunc(Number(entry?.qty || 1)));
+          if (key > 0) {
+            selectedByKey.set(key, qty);
+          }
         });
-        responses.push(response);
-        energieResponses.push(response);
-      }
 
-      if (lignesEnergie.length > 0 && typeof window.PompesPanelRefresh === 'function') {
-        window.PompesPanelRefresh();
-      }
+        const selectedEntries = remainingEntries.filter((entry) => selectedByKey.has(entry.key));
+        if (selectedEntries.length === 0) {
+          continue;
+        }
 
-      const transactionIds = collectTransactionIds(responses);
-      if (cceAmount > 0 && cceContext?.idCarte > 0) {
-        const transactionIdsEnergie = collectTransactionIds(energieResponses);
-        await Requetes.debiterCCE(cceContext.idCarte, cceAmount, transactionIdsEnergie);
-        window.dispatchEvent(new CustomEvent('cce:updated', { detail: { id_carte_CE: cceContext.idCarte } }));
+        const stepItems = selectedEntries.map((entry) => {
+          const selectedQty = selectedByKey.get(entry.key) ?? entry.remainingQty;
+          const qty = Math.min(entry.remainingQty, selectedQty);
+          return { ...entry.item, qty };
+        });
+        const step = await runStep(stepItems);
+        if (step.status !== 'success') {
+          return { status: 'cancel' };
+        }
+
+        remainingEntries = remainingEntries.flatMap((entry) => {
+          const selectedQty = selectedByKey.get(entry.key);
+          if (!selectedQty) return [entry];
+
+          const qtyLeft = entry.remainingQty - selectedQty;
+          if (qtyLeft > 0) {
+            return [{ ...entry, remainingQty: qtyLeft }];
+          }
+          return [];
+        });
       }
+    }
+
+    const cceAmountTotal = fromCents(methodTotalsCents.cce || 0);
+    const primaryMethod = resolvePrimaryMethodFromTotals(methodTotalsCents);
+
+    try {
+      const commitResult = await commitTransactions(
+        safeItems,
+        primaryMethod,
+        cceAmountTotal,
+        cceCardId,
+      );
+      const transactionIds = commitResult.transactionIds;
 
       const wantsReceipt = await chooseReceipt();
       let receiptState = 'none';
@@ -831,12 +1342,8 @@ window.TicketPayment = (() => {
             ? 'Transaction enregistrée. Reçu indisponible pour le moment.'
             : 'Transaction enregistrée avec succès.';
 
-      const breakdownHtml = plan
-        .map(
-          (entry) =>
-            `<div>${getMethodLabel(entry.method)} : <strong>${formatMoney(entry.amount)}</strong></div>`,
-        )
-        .join('');
+      const breakdownHtml = buildBreakdownHtml(methodTotalsCents);
+      const totalCashAmount = fromCents(methodTotalsCents.especes || 0);
 
       await Swal.fire({
         ...swalBase,
@@ -844,21 +1351,21 @@ window.TicketPayment = (() => {
         title: 'Paiement accepté',
         html: `
           <div>${breakdownHtml}</div>
-          ${cashAmount > 0 && cashDetails
-            ? `<div>Montant reçu : <strong>${formatMoney(cashDetails.given)}</strong></div>
-               ${cashDetails.change > 0 ? `<div>Trop-perçu : <strong>${formatMoney(cashDetails.change)}</strong></div>` : ''}`
+          ${totalCashAmount > 0
+            ? `<div>Montant reçu : <strong>${formatMoney(cashTotals.given)}</strong></div>
+               ${cashTotals.change > 0 ? `<div>Trop-perçu : <strong>${formatMoney(cashTotals.change)}</strong></div>` : ''}`
             : ''}
-          <div style="margin-top:${cashAmount > 0 ? '8px' : '0'};">
+          <div style="margin-top:${totalCashAmount > 0 ? '8px' : '0'};">
             ${receiptMessage}
           </div>
         `,
-        confirmButtonText: cashAmount > 0 ? 'Valider' : 'Fermer',
+        confirmButtonText: totalCashAmount > 0 ? 'Valider' : 'Fermer',
         allowOutsideClick: false,
       });
 
       window.dispatchEvent(new CustomEvent('stock:changed'));
       window.dispatchEvent(new CustomEvent('caisse:payment:success'));
-      return { status: 'success', responses };
+      return { status: 'success', responses: commitResult.responses };
     } catch (err) {
       await Swal.fire({
         ...swalBase,
