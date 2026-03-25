@@ -235,32 +235,32 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 2px 2px 0;
+  padding: 8px 12px;
   border-top: 1px solid var(--border);
   flex-shrink: 0;
+  background: var(--surface);
 }
 .vd-btn-confirm {
-  display: block;
   font-family: var(--mono);
-  font-size: 12px;
-  font-weight: 600;
-  margin: 0;
-  padding: 2px 2px;
+  font-size: 11px;
+  padding: 6px 24px;
   border-radius: 5px;
-  background: var(--accent);
-  color: #fff;
-  border: none;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
   cursor: pointer;
-  line-height: 1;
-  vertical-align: top;
-  transition: opacity 0.12s;
+  transition:
+    background 0.15s,
+    border-color 0.15s;
+}
+.vd-btn-confirm:hover:not(:disabled) {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
 }
 .vd-btn-confirm:disabled {
-  opacity: 0.35;
+  opacity: 0.4;
   cursor: not-allowed;
-}
-.vd-btn-confirm:not(:disabled):hover {
-  opacity: 0.85;
 }
 
 .vd-table {
