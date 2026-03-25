@@ -2,10 +2,13 @@
 const GerantFermeturesPanel = (() => {
   const states = new Map();
 
-  function toFrDate(isoDate) {
+  function toFrDate(isoDate, recurrent) {
     if (!isoDate || !isoDate.includes("-")) return "—";
-    const [year, month, day] = String(isoDate).split("-");
-    if (!year || !month || !day) return "—";
+    const parts = String(isoDate).split("-");
+    if (parts.length < 3) return "—";
+    const [year, month, day] = parts;
+    if (!month || !day) return "—";
+    if (recurrent || year === "0000") return `${day}/${month}`;
     return `${day}/${month}/${year}`;
   }
 
@@ -14,6 +17,7 @@ const GerantFermeturesPanel = (() => {
       id: Number(raw?.id_fermeture ?? raw?.id ?? 0),
       date: String(raw?.date_fermeture ?? raw?.date ?? ""),
       motif: String(raw?.motif ?? ""),
+      recurrent: !!(raw?.recurrent && String(raw.recurrent) !== "0"),
     };
   }
 
@@ -27,7 +31,12 @@ const GerantFermeturesPanel = (() => {
   }
 
   function sortRows(rows) {
-    rows.sort((a, b) => String(a.date).localeCompare(String(b.date)));
+    rows.sort((a, b) => {
+      // Sort by month-day regardless of year
+      const amd = String(a.date).slice(5);
+      const bmd = String(b.date).slice(5);
+      return amd.localeCompare(bmd);
+    });
   }
 
   function renderTable(root, rows) {
@@ -37,7 +46,7 @@ const GerantFermeturesPanel = (() => {
     if (!rows.length) {
       body.innerHTML = `
         <tr>
-          <td colspan="3" class="gf-empty">Aucun jour enregistré</td>
+          <td colspan="4" class="gf-empty">Aucun jour enregistré</td>
         </tr>
       `;
       return;
@@ -47,8 +56,13 @@ const GerantFermeturesPanel = (() => {
       .map(
         (row) => `
           <tr>
-            <td>${escapeHtml(toFrDate(row.date))}</td>
+            <td>${escapeHtml(toFrDate(row.date, row.recurrent))}</td>
             <td class="gf-cell-motif">${escapeHtml(row.motif)}</td>
+            <td class="gf-cell-type">
+              <span class="gf-type-badge ${row.recurrent ? "gf-type-badge--rec" : "gf-type-badge--exc"}">
+                ${row.recurrent ? "Annuel" : "Except."}
+              </span>
+            </td>
             <td class="gf-cell-action">
               <button
                 type="button"
@@ -77,7 +91,9 @@ const GerantFermeturesPanel = (() => {
       renderTable(root, state.rows);
     } catch (error) {
       renderTable(root, []);
-      Toast.err(error.message || "Chargement des jours de fermeture impossible");
+      Toast.err(
+        error.message || "Chargement des jours de fermeture impossible",
+      );
     }
   }
 
@@ -93,6 +109,7 @@ const GerantFermeturesPanel = (() => {
                   <tr>
                     <th>Date</th>
                     <th>Motif</th>
+                    <th>Type</th>
                     <th></th>
                   </tr>
                 </thead>
@@ -104,6 +121,12 @@ const GerantFermeturesPanel = (() => {
           <aside class="gf-form-card">
             <h3 class="gf-form-title">Ajouter un jour férié</h3>
             <form class="gf-form" data-gf-form novalidate>
+
+              <div class="gf-toggle-wrap">
+                <button type="button" class="gf-toggle-btn active" data-gf-type="recurrent">Chaque année</button>
+                <button type="button" class="gf-toggle-btn" data-gf-type="exceptionnel">Exceptionnel</button>
+              </div>
+
               <label class="gf-field">
                 <span>Date :</span>
                 <input type="date" name="date" required />
@@ -111,9 +134,10 @@ const GerantFermeturesPanel = (() => {
 
               <label class="gf-field">
                 <span>Motif :</span>
-                <input type="text" name="motif" maxlength="80" required placeholder="Ex : Inventaire annuel" />
+                <input type="text" name="motif" maxlength="80" required placeholder="Ex : Noël, inventaire…" />
               </label>
 
+              <input type="hidden" name="recurrent" value="1" />
               <button type="submit" class="gf-submit-btn">Valider</button>
             </form>
           </aside>
@@ -130,6 +154,21 @@ const GerantFermeturesPanel = (() => {
     renderTable(root, []);
     void loadRows(id, root);
 
+    // ── Toggle récurrent / exceptionnel ──
+    const toggleBtns = root.querySelectorAll("[data-gf-type]");
+    const hiddenRec = root.querySelector('input[name="recurrent"]');
+
+    toggleBtns.forEach((btn) => {
+      btn.addEventListener("click", () => {
+        toggleBtns.forEach((b) => b.classList.remove("active"));
+        btn.classList.add("active");
+        if (hiddenRec) {
+          hiddenRec.value = btn.dataset.gfType === "recurrent" ? "1" : "0";
+        }
+      });
+    });
+
+    // ── Soumission du formulaire ──
     const form = root.querySelector("[data-gf-form]");
     form?.addEventListener("submit", async (event) => {
       event.preventDefault();
@@ -140,17 +179,10 @@ const GerantFermeturesPanel = (() => {
       const data = new FormData(form);
       const date = String(data.get("date") || "").trim();
       const motif = String(data.get("motif") || "").trim();
+      const recurrent = String(data.get("recurrent")) === "1";
 
       if (!date || !motif) {
         Toast.warn("Veuillez renseigner la date et le motif");
-        return;
-      }
-
-      const already = state.rows.some(
-        (row) => row.date === date && row.motif.toLowerCase() === motif.toLowerCase(),
-      );
-      if (already) {
-        Toast.warn("Ce jour existe déjà");
         return;
       }
 
@@ -159,16 +191,21 @@ const GerantFermeturesPanel = (() => {
         const created = await Requetes.createFermeture({
           date_fermeture: date,
           motif,
+          recurrent,
         });
         const row = normalizeRow(created?.fermeture ?? created);
         if (row.id > 0) {
           state.rows.push(row);
           sortRows(state.rows);
-          renderTable(root, state.rows);
-        } else {
-          await loadRows(id, root);
         }
+        // Always re-render from state
+        renderTable(root, state.rows);
         form.reset();
+        // Reset toggle to default (récurrent)
+        toggleBtns.forEach((b) => b.classList.remove("active"));
+        const recBtn = root.querySelector('[data-gf-type="recurrent"]');
+        if (recBtn) recBtn.classList.add("active");
+        if (hiddenRec) hiddenRec.value = "1";
         Toast.ok("Jour férié ajouté");
       } catch (error) {
         Toast.err(error.message || "Ajout impossible");
@@ -177,6 +214,7 @@ const GerantFermeturesPanel = (() => {
       }
     });
 
+    // ── Suppression ──
     root.addEventListener("click", async (event) => {
       const btn = event.target.closest("[data-gf-delete]");
       if (!btn) return;
