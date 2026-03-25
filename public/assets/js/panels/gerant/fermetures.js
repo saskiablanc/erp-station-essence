@@ -123,7 +123,7 @@ const GerantFermeturesPanel = (() => {
             <form class="gf-form" data-gf-form novalidate>
 
               <div class="gf-toggle-wrap">
-                <button type="button" class="gf-toggle-btn active" data-gf-type="recurrent">Chaque année</button>
+                <button type="button" class="gf-toggle-btn active" data-gf-type="recurrent">Annuel</button>
                 <button type="button" class="gf-toggle-btn" data-gf-type="exceptionnel">Exceptionnel</button>
               </div>
 
