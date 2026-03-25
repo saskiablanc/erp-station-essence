@@ -94,32 +94,69 @@ const BddPanel = (() => {
       allowOutsideClick: false,
     });
   }
-  async function err(msg) {
+  async function err(msg, title = "Erreur") {
+    const safeHtml = esc(String(msg || "Erreur inconnue")).replaceAll("\n", "<br>");
     await Swal.fire({
       ...swalBase,
       icon: "error",
-      title: "Erreur",
-      html: esc(msg),
+      title,
+      html: safeHtml,
       showCloseButton: true,
       showConfirmButton: false,
       allowOutsideClick: false,
     });
+  }
+  function extractErrorMessage(error) {
+    if (error?.data?.message) return String(error.data.message);
+    if (error?.message) return String(error.message);
+    return "Une erreur inconnue est survenue.";
+  }
+  function isReferentialError(message) {
+    const msg = String(message || "").toLowerCase();
+    return (
+      msg.includes("clé étrangère") ||
+      msg.includes("cle etrangere") ||
+      msg.includes("foreign key") ||
+      msg.includes("référencé") ||
+      msg.includes("reference")
+    );
+  }
+  function isDuplicateError(message) {
+    const msg = String(message || "").toLowerCase();
+    return msg.includes("déjà existante") || msg.includes("deja existante") || msg.includes("unicité");
+  }
+  function actionLabel(action) {
+    if (action === "add") return "Ajout";
+    if (action === "edit") return "Modification";
+    if (action === "delete") return "Suppression";
+    return "Action";
+  }
+  function buildActionError(action, schema, error) {
+    const raw = extractErrorMessage(error);
+    const tableLabel = schema?.label || "table";
+    const prefix = `${actionLabel(action)} impossible (${tableLabel}).`;
+
+    if (isReferentialError(raw)) {
+      return `${prefix}\nLa ligne est liée à d'autres enregistrements.\nSupprimez d'abord les dépendances ou utilisez une suppression en cascade quand elle est prévue.`;
+    }
+    if (isDuplicateError(raw)) {
+      return `${prefix}\nLa valeur existe déjà (contrainte d'unicité).`;
+    }
+    if (raw.trim() === "") {
+      return prefix;
+    }
+    return `${prefix}\n${raw}`;
   }
   async function cancelled() {
-    await Swal.fire({
-      ...swalBase,
-      icon: "error",
-      title: "Opération Annulée",
-      showCloseButton: true,
-      showConfirmButton: false,
-      allowOutsideClick: false,
-    });
+    // Annulation utilisateur volontaire : pas de popup.
+    return;
   }
   async function confirm(msg, id) {
+    const safeMsg = esc(String(msg || "")).replaceAll("\n", "<br>");
     return Swal.fire({
       ...swalBase,
       icon: "question",
-      html: `<p class="bdd-confirm-msg">${esc(msg)}</p><p class="bdd-confirm-ref">(Référence : Id ${esc(String(id))})</p>`,
+      html: `<p class="bdd-confirm-msg">${safeMsg}</p><p class="bdd-confirm-ref">(Référence : Id ${esc(String(id))})</p>`,
       showCancelButton: true,
       cancelButtonText: "Annuler",
       confirmButtonText: "Confirmer",
@@ -602,6 +639,8 @@ const BddPanel = (() => {
       canAdd: true,
       canEdit: true,
       canDel: true,
+      deleteCascadeHint:
+        "Cette suppression retirera aussi les lignes liées : transaction_produit, transaction_energie, transaction_cce et reçu.",
       cols: [
         { f: "id_transaction", label: "ID", w: "50px" },
         { f: "prix_total", label: "Prix total", w: "90px", isPrice: true },
@@ -1584,7 +1623,7 @@ const BddPanel = (() => {
       await loadTable(root);
       await ok("Ligne Ajoutée");
     } catch (e) {
-      await err(e.message || "Erreur lors de l'ajout");
+      await err(buildActionError("add", schema, e), "Erreur ajout");
     }
   }
 
@@ -1671,7 +1710,7 @@ const BddPanel = (() => {
     } catch (e) {
       // Si la journée est verrouillée, invalider le cache pour forcer le rechargement du visuel
       if (e.message && e.message.includes("validée")) invalidateLockedDates();
-      await err(e.message || "Erreur modification");
+      await err(buildActionError("edit", schema, e), "Erreur modification");
       await loadTable(root);
     }
   }
@@ -1681,10 +1720,10 @@ const BddPanel = (() => {
   // ════════════════════════════════════════════════════════
   async function openDelete(root, key) {
     const schema = SCHEMAS[root._bddTable || "produit"];
-    const conf = await confirm(
-      "Êtes vous sûr de vouloir supprimer cette ligne ?",
-      key,
-    );
+    const deleteMessage = schema.deleteCascadeHint
+      ? `Êtes vous sûr de vouloir supprimer cette ligne ?\n${schema.deleteCascadeHint}`
+      : "Êtes vous sûr de vouloir supprimer cette ligne ?";
+    const conf = await confirm(deleteMessage, key);
     if (!conf.isConfirmed) {
       await cancelled();
       return;
@@ -1692,10 +1731,14 @@ const BddPanel = (() => {
     try {
       await schema.del(key);
       await loadTable(root);
-      await ok("Ligne Supprimée");
+      if (schema.deleteCascadeHint) {
+        await ok("Ligne Supprimée (avec dépendances)");
+      } else {
+        await ok("Ligne Supprimée");
+      }
     } catch (e) {
       if (e.message && e.message.includes("validée")) invalidateLockedDates();
-      await err(e.message || "Suppression impossible");
+      await err(buildActionError("delete", schema, e), "Erreur suppression");
       await loadTable(root);
     }
   }

@@ -486,7 +486,31 @@ class Bdd
     public function deleteTransaction(int $id): void
     {
         $this->guardTransaction($id);
-        $this->db->execute("DELETE FROM `Transaction` WHERE id_transaction=:id",[':id'=>$id]);
+        $pkQ = '`' . self::TE_PK . '`';
+
+        $this->db->beginTransaction();
+        try {
+            // Libère les pompes pointant vers une transaction énergie de cette transaction.
+            $this->db->execute(
+                "UPDATE Pompe p
+                 JOIN TransactionEnergie te ON te.{$pkQ} = p.id_transaction_energie
+                 SET p.id_transaction_energie = NULL
+                 WHERE te.id_transaction = :id",
+                [':id' => $id]
+            );
+
+            // Cascade logique : enfants puis parent.
+            $this->db->execute("DELETE FROM `Recu` WHERE id_transaction=:id", [':id' => $id]);
+            $this->db->execute("DELETE FROM TransactionCCE WHERE id_transaction=:id", [':id' => $id]);
+            $this->db->execute("DELETE FROM TransactionProduit WHERE `" . " id_transaction" . "`=:id", [':id' => $id]);
+            $this->db->execute("DELETE FROM TransactionEnergie WHERE id_transaction=:id", [':id' => $id]);
+            $this->db->execute("DELETE FROM `Transaction` WHERE id_transaction=:id", [':id' => $id]);
+
+            $this->db->commit();
+        } catch(\Throwable $e) {
+            $this->db->rollBack();
+            throw new RuntimeException($e->getMessage());
+        }
     }
 
     // ═══════════════════════════════════════════════════════

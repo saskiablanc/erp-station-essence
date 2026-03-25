@@ -61,7 +61,7 @@ final class Database
             return $stmt;
         } catch (PDOException $e) {
             $this->logError('SQL error: ' . $e->getMessage() . ' | Query: ' . $statement);
-            throw new RuntimeException('Database query failed.');
+            throw new RuntimeException($this->toReadableSqlError($e));
         }
     }
 
@@ -182,5 +182,35 @@ final class Database
         }
 
         return __DIR__ . '/../../storage/logs/database_errors.log';
+    }
+
+    private function toReadableSqlError(PDOException $e): string
+    {
+        $sqlState = (string) $e->getCode();
+        $driverCode = isset($e->errorInfo[1]) ? (int) $e->errorInfo[1] : 0;
+        $driverMessage = isset($e->errorInfo[2]) ? (string) $e->errorInfo[2] : '';
+
+        if ($sqlState === '23000') {
+            if ($driverCode === 1062) {
+                return 'Valeur déjà existante (contrainte d\'unicité).';
+            }
+            if ($driverCode === 1451) {
+                return 'Suppression impossible : cet enregistrement est encore référencé dans une autre table.';
+            }
+            if ($driverCode === 1452) {
+                return 'Enregistrement impossible : clé étrangère invalide.';
+            }
+            return 'Contrainte d\'intégrité violée.';
+        }
+
+        if ($sqlState === '42000') {
+            return 'Requête SQL invalide.';
+        }
+
+        if ($driverMessage !== '') {
+            return 'Erreur base de données : ' . $driverMessage;
+        }
+
+        return 'Database query failed.';
     }
 }
