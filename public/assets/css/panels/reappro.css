@@ -16,6 +16,9 @@
 .ra-msg--err {
   color: var(--danger);
 }
+td.ra-msg {
+  height: auto;
+}
 
 /* ═══════════════════════════════════════════════════════
    US23 — Consultation réapprovisionnement

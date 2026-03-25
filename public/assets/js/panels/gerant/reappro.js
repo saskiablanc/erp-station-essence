@@ -44,11 +44,6 @@ WM.register("gerant_reappro", {
         }
       });
 
-      if (rows.length === 0) {
-        wrap.innerHTML = '<div class="ra-msg">Aucun réapprovisionnement</div>';
-        return;
-      }
-
       var html =
         '<table class="ra-table"><thead><tr>' +
         "<th>N° Ordre</th><th>Nom</th><th>Code-barres</th><th>Quantité</th>" +
@@ -70,6 +65,14 @@ WM.register("gerant_reappro", {
         ">Annulé</option>" +
         "</select></div></th><th>Création</th><th>Souhaitée</th><th>Arrivée</th><th></th>" +
         "</tr></thead><tbody>";
+
+      if (rows.length === 0) {
+        html +=
+          '<tr><td colspan="9" style="text-align:center;padding:20px;font-family:var(--mono);font-size:12px;color:var(--text-dim);">Aucun réapprovisionnement pour ce filtre</td></tr>';
+        html += "</tbody></table>";
+        wrap.innerHTML = html;
+        return;
+      }
 
       rows.forEach(function (row) {
         var r = row.r;
