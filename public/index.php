@@ -14,6 +14,7 @@ use App\Controllers\HorairesBoutiqueController;
 use App\Controllers\IncidentController;
 use App\Controllers\ValidationController;
 use App\Controllers\BddController;
+use App\Controllers\SimulatorController;
 
 
 $uri = $_SERVER['REQUEST_URI'] ?? '';
@@ -77,6 +78,11 @@ $router->get('caisse', function () {
 
 $router->get('gerant', function () {
     (new CaisseController())->gerant();
+});
+
+// ── Simulateur physique (outil de test / démo) ───────────
+$router->get('simulator', function () {
+    (new SimulatorController())->index();
 });
 
 // ════════════════════════════════════════════════════════
