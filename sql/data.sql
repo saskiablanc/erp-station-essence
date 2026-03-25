@@ -644,14 +644,15 @@ CREATE TABLE `JourFermeture` (
   `id_fermeture`   BIGINT NOT NULL AUTO_INCREMENT,
   `date_fermeture` DATE NOT NULL,
   `motif`          VARCHAR(100) NOT NULL,
+  `recurrent`      TINYINT(1) NOT NULL DEFAULT 0,
   PRIMARY KEY (`id_fermeture`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 INSERT INTO `JourFermeture` VALUES
-(1, '2026-12-25', 'Noël'),
-(2, '2026-06-02', 'Jour férié'),
-(4, '2026-03-26', 'Fêtes des bulgares'),
-(5, '2026-11-21', 'Fêtes de Twenty One Pilots');
+(1, '0000-12-25', 'Noël', 1),
+(2, '0000-06-02', 'Jour férié', 1),
+(4, '2026-03-26', 'Fêtes des bulgares', 0),
+(5, '2026-11-21', 'Fêtes de Twenty One Pilots', 0);
 ALTER TABLE `JourFermeture` AUTO_INCREMENT = 6;
 
 -- ============================================================

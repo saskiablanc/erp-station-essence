@@ -201,47 +201,102 @@ const WM = (() => {
     const el = document.getElementById("win-" + id);
     if (!el) return;
 
-    const canvas = document.getElementById("canvas");
-    const w = State.all().windows[id] || {};
-
-    if (el.classList.contains("maximized")) {
-      // Restaure l'état précédent
-      el.classList.remove("maximized");
-      if (w._prevStyle) {
-        el.style.cssText = w._prevStyle;
-        el.dataset.x = w._prevDx || 0;
-        el.dataset.y = w._prevDy || 0;
-      }
-      const btn = el.querySelector(".wc.max");
-      if (btn) {
-        btn.setAttribute("title", "Agrandir");
-        btn.classList.remove("active");
-      }
-    } else {
-      // Sauvegarde l'état courant
-      w._prevStyle = el.style.cssText;
-      w._prevDx = el.dataset.x || 0;
-      w._prevDy = el.dataset.y || 0;
-      State.all().windows[id] = w;
-
-      const rect = canvas.getBoundingClientRect();
-      el.style.cssText = [
-        "left:0px",
-        "top:0px",
-        `width:${rect.width}px`,
-        `height:${rect.height}px`,
-        `z-index:${++State.all().zTop}`,
-        "transform:none",
-      ].join(";");
-      el.dataset.x = 0;
-      el.dataset.y = 0;
-      el.classList.add("maximized");
-      const btn = el.querySelector(".wc.max");
-      if (btn) {
-        btn.setAttribute("title", "Restaurer");
-        btn.classList.add("active");
-      }
+    // Si déjà maximisé → restaurer
+    if (el._maxOverlay) {
+      restoreFromMax(id);
+      return;
     }
+
+    // ── Sauvegarder l'état courant ──
+    el._maxPrevStyle = el.style.cssText;
+    el._maxPrevParent = el.parentNode;
+    el._maxPrevDx = el.dataset.x || 0;
+    el._maxPrevDy = el.dataset.y || 0;
+
+    // ── Créer l'overlay ──
+    const overlay = document.createElement("div");
+    overlay.className = "wm-max-overlay";
+
+    // Fermer au clic sur le fond (pas sur le panel)
+    overlay.addEventListener("click", (e) => {
+      if (e.target === overlay) restoreFromMax(id);
+    });
+
+    document.body.appendChild(overlay);
+
+    // ── Déplacer le .win dans l'overlay ──
+    overlay.appendChild(el);
+    el._maxOverlay = overlay;
+    el.classList.add("maximized");
+
+    // Style pour remplir le popup
+    el.style.cssText = [
+      "position:relative",
+      "width:min(92vw,1100px)",
+      "height:min(88vh,780px)",
+      "z-index:auto",
+      "transform:none",
+      "animation:wmMaxSlideUp 0.2s cubic-bezier(0.25,0.46,0.45,0.94)",
+    ].join(";");
+    el.dataset.x = 0;
+    el.dataset.y = 0;
+
+    // Remplacer le bouton min par un bouton fermer ✕
+    const minBtn = el.querySelector(".wc.min");
+    if (minBtn) {
+      minBtn._maxPrevHTML = minBtn.innerHTML;
+      minBtn._maxPrevTitle = minBtn.title;
+      minBtn.innerHTML = "&#x2715;";
+      minBtn.title = "Fermer";
+      minBtn.classList.add("wc-max-close");
+    }
+
+    const maxBtn = el.querySelector(".wc.max");
+    if (maxBtn) {
+      maxBtn.setAttribute("title", "Restaurer");
+      maxBtn.classList.add("active");
+    }
+  }
+
+  function restoreFromMax(id) {
+    const el = document.getElementById("win-" + id);
+    if (!el || !el._maxOverlay) return;
+
+    const overlay = el._maxOverlay;
+    const prevParent = el._maxPrevParent || document.getElementById("canvas");
+
+    // Remettre le .win dans le canvas
+    prevParent.appendChild(el);
+
+    // Restaurer le style
+    el.style.cssText = el._maxPrevStyle || "";
+    el.dataset.x = el._maxPrevDx || 0;
+    el.dataset.y = el._maxPrevDy || 0;
+    el.classList.remove("maximized");
+
+    // Restaurer le bouton min
+    const minBtn = el.querySelector(".wc.min");
+    if (minBtn && minBtn._maxPrevHTML !== undefined) {
+      minBtn.innerHTML = minBtn._maxPrevHTML;
+      minBtn.title = minBtn._maxPrevTitle || "Réduire";
+      minBtn.classList.remove("wc-max-close");
+      delete minBtn._maxPrevHTML;
+      delete minBtn._maxPrevTitle;
+    }
+
+    const maxBtn = el.querySelector(".wc.max");
+    if (maxBtn) {
+      maxBtn.setAttribute("title", "Agrandir");
+      maxBtn.classList.remove("active");
+    }
+
+    // Supprimer l'overlay
+    overlay.remove();
+    el._maxOverlay = null;
+    delete el._maxPrevStyle;
+    delete el._maxPrevParent;
+    delete el._maxPrevDx;
+    delete el._maxPrevDy;
   }
 
   function create(id) {
@@ -277,8 +332,8 @@ const WM = (() => {
         <span class="win-icon">${def.icon}</span>
         <span class="win-label">${def.label}</span>
         <div class="win-controls">
-          <button class="wc max" type="button" title="Agrandir">${SVG_MAX}</button>
           <button class="wc min" type="button" title="Réduire">-</button>
+          <button class="wc max" type="button" title="Agrandir">${SVG_MAX}</button>
         </div>
       </div>
       <div class="win-body" id="wb-${id}">${def.buildHTML()}</div>
@@ -399,8 +454,11 @@ const WM = (() => {
     const el = document.getElementById("win-" + id);
     if (!el) return;
 
-    // Quitte le mode maximisé avant de réduire
-    if (el.classList.contains("maximized")) maximize(id);
+    // En mode maximisé, le bouton min sert de fermer → restaurer
+    if (el._maxOverlay) {
+      restoreFromMax(id);
+      return;
+    }
 
     const w = State.all().windows[id] || { minimized: false, visible: true };
     w.minimized = !w.minimized;

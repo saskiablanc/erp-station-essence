@@ -106,7 +106,9 @@ class Reappro
     }
 
     /**
-     * Modifier le statut d'un réappro (US23 critère 4)
+     * Modifier le statut d'un réappro
+     * Seuls "En cours" et "En retard" peuvent passer à "Arrivé"
+     * Quand on passe à "Arrivé" : date_arrivee = aujourd'hui + mise à jour stock
      */
     public function updateStatut(int $id, string $nouveauStatut): bool
     {
@@ -115,6 +117,22 @@ class Reappro
             return false;
         }
 
+        // Vérifier le statut actuel
+        $reappro = $this->getById($id);
+        if (!$reappro) return false;
+
+        $actuel = $reappro['statut_reappro'];
+
+        // On ne peut modifier que "En cours" ou "En retard"
+        if ($actuel !== 'En cours' && $actuel !== 'En retard') {
+            return false;
+        }
+
+        if ($nouveauStatut === 'Arrivé') {
+            return $this->marquerArrive($id, $reappro['lignes']);
+        }
+
+        // Autres transitions (ex: En cours → En retard)
         $rows = $this->db->execute(
             "UPDATE Reapprovisionnement
              SET statut_reappro = :statut
@@ -122,6 +140,51 @@ class Reappro
             [':statut' => $nouveauStatut, ':id' => $id]
         );
         return $rows > 0;
+    }
+
+    /**
+     * Marquer un réappro comme arrivé :
+     * 1. Statut → Arrivé
+     * 2. date_arrivee = CURRENT_DATE sur chaque LigneReappro
+     * 3. Stock += quantité pour chaque ligne
+     */
+    private function marquerArrive(int $id, array $lignes): bool
+    {
+        $this->db->beginTransaction();
+        try {
+            // 1. Mettre à jour le statut
+            $this->db->execute(
+                "UPDATE Reapprovisionnement
+                 SET statut_reappro = 'Arrivé'
+                 WHERE id_reappro = :id
+                   AND statut_reappro IN ('En cours', 'En retard')",
+                [':id' => $id]
+            );
+
+            // 2. Remplir date_arrivee sur toutes les lignes
+            $this->db->execute(
+                "UPDATE LigneReappro
+                 SET date_arrivee = CURRENT_DATE
+                 WHERE id_reappro = :id AND date_arrivee IS NULL",
+                [':id' => $id]
+            );
+
+            // 3. Mettre à jour le stock pour chaque ligne
+            foreach ($lignes as $l) {
+                $this->db->execute(
+                    "UPDATE Stock
+                     SET quantite_stock = quantite_stock + :qty
+                     WHERE id_article = :id_article",
+                    [':qty' => $l['quantite'], ':id_article' => $l['id_article']]
+                );
+            }
+
+            $this->db->commit();
+            return true;
+        } catch (\Throwable $e) {
+            $this->db->rollBack();
+            throw $e;
+        }
     }
 
     // ═══════════════════════════════════════════════════════

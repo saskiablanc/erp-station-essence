@@ -74,7 +74,7 @@ WM.register("gerant_reappro", {
       rows.forEach(function (row) {
         var r = row.r;
         var l = row.l;
-        var annulable =
+        var modifiable =
           r.statut_reappro === "En cours" || r.statut_reappro === "En retard";
         var statutCls =
           {
@@ -83,6 +83,35 @@ WM.register("gerant_reappro", {
             Arrivé: "arrive",
             Annulé: "annule",
           }[r.statut_reappro] || "";
+
+        // Cellule statut : select si modifiable, badge sinon
+        var statutHTML;
+        if (modifiable) {
+          statutHTML =
+            '<select class="ra-statut-select ra-statut-select--' +
+            statutCls +
+            '"' +
+            ' data-id="' +
+            r.id_reappro +
+            '"' +
+            ' data-current="' +
+            r.statut_reappro +
+            '">' +
+            '<option value="' +
+            r.statut_reappro +
+            '" selected>' +
+            r.statut_reappro +
+            "</option>" +
+            '<option value="Arrivé">Arrivé</option>' +
+            "</select>";
+        } else {
+          statutHTML =
+            '<span class="ra-badge ra-badge--' +
+            statutCls +
+            '">' +
+            r.statut_reappro +
+            "</span>";
+        }
 
         html +=
           '<tr class="ra-row ra-row--' +
@@ -101,11 +130,9 @@ WM.register("gerant_reappro", {
           '<td class="ra-cell-qty">' +
           (l ? l.quantite : "") +
           "</td>" +
-          '<td><span class="ra-badge ra-badge--' +
-          statutCls +
-          '">' +
-          r.statut_reappro +
-          "</span></td>" +
+          "<td>" +
+          statutHTML +
+          "</td>" +
           '<td class="ra-cell-date">' +
           r.date_reappro +
           "</td>" +
@@ -116,7 +143,7 @@ WM.register("gerant_reappro", {
           (l && l.date_arrivee ? l.date_arrivee : "—") +
           "</td>" +
           "<td>" +
-          (annulable
+          (modifiable
             ? '<button class="ra-del" data-annuler="' +
               r.id_reappro +
               '" title="Annuler">✕</button>'
@@ -128,6 +155,50 @@ WM.register("gerant_reappro", {
       html += "</tbody></table>";
       wrap.innerHTML = html;
     }
+
+    // Changement de statut via le select inline
+    wrap.addEventListener("change", async function (e) {
+      var sel = e.target.closest(".ra-statut-select");
+      if (sel) {
+        var id = sel.dataset.id;
+        var ancien = sel.dataset.current;
+        var nouveau = sel.value;
+
+        if (nouveau === ancien) return;
+
+        var confirm = await Swal.fire({
+          title: "Réapprovisionnement #" + id,
+          text:
+            "Passer le statut de « " + ancien + " » à « " + nouveau + " » ?",
+          icon: "question",
+          showCancelButton: true,
+          confirmButtonText: "Confirmer",
+          cancelButtonText: "Annuler",
+        });
+
+        if (!confirm.isConfirmed) {
+          sel.value = ancien;
+          return;
+        }
+
+        try {
+          await Requetes.updateStatutReappro(id, nouveau);
+          Toast.ok("Réapprovisionnement #" + id + " → " + nouveau);
+          charger();
+        } catch (err) {
+          Toast.err(err.message);
+          sel.value = ancien;
+        }
+        return;
+      }
+
+      // Filtre par statut (header)
+      var filtre = e.target.closest("#ra-filtre");
+      if (filtre) {
+        currentStatut = filtre.value || "";
+        charger();
+      }
+    });
 
     // US22 : clic sur croix rouge pour annuler
     wrap.addEventListener("click", async function (e) {
@@ -153,13 +224,6 @@ WM.register("gerant_reappro", {
       } catch (err) {
         Toast.err(err.message);
       }
-    });
-
-    wrap.addEventListener("change", function (e) {
-      var filtre = e.target.closest("#ra-filtre");
-      if (!filtre) return;
-      currentStatut = filtre.value || "";
-      charger();
     });
 
     charger();

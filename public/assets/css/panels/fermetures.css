@@ -12,7 +12,7 @@
   height: 100%;
   min-height: 0;
   display: grid;
-  grid-template-columns: minmax(220px, 54%) minmax(220px, 46%);
+  grid-template-columns: minmax(220px, 55%) minmax(160px, 45%);
   gap: 4px;
 }
 
@@ -87,19 +87,25 @@
 
 .gf-table th:nth-child(1),
 .gf-table td:nth-child(1) {
-  width: 42%;
+  width: 28%;
   white-space: nowrap;
   font-variant-numeric: tabular-nums;
 }
 
 .gf-table th:nth-child(2),
 .gf-table td:nth-child(2) {
-  width: 46%;
+  width: 36%;
   overflow-wrap: anywhere;
 }
 
 .gf-table th:nth-child(3),
 .gf-table td:nth-child(3) {
+  width: 24%;
+  text-align: center;
+}
+
+.gf-table th:nth-child(4),
+.gf-table td:nth-child(4) {
   width: 12%;
 }
 
@@ -147,7 +153,8 @@
   display: flex;
   flex-direction: column;
   justify-content: flex-start;
-  overflow: hidden;
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 
 .gf-form-title {
@@ -209,6 +216,68 @@
   box-shadow: var(--shadow-soft);
 }
 
+/* Type badges */
+.gf-type-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-size: 10px;
+  font-family: var(--mono);
+  font-weight: 600;
+  letter-spacing: 0.3px;
+}
+
+.gf-type-badge--rec {
+  background: rgba(99, 102, 241, 0.1);
+  border: 1px solid rgba(99, 102, 241, 0.25);
+  color: var(--accent);
+}
+
+.gf-type-badge--exc {
+  background: rgba(245, 158, 11, 0.1);
+  border: 1px solid rgba(245, 158, 11, 0.25);
+  color: #b45309;
+}
+
+.gf-cell-type {
+  text-align: center;
+}
+
+/* Toggle récurrent / exceptionnel */
+.gf-toggle-wrap {
+  display: flex;
+  gap: 0;
+  border: 2px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+  background: #fff;
+  box-shadow: var(--shadow-soft);
+}
+
+.gf-toggle-btn {
+  flex: 1;
+  height: 36px;
+  border: none;
+  background: transparent;
+  color: var(--text-mid);
+  font-family: var(--mono);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.gf-toggle-btn.active {
+  background: var(--accent);
+  color: #fff;
+  font-weight: 700;
+}
+
+.gf-toggle-btn:not(.active):hover {
+  background: rgba(99, 102, 241, 0.06);
+  color: var(--text);
+}
+
 #win-gerant_fermetures .win-body {
   padding: 6px;
 }
@@ -219,7 +288,7 @@
 
 @container (max-width: 700px) {
   .gf-layout {
-    grid-template-columns: minmax(170px, 44%) minmax(0, 56%);
+    grid-template-columns: minmax(150px, 55%) minmax(0, 45%);
     gap: 6px;
   }
 
@@ -288,16 +357,21 @@
 
   .gf-table th:nth-child(1),
   .gf-table td:nth-child(1) {
-    width: 42%;
+    width: 26%;
   }
 
   .gf-table th:nth-child(2),
   .gf-table td:nth-child(2) {
-    width: 46%;
+    width: 34%;
   }
 
   .gf-table th:nth-child(3),
   .gf-table td:nth-child(3) {
+    width: 28%;
+  }
+
+  .gf-table th:nth-child(4),
+  .gf-table td:nth-child(4) {
     width: 12%;
   }
 
