@@ -268,3 +268,65 @@ body.is-resizing #canvas * {
   -webkit-user-select: none !important;
 }
 
+/* ── MAXIMIZE POPUP OVERLAY ──────────────────────────────── */
+.wm-max-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  z-index: 9500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: wmMaxFadeIn 0.18s ease-out;
+}
+
+@keyframes wmMaxFadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes wmMaxSlideUp {
+  from {
+    transform: translateY(14px);
+    opacity: 0;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
+
+/* Le .win reparenté dans l'overlay */
+.wm-max-overlay > .win {
+  border-radius: 14px;
+  box-shadow: 0 32px 80px rgba(0, 0, 0, 0.45);
+}
+
+.wm-max-overlay > .win > .win-title {
+  border-radius: 14px 14px 0 0;
+  cursor: default;
+}
+
+/* Bouton ✕ fermer (remplace le - en mode maximisé) */
+.wc.wc-max-close:hover {
+  background: rgba(239, 68, 68, 0.1);
+  border-color: var(--danger);
+  color: var(--danger);
+}
+
+/* Cacher les resize handles en mode maximisé */
+.wm-max-overlay .win-resize-side,
+.wm-max-overlay .win-resize-handle {
+  display: none;
+}
+
+/* Force SweetAlert2 au-dessus du maximize overlay */
+.swal2-container {
+  z-index: 10000 !important;
+}
