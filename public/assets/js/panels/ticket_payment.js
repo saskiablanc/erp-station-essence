@@ -799,14 +799,14 @@ window.TicketPayment = (() => {
 
     await Swal.fire({
       html: `
-        <div class="ticket-cash-modal">
-          <button type="button" class="ticket-cash-close" data-cash-close aria-label="Fermer">X</button>
-          <div class="ticket-cash-total">Total à régler : <strong>${formatMoney(total)}</strong></div>
-          <div class="ticket-cash-display-wrap">
-            <div class="ticket-cash-display" data-cash-display>0.00 EUR</div>
+        <div class="ticket-barcode-modal ticket-barcode-modal--cash">
+          <button type="button" class="ticket-barcode-close" data-cash-close aria-label="Fermer">X</button>
+          <div class="ticket-barcode-total">Total à régler : <strong>${formatMoney(total)}</strong></div>
+          <div class="ticket-barcode-display-wrap">
+            <div class="ticket-barcode-display ticket-barcode-display--cash" data-cash-display>0.00 EUR</div>
           </div>
-          <div class="ticket-cash-error" data-cash-error></div>
-          <div class="ticket-cash-keypad">
+          <div class="ticket-barcode-error" data-cash-error></div>
+          <div class="ticket-barcode-keypad">
             <button type="button" data-cash-key="1">1</button>
             <button type="button" data-cash-key="2">2</button>
             <button type="button" data-cash-key="3">3</button>
@@ -818,7 +818,7 @@ window.TicketPayment = (() => {
             <button type="button" data-cash-key="9">9</button>
             <button type="button" data-cash-action="back">\u2039</button>
             <button type="button" data-cash-key="0">0</button>
-            <button type="button" data-cash-action="validate">\u2713</button>
+            <button type="button" data-cash-action="validate" data-barcode-action="validate">\u2713</button>
           </div>
         </div>
       `,
@@ -827,8 +827,8 @@ window.TicketPayment = (() => {
       allowOutsideClick: false,
       allowEscapeKey: true,
       customClass: {
-        popup: 'ticket-swal-popup ticket-swal-popup-cash',
-        htmlContainer: 'ticket-swal-cash-html',
+        popup: 'ticket-swal-popup ticket-swal-popup-barcode',
+        htmlContainer: 'ticket-swal-barcode-html',
       },
       didOpen: (popup) => {
         const display = popup.querySelector('[data-cash-display]');

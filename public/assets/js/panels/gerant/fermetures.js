@@ -102,7 +102,6 @@ const GerantFermeturesPanel = (() => {
       <section class="gf-panel">
         <div class="gf-layout">
           <div class="gf-table-card">
-            <h3 class="gf-side-title">Jours enregistrés</h3>
             <div class="gf-table-scroll">
               <table class="gf-table" aria-label="Jours de fermeture">
                 <thead>
@@ -119,7 +118,6 @@ const GerantFermeturesPanel = (() => {
           </div>
 
           <aside class="gf-form-card">
-            <h3 class="gf-form-title">Ajouter un jour férié</h3>
             <form class="gf-form" data-gf-form novalidate>
 
               <div class="gf-toggle-wrap">
@@ -138,7 +136,7 @@ const GerantFermeturesPanel = (() => {
               </label>
 
               <input type="hidden" name="recurrent" value="1" />
-              <button type="submit" class="gf-submit-btn">Valider</button>
+              <button type="submit" class="gf-submit-btn">Ajouter jour férié</button>
             </form>
           </aside>
         </div>

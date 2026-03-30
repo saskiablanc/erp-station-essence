@@ -237,7 +237,28 @@ WM.register('ticket', {
       }
     });
 
-    panel.querySelector('.ticket-rows').addEventListener('click', async (event) => {
+    const rowsEl = panel.querySelector('.ticket-rows');
+
+    rowsEl?.addEventListener('click', async (event) => {
+      const qtyBtn = event.target.closest('[data-qty-action]');
+      if (qtyBtn) {
+        const index = Number(qtyBtn.dataset.qtyIndex);
+        const action = String(qtyBtn.dataset.qtyAction || '');
+        const currentQty = Number(cart.getItems()?.[index]?.qty ?? 1);
+        const nextQty = action === 'dec' ? currentQty - 1 : currentQty + 1;
+        const result = cart.setQtyAt(index, nextQty);
+        if (!result.ok) {
+          if (action === 'dec' && currentQty <= 1) {
+            Toast.warn('Quantité minimale : 1');
+          } else {
+            Toast.warn(result.error || 'Quantité invalide');
+          }
+          return;
+        }
+        render();
+        return;
+      }
+
       const btn = event.target.closest('.ticket-del');
       if (!btn) return;
 

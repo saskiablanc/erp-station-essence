@@ -9,7 +9,7 @@
   border-radius: 10px;
   overflow: hidden;
   --ticket-cols: 70px 1fr 150px 110px 90px 28px;
-  --ticket-row-h: 26px;
+  --ticket-row-h: 34px;
   --ticket-scrollbar-gutter: 0px;
 }
 .ticket-actions {
@@ -108,6 +108,45 @@
 .ticket-row .cell.prix {
   justify-content: flex-end;
   font-variant-numeric: tabular-nums;
+}
+.ticket-qty-stepper {
+  display: grid;
+  grid-template-columns: 24px minmax(30px, auto) 24px;
+  align-items: center;
+  gap: 4px;
+  height: 28px;
+}
+.ticket-qty-btn {
+  width: 24px;
+  height: 24px;
+  border-radius: 8px;
+  border: 2px solid var(--border);
+  background: var(--btn-grad);
+  color: var(--accent);
+  font-family: var(--display);
+  font-size: 18px;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: var(--shadow-soft);
+}
+.ticket-qty-btn:active {
+  transform: translateY(1px);
+}
+.ticket-qty-value {
+  min-width: 30px;
+  text-align: center;
+  font-family: var(--mono);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text);
+}
+.ticket-qty-readonly {
+  min-width: 30px;
+  text-align: right;
+  font-family: var(--mono);
+  font-size: 12px;
 }
 .ticket-del {
   width: 22px;

@@ -63,6 +63,29 @@ window.TicketView = (() => {
 
     rowsEl.innerHTML = '';
     items.forEach((item, index) => {
+      const editableQty = String(item.source || '').toLowerCase() !== 'energie';
+      const qtyCell = editableQty
+        ? `
+          <div class="ticket-qty-stepper" data-qty-stepper="${index}">
+            <button
+              class="ticket-qty-btn ticket-qty-btn--minus"
+              type="button"
+              data-qty-action="dec"
+              data-qty-index="${index}"
+              aria-label="Diminuer la quantité ligne ${index + 1}"
+            >−</button>
+            <span class="ticket-qty-value" data-qty-value-index="${index}">${item.qty}</span>
+            <button
+              class="ticket-qty-btn ticket-qty-btn--plus"
+              type="button"
+              data-qty-action="inc"
+              data-qty-index="${index}"
+              aria-label="Augmenter la quantité ligne ${index + 1}"
+            >+</button>
+          </div>
+        `
+        : `<span class="ticket-qty-readonly">${item.qty}</span>`;
+
       const row = document.createElement('div');
       row.className = 'ticket-row filled';
       row.dataset.index = String(index);
@@ -70,7 +93,7 @@ window.TicketView = (() => {
         <div class="cell num">${index + 1}</div>
         <div class="cell nom">${item.libelle}</div>
         <div class="cell code">${item.codeAffiche || item.code}</div>
-        <div class="cell qty">${item.qty}</div>
+        <div class="cell qty">${qtyCell}</div>
         <div class="cell prix">${formatEuro(item.prix * item.qty)}</div>
         <div class="cell del"><button class="ticket-del" type="button" aria-label="Supprimer">X</button></div>
       `;

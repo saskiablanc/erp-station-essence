@@ -44,6 +44,20 @@ window.TicketCart = (() => {
       items.splice(0, items.length);
     }
 
+    function setQtyAt(index, qty) {
+      if (!Number.isInteger(index) || index < 0 || index >= items.length) {
+        return { ok: false, error: 'Ligne introuvable' };
+      }
+
+      const nextQty = Number.parseInt(String(qty), 10);
+      if (!Number.isInteger(nextQty) || nextQty < 1) {
+        return { ok: false, error: 'Quantité invalide' };
+      }
+
+      items[index].qty = nextQty;
+      return { ok: true };
+    }
+
     function getItems() {
       return items;
     }
@@ -81,6 +95,7 @@ window.TicketCart = (() => {
     return {
       addArticle,
       removeAt,
+      setQtyAt,
       clear,
       getItems,
       getTotal,

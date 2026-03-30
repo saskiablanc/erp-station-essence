@@ -29,6 +29,20 @@
   gap: 10px;
   padding-top: 2px;
 }
+.ticket-barcode-modal--cash {
+  gap: 8px;
+}
+
+.ticket-barcode-total {
+  margin-top: 8px;
+  text-align: center;
+  color: var(--text);
+  font-family: var(--mono);
+  font-size: 16px;
+}
+.ticket-barcode-modal--cash .ticket-barcode-display-wrap {
+  margin-top: 6px;
+}
 
 .ticket-barcode-close {
   position: absolute;
@@ -77,6 +91,9 @@
   letter-spacing: 0.04em;
   color: var(--text);
   user-select: none;
+}
+.ticket-barcode-display--cash {
+  letter-spacing: 0;
 }
 
 .ticket-barcode-error {
