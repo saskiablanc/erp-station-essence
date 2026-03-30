@@ -89,16 +89,14 @@ const PompeCarburant = (() => {
     const date = _formatDate(p.date_debut);
 
     let actionBtn = "";
-    if (isManuel && isActive && !tx) {
-      actionBtn = `<button class="pc-btn pc-btn--demarrer" onclick="PompeCarburant.demarrer(${p.id_pompe})">Démarrer livraison</button>`;
-    } else if (isManuel && isEnCours && tx) {
-      actionBtn = `<button class="pc-btn pc-btn--terminer" onclick="PompeCarburant.terminer(${p.id_pompe})">Terminer livraison</button>`;
-    } else if (isManuel && isDesact && tx) {
+    if (isManuel && isDesact && tx) {
       actionBtn = `<button class="pc-btn pc-btn--encaisser" onclick="PompeCarburant.encaisser(${p.id_pompe})">Encaisser</button>`;
-    } else if (isDesact) {
+    } else if (isDesact && !tx) {
       actionBtn = `<button class="pc-btn pc-btn--activer" onclick="PompeCarburant.activer(${p.id_pompe})">Activer</button>`;
-    } else if (isManuel) {
-      actionBtn = `<button class="pc-btn pc-btn--disabled" disabled>Action indisponible</button>`;
+    } else if (isManuel && isEnCours) {
+      actionBtn = `<span class="pc-mode-badge" style="background:var(--warn-dim);color:var(--warn);border-color:var(--warn);">EN COURS</span>`;
+    } else if (isManuel && isActive) {
+      actionBtn = `<span class="pc-mode-badge">DISPONIBLE</span>`;
     } else {
       actionBtn = `${modeBadge}`;
     }
@@ -204,45 +202,6 @@ const PompeCarburant = (() => {
     }
   }
 
-  async function demarrer(idPompe) {
-    const btn = document.querySelector(`#pc-card-${idPompe} .pc-btn--demarrer`);
-    if (btn) {
-      btn.disabled = true;
-      btn.textContent = "...";
-    }
-    try {
-      const quantite = Number((5 + Math.random() * 35).toFixed(3));
-      await Requetes.demarrerPompe(idPompe, { quantite_delivree: quantite });
-      Toast.ok(`Pompe ${idPompe} : livraison démarrée`);
-      if (typeof PompesPanelRefresh === "function") PompesPanelRefresh();
-    } catch (e) {
-      Toast.err(`Échec démarrage : ${e.message}`);
-      if (btn) {
-        btn.disabled = false;
-        btn.textContent = "Démarrer livraison";
-      }
-    }
-  }
-
-  async function terminer(idPompe) {
-    const btn = document.querySelector(`#pc-card-${idPompe} .pc-btn--terminer`);
-    if (btn) {
-      btn.disabled = true;
-      btn.textContent = "...";
-    }
-    try {
-      await Requetes.terminerPompe(idPompe);
-      Toast.ok(`Pompe ${idPompe} : livraison terminée, prête à encaisser`);
-      if (typeof PompesPanelRefresh === "function") PompesPanelRefresh();
-    } catch (e) {
-      Toast.err(`Échec fin de livraison : ${e.message}`);
-      if (btn) {
-        btn.disabled = false;
-        btn.textContent = "Terminer livraison";
-      }
-    }
-  }
-
   async function activer(idPompe) {
     const btn = document.querySelector(`#pc-card-${idPompe} .pc-btn--activer`);
     if (btn) {
@@ -262,5 +221,5 @@ const PompeCarburant = (() => {
     }
   }
 
-  return { buildHTML, onData, demarrer, terminer, encaisser, activer };
+  return { buildHTML, onData, encaisser, activer };
 })();
