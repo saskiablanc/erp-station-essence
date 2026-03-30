@@ -67,6 +67,11 @@ const PompeCarburant = (() => {
     return `<span class="pc-led" style="background:${color};box-shadow:0 0 5px ${color};${anim}"></span>`;
   }
 
+  function _lastCardLabel(p) {
+    const mode = String(p?.derniere_carte || "").toUpperCase();
+    return mode === "CCE" ? "CCE" : "Carte bancaire";
+  }
+
   function _cardHTML(p) {
     const tx = p.transaction || null;
     const carb = tx ? tx.libelle : null;
@@ -82,7 +87,7 @@ const PompeCarburant = (() => {
 
     const modeBadge = isManuel
       ? `<span class="pc-mode-badge">MANUEL</span>`
-      : `<span class="pc-mode-badge pc-mode-badge--auto">CARTES</span>`;
+      : `<span class="pc-mode-badge pc-mode-badge--auto">${_lastCardLabel(p)}</span>`;
 
     const qte = tx ? `${_fmt(tx.quantite_delivree, 2)} L` : "\u2014";
     const total = tx ? `${_fmt(tx.prix_total, 2)} \u20ac` : "\u2014";

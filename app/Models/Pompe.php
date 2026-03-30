@@ -31,6 +31,48 @@ final class Pompe
             return [];
         }
 
+        // ── 1.b Dernière carte utilisée par pompe (CCE / CB) ─────────────
+        $pompeIds = array_values(array_filter(
+            array_map(static fn($p) => (int) ($p['id_pompe'] ?? 0), $pompes),
+            static fn(int $id): bool => $id > 0
+        ));
+        $lastCardByPompe = [];
+        if (!empty($pompeIds)) {
+            $placeholdersPompes = implode(',', array_fill(0, count($pompeIds), '?'));
+            $pkColumn = $this->getTransactionEnergiePkColumn();
+            $pkQuoted = sprintf('`%s`', str_replace('`', '``', $pkColumn));
+
+            $rows = $this->db->query(
+                sprintf(
+                    "SELECT te.id_pompe,
+                            CASE WHEN tc.id_transaction IS NULL THEN 'CB' ELSE 'CCE' END AS derniere_carte
+                     FROM TransactionEnergie te
+                     JOIN (
+                       SELECT id_pompe, MAX(%s) AS max_te
+                       FROM TransactionEnergie
+                       WHERE id_pompe IN (%s)
+                         AND statut = 'payee'
+                         AND id_transaction IS NOT NULL
+                       GROUP BY id_pompe
+                     ) latest
+                       ON latest.id_pompe = te.id_pompe
+                      AND latest.max_te = te.%s
+                     LEFT JOIN TransactionCCE tc
+                       ON tc.id_transaction = te.id_transaction",
+                    $pkQuoted,
+                    $placeholdersPompes,
+                    $pkQuoted
+                ),
+                $pompeIds
+            )->fetchAll();
+
+            foreach ($rows as $row) {
+                $idPompe = (int) ($row['id_pompe'] ?? 0);
+                if ($idPompe <= 0) continue;
+                $lastCardByPompe[$idPompe] = strtoupper((string) ($row['derniere_carte'] ?? 'CB'));
+            }
+        }
+
         // ── 2. Transactions en cours (si id_transaction_energie renseigné) ──
         $ids = array_values(array_filter(
             array_column($pompes, 'id_transaction_energie'),
@@ -107,7 +149,7 @@ final class Pompe
         }
 
         // ── 3. Assembler ─────────────────────────────────────
-        return array_map(function (array $p) use ($txDetails): array {
+        return array_map(function (array $p) use ($txDetails, $lastCardByPompe): array {
             $idTe = isset($p['id_transaction_energie']) && $p['id_transaction_energie'] !== ''
                   ? (int) $p['id_transaction_energie']
                   : null;
@@ -122,6 +164,7 @@ final class Pompe
                 'mode'       => $p['mode'],                 // 'manuel' | 'auto'
                 'statut'     => $p['statut'],               // 'active' | 'en_cours' | 'desactivee'
                 'date_debut' => $p['date_debut'],
+                'derniere_carte' => $lastCardByPompe[(int) $p['id_pompe']] ?? 'CB',
                 'transaction' => $tx ? [
                     'id_transaction_energie' => (int) $tx['id_transaction_energie'],
                     'id_energie'             => (int) $tx['id_energie'],

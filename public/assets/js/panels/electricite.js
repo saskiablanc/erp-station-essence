@@ -50,6 +50,11 @@ const PompeElectricite = (() => {
     return `<span class="pe-led" style="background:${color};box-shadow:0 0 5px ${color};${anim}"></span>`;
   }
 
+  function _lastCardLabel(p) {
+    const mode = String(p?.derniere_carte || "").toUpperCase();
+    return mode === "CCE" ? "CCE" : "Carte bancaire";
+  }
+
   // numero affiché : rapides 1-8, lents réindexés 1-2
   function _numAff(p) {
     return p.sous_type === "lente" ? p.numero - 8 : p.numero;
@@ -72,7 +77,7 @@ const PompeElectricite = (() => {
     if (isDesact) {
       actionBtn = `<button class="pe-btn pe-btn--activer" onclick="PompeElectricite.activer(${p.id_pompe})">Activer</button>`;
     } else {
-      actionBtn = `<span class="pe-carte-label">CARTES</span>`;
+      actionBtn = `<span class="pe-carte-label">${_lastCardLabel(p)}</span>`;
     }
 
     const borderColor = isEnCours
