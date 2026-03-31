@@ -1423,7 +1423,14 @@ window.TicketPayment = (() => {
       return acc;
     }, {});
 
+    let cashDetails = null;
     const cashAmount = Number(amountByMethod.especes || 0);
+    if (cashAmount > 0) {
+      cashDetails = await promptCashAmount(cashAmount);
+      if (!cashDetails) {
+        return { status: 'cancel' };
+      }
+    }
 
     const cbAmount = Number(amountByMethod.cb || 0);
     if (cbAmount > 0) {
@@ -1444,6 +1451,7 @@ window.TicketPayment = (() => {
       status: 'success',
       plan,
       amountByMethod,
+      cashDetails,
       cashAmount,
       cbAmount,
     };

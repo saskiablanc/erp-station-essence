@@ -50,6 +50,13 @@ const CceConsultPanel = (() => {
     return `${amount.toFixed(2)}€`;
   }
 
+  function formatConsultTransactionMoney(value, kind) {
+    const amount = Number(value ?? 0);
+    if (!Number.isFinite(amount)) return "—";
+    const prefix = String(kind || "").toLowerCase() === "rechargement" ? "+" : "";
+    return `${prefix}${amount.toFixed(2)}€`;
+  }
+
   function formatConsultQuantity(value) {
     const quantity = Number(value ?? 0);
     if (!Number.isFinite(quantity)) return "—";
@@ -598,9 +605,13 @@ const CceConsultPanel = (() => {
           (row) => `
             <tr>
               <td>${escapeHtml(row?.id_transaction ?? "—")}</td>
-              <td>${escapeHtml(row?.carburant ?? "—")}</td>
-              <td>${escapeHtml(formatConsultQuantity(row?.quantite))}</td>
-              <td>${escapeHtml(formatConsultMoney(row?.montant_total))}</td>
+              <td>${escapeHtml(row?.transaction_name ?? "—")}</td>
+              <td>${escapeHtml(
+                String(row?.transaction_kind || "").toLowerCase() === "rechargement"
+                  ? "—"
+                  : formatConsultQuantity(row?.quantite),
+              )}</td>
+              <td>${escapeHtml(formatConsultTransactionMoney(row?.montant_total, row?.transaction_kind))}</td>
               <td>${escapeHtml(formatConsultDate(row?.date_heure))}</td>
               <td>${escapeHtml(formatConsultTime(row?.date_heure))}</td>
             </tr>
@@ -656,7 +667,7 @@ const CceConsultPanel = (() => {
                 <thead>
                   <tr>
                     <th>ID Transaction</th>
-                    <th>Carburants</th>
+                    <th>Transaction Name</th>
                     <th>Quantité</th>
                     <th>Montant Total</th>
                     <th>Date</th>
@@ -667,7 +678,7 @@ const CceConsultPanel = (() => {
                   ${
                     rows.length > 0
                       ? bodyHtml
-                      : '<tr><td colspan="6" class="cce-transactions-empty">Aucune transaction carburant CCE pour cette carte.</td></tr>'
+                      : '<tr><td colspan="6" class="cce-transactions-empty">Aucune transaction CCE pour cette carte.</td></tr>'
                   }
                 </tbody>
               </table>
