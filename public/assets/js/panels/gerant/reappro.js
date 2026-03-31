@@ -1,4 +1,24 @@
 /** panels/gerant/reappro.js — US23 Consultation + US22 Annulation */
+const ReapproPanel = (() => {
+  let changeHandler = null;
+
+  function dispatchChanged(detail = {}) {
+    window.dispatchEvent(new CustomEvent("reappro:changed", { detail }));
+  }
+
+  function bindRefresh(charger) {
+    if (changeHandler) {
+      window.removeEventListener("reappro:changed", changeHandler);
+    }
+    changeHandler = function () {
+      charger();
+    };
+    window.addEventListener("reappro:changed", changeHandler);
+  }
+
+  return { dispatchChanged, bindRefresh };
+})();
+
 WM.register("gerant_reappro", {
   label: "Réapprovisionnement",
   icon: "",
@@ -187,7 +207,14 @@ WM.register("gerant_reappro", {
         try {
           await Requetes.updateStatutReappro(id, nouveau);
           Toast.ok("Réapprovisionnement #" + id + " → " + nouveau);
-          charger();
+          if (nouveau === "Arrivé") {
+            window.dispatchEvent(new CustomEvent("stock:changed"));
+          }
+          ReapproPanel.dispatchChanged({
+            type: "status",
+            id_reappro: Number(id),
+            statut: nouveau,
+          });
         } catch (err) {
           Toast.err(err.message);
           sel.value = ancien;
@@ -223,16 +250,22 @@ WM.register("gerant_reappro", {
       try {
         await Requetes.annulerReappro(id);
         Toast.ok("Réapprovisionnement #" + id + " annulé");
-        charger();
+        ReapproPanel.dispatchChanged({
+          type: "cancel",
+          id_reappro: Number(id),
+          statut: "Annulé",
+        });
       } catch (err) {
         Toast.err(err.message);
       }
     });
 
     charger();
+    ReapproPanel.bindRefresh(charger);
 
     // Permet aux autres panels de déclencher un rechargement
     window.ReapproEvents = window.ReapproEvents || {};
     window.ReapproEvents.refresh = charger;
+    window.ReapproEvents.dispatchChanged = ReapproPanel.dispatchChanged;
   },
 });

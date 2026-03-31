@@ -94,6 +94,7 @@ const Requetes = (() => {
       ),
     getReappro: (id) => appel("GET", `/json/reappros/${id}`),
     creerReappro: (d) => appel("POST", "/json/reappros", d),
+    creerReapproAuto: () => appel("POST", "/json/reappros/auto"),
     annulerReappro: (id) => appel("POST", `/json/reappros/${id}/annuler`),
     updateStatutReappro: (id, s) =>
       appel("POST", `/json/reappros/${id}/statut`, { statut: s }),

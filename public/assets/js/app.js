@@ -6,6 +6,89 @@
 const App = (() => {
   const isGerant =
     typeof CAISSE_MODE !== "undefined" && CAISSE_MODE === "gerant";
+  let autoReapproInFlight = false;
+
+  function escapeHtml(value) {
+    return String(value ?? "")
+      .replaceAll("&", "&amp;")
+      .replaceAll("<", "&lt;")
+      .replaceAll(">", "&gt;")
+      .replaceAll('"', "&quot;")
+      .replaceAll("'", "&#39;");
+  }
+
+  function formatReapproQty(article) {
+    const qty = Number(article?.volume ?? 0);
+    const type = String(article?.type_article ?? "").toLowerCase();
+    if (!Number.isFinite(qty)) return "0";
+    if (type === "carburant" || type === "energie" || type === "electricite") {
+      return `${qty.toFixed(3)} L`;
+    }
+    return String(Math.max(0, Math.trunc(qty)));
+  }
+
+  async function verifierReapproAuto() {
+    if (autoReapproInFlight) return;
+    autoReapproInFlight = true;
+
+    try {
+      const result = await Requetes.creerReapproAuto();
+      const created = Array.isArray(result?.created) ? result.created : [];
+      const createdCount = Number(result?.created_count ?? created.length ?? 0);
+
+      if (createdCount > 0) {
+        window.dispatchEvent(
+          new CustomEvent("reappro:changed", {
+            detail: {
+              type: "auto-create",
+              id_reappro: Number(result?.id_reappro ?? 0),
+              created,
+            },
+          }),
+        );
+
+        const linesHtml = created
+          .map(
+            (article) => `
+              <tr>
+                <td style="text-align:left;padding:4px 10px 4px 0;">${escapeHtml(article?.nom_article || `#${article?.id_article || ""}`)}</td>
+                <td style="text-align:right;padding:4px 0;">${escapeHtml(formatReapproQty(article))}</td>
+              </tr>
+            `,
+          )
+          .join("");
+
+        await Swal.fire({
+          icon: "warning",
+          title: "Seuil d'alerte atteint",
+          html: `
+            <div style="text-align:left;font-size:13px;">
+              Réapprovisionnement automatique lancé${createdCount > 1 ? "s" : ""}.
+              <br><br>
+              <b>N° Ordre :</b> #${escapeHtml(result?.id_reappro ?? "—")}<br>
+              <b>Articles :</b> ${escapeHtml(createdCount)}<br><br>
+              <table style="width:100%;font-size:12px;">
+                <tr><th style="text-align:left;">Article</th><th style="text-align:right;">Qté</th></tr>
+                ${linesHtml}
+              </table>
+            </div>
+          `,
+          confirmButtonText: "Fermer",
+        });
+
+        Toast.warn(
+          "Réappro automatique lancé" +
+            (createdCount > 1 ? "s" : "") +
+            " : #" +
+            Number(result?.id_reappro || 0),
+        );
+      }
+    } catch (_) {
+      // L'auto-réappro ne doit pas bloquer l'encaissement ou l'UI.
+    } finally {
+      autoReapproInFlight = false;
+    }
+  }
 
   function init() {
     State.set("employe", SESSION);
@@ -38,6 +121,10 @@ const App = (() => {
           WM.applyLayout(currentHand);
         }
       }, 120);
+    });
+
+    window.addEventListener("caisse:payment:success", () => {
+      void verifierReapproAuto();
     });
   }
 
