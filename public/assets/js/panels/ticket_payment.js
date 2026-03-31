@@ -310,6 +310,9 @@ window.TicketPayment = (() => {
 
   async function choosePaymentPlan(total, options = {}) {
     const totalCents = toCents(total);
+    const allowedMethods = Array.isArray(options.allowedMethods) && options.allowedMethods.length > 0
+      ? options.allowedMethods.map((method) => String(method || '').toLowerCase())
+      : ['cb', 'cce', 'especes'];
     const cceRuleLimitCents = Math.max(0, toCents(options.cceMax ?? total));
     const cceInfo = options.cceInfo || null;
     const cceBalanceCents =
@@ -320,12 +323,16 @@ window.TicketPayment = (() => {
       cceBalanceCents === null
         ? cceRuleLimitCents
         : Math.min(cceRuleLimitCents, cceBalanceCents);
-    const cceEnabled = cceCapCents > 0;
-    const methods = ['cb', 'cce', 'especes'];
+    const cceEnabled = allowedMethods.includes('cce') && cceCapCents > 0;
+    const methods = ['cb', 'cce', 'especes'].filter((method) => allowedMethods.includes(method));
     const state = {
       share: false,
       strategy: 'montants',
-      selected: { cb: true, cce: false, especes: false },
+      selected: {
+        cb: methods.includes('cb'),
+        cce: false,
+        especes: false,
+      },
       parts: { cb: 1, cce: 1, especes: 1 },
       amounts: { cb: '', cce: '', especes: '' },
     };
@@ -337,14 +344,18 @@ window.TicketPayment = (() => {
     const html = `
       <div class="ticket-pay-split">
         <div class="ticket-pay-choice-total">Total à régler : <strong>${formatMoneyEuro(total)}</strong></div>
-        <div class="ticket-pay-cce-limit">
-          Sous-total énergie (payable CCE) : <strong>${formatMoneyEuro(fromCents(cceRuleLimitCents))}</strong>
-        </div>
         ${
-          cceInfo
-            ? `<div class="ticket-pay-cce-balance">
+          methods.includes('cce')
+            ? `<div class="ticket-pay-cce-limit">
+                 Sous-total énergie (payable CCE) : <strong>${formatMoneyEuro(fromCents(cceRuleLimitCents))}</strong>
+               </div>
+               ${
+                 cceInfo
+                   ? `<div class="ticket-pay-cce-balance">
                  Carte CCE scannée #${cceInfo.idCarte} — Solde : <strong>${formatMoneyEuro(cceInfo.solde)}</strong> — Plafond CCE : <strong>${formatMoneyEuro(fromCents(cceCapCents))}</strong>
                </div>`
+                   : ''
+               }`
             : ''
         }
         <div class="ticket-pay-split-top">
@@ -414,6 +425,23 @@ window.TicketPayment = (() => {
 
     const isShareEditMode = () => state.share && state.strategy !== 'equitablement';
     const isAmountTpeMode = () => state.share && state.strategy === 'montants';
+
+    const getMaxAssignableCents = (targetMethod) => {
+      const selectedMethods = readSelectedMethods();
+      const othersTotal = selectedMethods
+        .filter((method) => method !== targetMethod)
+        .reduce((acc, method) => {
+          const parsed = parseEuroInput(state.amounts[method]);
+          if (!Number.isFinite(parsed) || parsed <= 0) return acc;
+          return acc + toCents(parsed);
+        }, 0);
+
+      let maxCents = Math.max(0, totalCents - othersTotal);
+      if (targetMethod === 'cce') {
+        maxCents = Math.min(maxCents, cceCapCents);
+      }
+      return maxCents;
+    };
 
     const compute = (strict = false) => {
       const selectedMethods = readSelectedMethods();
@@ -674,15 +702,11 @@ window.TicketPayment = (() => {
             if (state.strategy === 'parts') {
               state.parts[method] = value;
             } else if (state.strategy === 'montants') {
-              if (method === 'cce') {
-                const parsed = parseEuroInput(value);
-                const maxCce = fromCents(cceCapCents);
-                if (Number.isFinite(parsed) && parsed > maxCce) {
-                  state.amounts[method] = maxCce.toFixed(2);
-                  event.target.value = state.amounts[method];
-                } else {
-                  state.amounts[method] = value;
-                }
+              const parsed = parseEuroInput(value);
+              const maxAssignable = fromCents(getMaxAssignableCents(method));
+              if (Number.isFinite(parsed) && parsed > maxAssignable) {
+                state.amounts[method] = maxAssignable.toFixed(2);
+                event.target.value = state.amounts[method];
               } else {
                 state.amounts[method] = value;
               }
@@ -738,9 +762,7 @@ window.TicketPayment = (() => {
           }
 
           let cents = Number.parseInt(digits || '0', 10);
-          if (activeMethod === 'cce') {
-            cents = Math.min(cents, cceCapCents);
-          }
+          cents = Math.min(cents, getMaxAssignableCents(activeMethod));
           state.amounts[activeMethod] = fromCents(cents).toFixed(2);
           refresh();
         });
@@ -1382,5 +1404,62 @@ window.TicketPayment = (() => {
     }
   }
 
-  return { process };
+  async function processCceRecharge(total) {
+    const safeTotal = Number(total || 0);
+    if (!Number.isFinite(safeTotal) || safeTotal <= 0) {
+      return { status: 'cancel' };
+    }
+
+    const payment = await choosePaymentPlan(safeTotal, {
+      allowedMethods: ['cb', 'especes'],
+    });
+    if (!payment) {
+      return { status: 'cancel' };
+    }
+
+    const normalized = normalizePaymentPlan(payment.plan, payment.primaryMethod || 'cb');
+    const plan = normalized.plan;
+    const amountByMethod = plan.reduce((acc, entry) => {
+      const method = String(entry?.method || '').toLowerCase();
+      const amount = Number(entry?.amount || 0);
+      if (!method || amount <= 0) return acc;
+      acc[method] = (acc[method] || 0) + amount;
+      return acc;
+    }, {});
+
+    let cashDetails = null;
+    const cashAmount = Number(amountByMethod.especes || 0);
+    if (cashAmount > 0) {
+      cashDetails = await promptCashAmount(cashAmount);
+      if (!cashDetails) {
+        return { status: 'cancel' };
+      }
+    }
+
+    const cbAmount = Number(amountByMethod.cb || 0);
+    if (cbAmount > 0) {
+      Swal.fire({
+        ...swalBase,
+        title: 'Paiement carte bleue en cours',
+        html: 'Connexion au terminal CB...',
+        allowOutsideClick: false,
+        showConfirmButton: false,
+        didOpen: () => Swal.showLoading(),
+      });
+
+      const delay = 1000 + Math.floor(Math.random() * 1000);
+      await wait(delay);
+    }
+
+    return {
+      status: 'success',
+      plan,
+      amountByMethod,
+      cashDetails,
+      cashAmount,
+      cbAmount,
+    };
+  }
+
+  return { process, processCceRecharge };
 })();

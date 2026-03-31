@@ -232,20 +232,60 @@ class Cce
 
         $montantCredite = round($arrondi + $bonus, 3);
         $dateApport = date('Y-m-d');
+        $dateHeureRecharge = date('Y-m-d H:i:s');
 
-        $this->db->execute(
-            'UPDATE `CarteCE`
-             SET solde_client = solde_client + :montant_credite,
-                 date_dernier_apport = :date_dernier_apport,
-                 montant_dernier_apport = :montant_entier
-             WHERE id_carte_CE = :id',
-            [
-                'montant_credite' => $montantCredite,
-                'date_dernier_apport' => $dateApport,
-                'montant_entier' => (int) round($montant),
-                'id' => $idCarte,
-            ]
-        );
+        $idTransactionRecharge = 0;
+
+        $this->db->beginTransaction();
+        try {
+            $this->db->execute(
+                'UPDATE `CarteCE`
+                 SET solde_client = solde_client + :montant_credite,
+                     date_dernier_apport = :date_dernier_apport,
+                     montant_dernier_apport = :montant_entier
+                 WHERE id_carte_CE = :id',
+                [
+                    'montant_credite' => $montantCredite,
+                    'date_dernier_apport' => $dateApport,
+                    'montant_entier' => (int) round($montant),
+                    'id' => $idCarte,
+                ]
+            );
+
+            if (!$this->hasTransactionCardLink()) {
+                throw new RuntimeException('Table TransactionCCE introuvable');
+            }
+
+            $this->db->execute(
+                'INSERT INTO `Transaction` (`prix_total`, `date_heure`)
+                 VALUES (:prix_total, :date_heure)',
+                [
+                    'prix_total' => $montantCredite,
+                    'date_heure' => $dateHeureRecharge,
+                ]
+            );
+
+            $idTransactionRecharge = (int) $this->db->lastInsertId();
+            if ($idTransactionRecharge <= 0) {
+                throw new RuntimeException('Création de la transaction de rechargement impossible');
+            }
+
+            $this->db->execute(
+                'INSERT INTO `TransactionCCE` (`id_transaction`, `id_carte_CE`)
+                 VALUES (:id_transaction, :id_carte_CE)',
+                [
+                    'id_transaction' => $idTransactionRecharge,
+                    'id_carte_CE' => $idCarte,
+                ]
+            );
+
+            $this->db->commit();
+        } catch (\Throwable $e) {
+            if ($this->db->getConnection()->inTransaction()) {
+                $this->db->rollBack();
+            }
+            throw $e;
+        }
 
         $cce = $this->findOverviewById($idCarte);
         if (!$cce) {
@@ -253,6 +293,7 @@ class Cce
         }
 
         $cce['rechargement'] = [
+            'id_transaction' => $idTransactionRecharge,
             'montant_saisi' => $arrondi,
             'bonus_applique' => $bonus,
             'tranche_bonus' => $trancheBonus > 0 ? $trancheBonus : null,
@@ -352,34 +393,45 @@ class Cce
      */
     public function findTransactionCceForCard(int $idCarte): array
     {
-        if (!$this->hasTransactionCardLink()) {
-            throw new RuntimeException('Table TransactionCCE introuvable');
+        $rows = [];
+
+        if ($this->hasTransactionCardLink()) {
+            $rows = $this->db->query(
+                'SELECT
+                    t.id_transaction,
+                    CASE
+                        WHEN te.id_transaction IS NULL THEN \'Rechargement de la carte CCE\'
+                        ELSE c.libelle
+                    END AS transaction_name,
+                    CASE
+                        WHEN te.id_transaction IS NULL THEN NULL
+                        ELSE te.quantite_delivree
+                    END AS quantite,
+                    t.prix_total AS montant_total,
+                    t.date_heure,
+                    CASE
+                        WHEN te.id_transaction IS NULL THEN \'rechargement\'
+                        ELSE \'carburant\'
+                    END AS transaction_kind
+                 FROM `TransactionCCE` tcce
+                 INNER JOIN `Transaction` t
+                    ON t.id_transaction = tcce.id_transaction
+                 LEFT JOIN `TransactionEnergie` te
+                    ON te.id_transaction = t.id_transaction
+                 LEFT JOIN `Energie` e
+                    ON e.id_energie = te.id_energie
+                   AND e.type_energie = \'carburant\'
+                 LEFT JOIN `Carburant` c
+                    ON c.id_energie = e.id_energie
+                 WHERE tcce.id_carte_CE = :id_carte
+                   AND (te.id_transaction IS NULL OR e.id_energie IS NOT NULL)
+                 ORDER BY t.date_heure DESC, t.id_transaction DESC',
+                ['id_carte' => $idCarte]
+            )->fetchAll(PDO::FETCH_ASSOC) ?: [];
         }
 
-        $rows = $this->db->query(
-            'SELECT
-                t.id_transaction,
-                c.libelle AS carburant,
-                te.quantite_delivree AS quantite,
-                COALESCE(t.prix_total, te.quantite_delivree * c.prix_litre) AS montant_total,
-                t.date_heure
-             FROM `TransactionCCE` tcce
-             INNER JOIN `Transaction` t
-                ON t.id_transaction = tcce.id_transaction
-             INNER JOIN `TransactionEnergie` te
-                ON te.id_transaction = t.id_transaction
-             INNER JOIN `Energie` e
-                ON e.id_energie = te.id_energie
-             INNER JOIN `Carburant` c
-                ON c.id_energie = e.id_energie
-             WHERE tcce.id_carte_CE = :id_carte
-               AND e.type_energie = \'carburant\'
-             ORDER BY t.date_heure DESC, t.id_transaction DESC',
-            ['id_carte' => $idCarte]
-        )->fetchAll(PDO::FETCH_ASSOC) ?: [];
-
         return [
-            'columns' => ['id_transaction', 'carburant', 'quantite', 'montant_total', 'date_heure'],
+            'columns' => ['id_transaction', 'transaction_name', 'quantite', 'montant_total', 'date_heure', 'transaction_kind'],
             'rows' => $rows,
         ];
     }

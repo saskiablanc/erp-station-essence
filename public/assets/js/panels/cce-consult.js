@@ -69,6 +69,13 @@ const CceConsultPanel = (() => {
     return `${amount.toFixed(2)}€`;
   }
 
+  function formatConsultTransactionMoney(value, kind) {
+    const amount = Number(value ?? 0);
+    if (!Number.isFinite(amount)) return "—";
+    const prefix = String(kind || "").toLowerCase() === "rechargement" ? "+" : "";
+    return `${prefix}${amount.toFixed(2)}€`;
+  }
+
   function formatConsultQuantity(value) {
     const quantity = Number(value ?? 0);
     if (!Number.isFinite(quantity)) return "—";
@@ -272,50 +279,6 @@ const CceConsultPanel = (() => {
     }
   }
 
-  async function chooseRechargeMethod(montant) {
-    let method = null;
-
-    const result = await Swal.fire({
-      title: "Choix du paiement",
-      html: `
-        <div class="ticket-pay-choice-total">Montant à recharger : <strong>${formatMoney(montant)}</strong></div>
-        <div class="ticket-pay-choice-grid ticket-pay-choice-grid--two">
-          <button type="button" class="ticket-pay-choice-btn" data-payment-method="cb">Carte bleue</button>
-          <button type="button" class="ticket-pay-choice-btn" data-payment-method="especes">Espèces</button>
-        </div>
-        <button type="button" class="ticket-pay-choice-btn ticket-pay-choice-btn-cancel" data-payment-cancel>
-          Annuler
-        </button>
-      `,
-      showConfirmButton: false,
-      showCancelButton: false,
-      allowOutsideClick: false,
-      allowEscapeKey: true,
-      customClass: {
-        popup: "cce-swal-popup cce-swal-popup-recharge-choice",
-        title: "cce-swal-title",
-        htmlContainer: "cce-swal-text",
-      },
-      didOpen: (popup) => {
-        popup.querySelectorAll("[data-payment-method]").forEach((button) => {
-          button.addEventListener("click", () => {
-            method = String(button.dataset.paymentMethod || "").toLowerCase();
-            Swal.close();
-          });
-        });
-        popup
-          .querySelector("[data-payment-cancel]")
-          ?.addEventListener("click", () => {
-            method = null;
-            Swal.close();
-          });
-      },
-    });
-
-    if (result.isDismissed && !method) return null;
-    return method;
-  }
-
   function formatCents(valueCents) {
     return `${(Math.max(0, valueCents) / 100).toFixed(2)} EUR`;
   }
@@ -444,101 +407,6 @@ const CceConsultPanel = (() => {
     return cents / 100;
   }
 
-  async function promptCashAmount(total) {
-    const totalCents = Math.round(Number(total || 0) * 100);
-    const maxDigits = 7;
-    let digits = "";
-    let confirmed = false;
-
-    await Swal.fire({
-      html: `
-        <div class="ticket-cash-modal">
-          <button type="button" class="ticket-cash-close" data-cash-close aria-label="Fermer">X</button>
-          <div class="ticket-cash-total">Montant à régler : <strong>${formatMoney(total)}</strong></div>
-          <div class="ticket-cash-display-wrap">
-            <div class="ticket-cash-display" data-cash-display>0.00 EUR</div>
-          </div>
-          <div class="ticket-cash-error" data-cash-error></div>
-          <div class="ticket-cash-keypad">
-            <button type="button" data-cash-key="1">1</button>
-            <button type="button" data-cash-key="2">2</button>
-            <button type="button" data-cash-key="3">3</button>
-            <button type="button" data-cash-key="4">4</button>
-            <button type="button" data-cash-key="5">5</button>
-            <button type="button" data-cash-key="6">6</button>
-            <button type="button" data-cash-key="7">7</button>
-            <button type="button" data-cash-key="8">8</button>
-            <button type="button" data-cash-key="9">9</button>
-            <button type="button" data-cash-action="back">\u2039</button>
-            <button type="button" data-cash-key="0">0</button>
-            <button type="button" data-cash-action="validate">\u2713</button>
-          </div>
-        </div>
-      `,
-      showConfirmButton: false,
-      showCancelButton: false,
-      allowOutsideClick: false,
-      allowEscapeKey: true,
-      customClass: {
-        popup: "ticket-swal-popup ticket-swal-popup-cash",
-        htmlContainer: "ticket-swal-cash-html",
-      },
-      didOpen: (popup) => {
-        const display = popup.querySelector("[data-cash-display]");
-        const error = popup.querySelector("[data-cash-error]");
-
-        const refresh = () => {
-          const valueCents = digits ? Number.parseInt(digits, 10) : 0;
-          display.textContent = formatCents(valueCents);
-        };
-
-        const close = () => Swal.close();
-        const validate = () => {
-          const valueCents = digits ? Number.parseInt(digits, 10) : 0;
-          if (valueCents < totalCents) {
-            error.textContent = "Montant insuffisant";
-            return;
-          }
-          confirmed = true;
-          close();
-        };
-
-        popup
-          .querySelector("[data-cash-close]")
-          ?.addEventListener("click", close);
-        popup.querySelectorAll("[data-cash-key]").forEach((button) => {
-          button.addEventListener("click", () => {
-            if (digits.length >= maxDigits) {
-              error.textContent = "Montant trop élevé";
-              return;
-            }
-            digits += String(button.dataset.cashKey || "");
-            error.textContent = "";
-            refresh();
-          });
-        });
-        popup
-          .querySelector('[data-cash-action="back"]')
-          ?.addEventListener("click", () => {
-            digits = digits.slice(0, -1);
-            error.textContent = "";
-            refresh();
-          });
-        popup
-          .querySelector('[data-cash-action="validate"]')
-          ?.addEventListener("click", validate);
-      },
-    });
-
-    if (!confirmed) return null;
-
-    const givenCents = digits ? Number.parseInt(digits, 10) : 0;
-    return {
-      given: givenCents / 100,
-      change: Math.max(0, givenCents - totalCents) / 100,
-    };
-  }
-
   async function openRechargePopup(root, cce) {
     let cceCourante = cce;
     try {
@@ -567,29 +435,16 @@ const CceConsultPanel = (() => {
       return;
     }
 
-    const method = await chooseRechargeMethod(montant);
-    if (!method) return;
+    const paymentResult =
+      window.TicketPayment &&
+      typeof window.TicketPayment.processCceRecharge === "function"
+        ? await window.TicketPayment.processCceRecharge(montant)
+        : null;
+    if (!paymentResult || paymentResult.status !== "success") return;
 
-    let cashDetails = null;
-    if (method === "especes") {
-      cashDetails = await promptCashAmount(montant);
-      if (!cashDetails) return;
-    } else {
-      Swal.fire({
-        title: "Paiement en cours",
-        html: "Connexion au terminal de paiement...",
-        allowOutsideClick: false,
-        showConfirmButton: false,
-        didOpen: () => Swal.showLoading(),
-        customClass: {
-          popup: "cce-swal-popup",
-          title: "cce-swal-title",
-          htmlContainer: "cce-swal-text",
-        },
-      });
-      const delay = 1000 + Math.floor(Math.random() * 1000);
-      await wait(delay);
-    }
+    const cashDetails = paymentResult.cashDetails || null;
+    const amountByMethod = paymentResult.amountByMethod || {};
+    const usedCash = Number(amountByMethod.especes || 0) > 0;
 
     try {
       const rechargeResult = await Requetes.rechargerCCE(
@@ -607,23 +462,30 @@ const CceConsultPanel = (() => {
         title: "Paiement accepté",
         html: `
           ${
-            method === "especes" && cashDetails
+            usedCash && cashDetails
               ? `<div>Montant reçu : <strong>${formatMoney(cashDetails.given)}</strong></div>
                ${cashDetails.change > 0 ? `<div>Trop-perçu : <strong>${formatMoney(cashDetails.change)}</strong></div>` : ""}`
               : ""
           }
+          <div style="margin-top:${usedCash && cashDetails ? "8px" : "0"};">
+            ${
+              Number(amountByMethod.cb || 0) > 0
+                ? `Carte bleue : <strong>${formatMoney(amountByMethod.cb)}</strong>`
+                : `Espèces : <strong>${formatMoney(amountByMethod.especes || 0)}</strong>`
+            }
+          </div>
           ${
             bonusApplique > 0
               ? `<div style="margin-top:8px;">Bonus CCE appliqué : <strong>${formatMoney(bonusApplique)}</strong></div>
                <div>Montant crédité : <strong>${formatMoney(montantCredite)}</strong></div>`
               : ""
           }
-          <div style="margin-top:${method === "especes" ? "8px" : "0"};">
+          <div style="margin-top:8px;">
             Rechargement CCE effectué avec succès.
           </div>
         `,
         icon: "success",
-        confirmButtonText: method === "especes" ? "Valider" : "Fermer",
+        confirmButtonText: usedCash ? "Valider" : "Fermer",
         allowOutsideClick: false,
         customClass: {
           popup: "cce-swal-popup",
@@ -762,9 +624,13 @@ const CceConsultPanel = (() => {
           (row) => `
             <tr>
               <td>${escapeHtml(row?.id_transaction ?? "—")}</td>
-              <td>${escapeHtml(row?.carburant ?? "—")}</td>
-              <td>${escapeHtml(formatConsultQuantity(row?.quantite))}</td>
-              <td>${escapeHtml(formatConsultMoney(row?.montant_total))}</td>
+              <td>${escapeHtml(row?.transaction_name ?? "—")}</td>
+              <td>${escapeHtml(
+                String(row?.transaction_kind || "").toLowerCase() === "rechargement"
+                  ? "—"
+                  : formatConsultQuantity(row?.quantite),
+              )}</td>
+              <td>${escapeHtml(formatConsultTransactionMoney(row?.montant_total, row?.transaction_kind))}</td>
               <td>${escapeHtml(formatConsultDate(row?.date_heure))}</td>
               <td>${escapeHtml(formatConsultTime(row?.date_heure))}</td>
             </tr>
@@ -820,7 +686,7 @@ const CceConsultPanel = (() => {
                 <thead>
                   <tr>
                     <th>ID Transaction</th>
-                    <th>Carburants</th>
+                    <th>Transaction Name</th>
                     <th>Quantité</th>
                     <th>Montant Total</th>
                     <th>Date</th>
@@ -831,7 +697,7 @@ const CceConsultPanel = (() => {
                   ${
                     rows.length > 0
                       ? bodyHtml
-                      : '<tr><td colspan="6" class="cce-transactions-empty">Aucune transaction carburant CCE pour cette carte.</td></tr>'
+                      : '<tr><td colspan="6" class="cce-transactions-empty">Aucune transaction CCE pour cette carte.</td></tr>'
                   }
                 </tbody>
               </table>
