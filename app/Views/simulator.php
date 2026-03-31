@@ -11,7 +11,9 @@
   <?php
     $baseUrl = rtrim(dirname($_SERVER['SCRIPT_NAME'] ?? ''), '/');
     if ($baseUrl === '/' || $baseUrl === '\\') $baseUrl = '';
+    $assetsUrl = $baseUrl . '/assets';
   ?>
+  <link rel="icon" type="image/png" href="<?= $assetsUrl ?>/img/logo_unica.png">
   <script>const API = '<?= $baseUrl ?>';</script>
   <style>
     :root {

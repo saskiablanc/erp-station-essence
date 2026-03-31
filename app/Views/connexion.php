@@ -21,6 +21,7 @@ declare(strict_types=1);
   }
   $assetsUrl = $baseUrl . '/assets';
   ?>
+  <link rel="icon" type="image/png" href="<?= $assetsUrl ?>/img/logo_unica.png">
   <link rel="stylesheet" href="<?= $assetsUrl ?>/css/connexion.css">
 </head>
 <body>

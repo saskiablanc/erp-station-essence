@@ -16,6 +16,7 @@
   }
   $assetsUrl = $baseUrl . '/assets';
   ?>
+  <link rel="icon" type="image/png" href="<?= $assetsUrl ?>/img/logo_unica.png">
   <link rel="stylesheet" href="<?= $assetsUrl ?>/css/caisse.css">
   <link rel="stylesheet" href="<?= $assetsUrl ?>/css/core/caisse_dialogs.css">
 
