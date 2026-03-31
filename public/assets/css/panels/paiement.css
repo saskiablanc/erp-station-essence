@@ -71,15 +71,16 @@
 }
 .pay-montant-input {
   flex: 1;
-  height: 32px;
-  padding: 0 14px;
+  height: var(--pill-compact-h);
+  padding: 0 var(--pill-compact-px);
   background: #fff;
   border: 2px solid var(--border);
-  border-radius: 999px;
+  border-radius: var(--pill-compact-radius);
   box-shadow: var(--shadow-soft);
   color: var(--text);
-  font-size: 14px;
+  font-size: var(--pill-compact-font);
   font-weight: 600;
+  text-align: center;
   outline: none;
   transition: border-color 0.15s;
 }
@@ -87,14 +88,14 @@
   border-color: var(--accent-2);
 }
 .pay-montant-valider {
-  height: 32px;
-  padding: 0 14px;
+  height: var(--pill-compact-h);
+  padding: 0 var(--pill-compact-px);
   background: var(--btn-grad);
   border: 2px solid var(--border);
-  border-radius: 30px;
+  border-radius: var(--pill-compact-radius);
   color: var(--accent);
   box-shadow: var(--shadow-soft);
-  font-size: 11px;
+  font-size: var(--pill-compact-font);
 }
 .pay-monnaie {
   margin-top: 8px;

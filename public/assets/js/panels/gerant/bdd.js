@@ -1443,7 +1443,7 @@ const BddPanel = (() => {
       <div class="bdd-panel">
         <div class="bdd-nav">${tabs}</div>
         <div class="bdd-content">
-          <div class="bdd-toolbar"><button class="bdd-add-btn">Ajouter Ligne</button></div>
+          <div class="bdd-toolbar"><button class="bdd-add-btn">+ Ajouter Ligne</button></div>
           <div class="bdd-table-wrap">
             <div class="bdd-table-center">
               <table class="bdd-table">
