@@ -356,82 +356,32 @@ class Cce
             throw new RuntimeException('Table TransactionCCE introuvable');
         }
 
-        $columnsStmt = $this->db->query('SHOW COLUMNS FROM `Transaction`');
-        $columns = $columnsStmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
-        if ($columns === []) {
-            return ['columns' => [], 'rows' => []];
-        }
+        $rows = $this->db->query(
+            'SELECT
+                t.id_transaction,
+                c.libelle AS carburant,
+                te.quantite_delivree AS quantite,
+                COALESCE(t.prix_total, te.quantite_delivree * c.prix_litre) AS montant_total,
+                t.date_heure
+             FROM `TransactionCCE` tcce
+             INNER JOIN `Transaction` t
+                ON t.id_transaction = tcce.id_transaction
+             INNER JOIN `TransactionEnergie` te
+                ON te.id_transaction = t.id_transaction
+             INNER JOIN `Energie` e
+                ON e.id_energie = te.id_energie
+             INNER JOIN `Carburant` c
+                ON c.id_energie = e.id_energie
+             WHERE tcce.id_carte_CE = :id_carte
+               AND e.type_energie = \'carburant\'
+             ORDER BY t.date_heure DESC, t.id_transaction DESC',
+            ['id_carte' => $idCarte]
+        )->fetchAll(PDO::FETCH_ASSOC) ?: [];
 
-        $transactionPk = null;
-        $selectedColumns = [];
-
-        foreach ($columns as $column) {
-            $field = trim((string) ($column['Field'] ?? ''));
-            if ($field === '') {
-                continue;
-            }
-
-            $extra = strtolower(trim((string) ($column['Extra'] ?? '')));
-            if ($transactionPk === null && str_contains($extra, 'auto_increment')) {
-                $transactionPk = $field;
-            }
-
-            $selectedColumns[] = $field;
-        }
-
-        if ($transactionPk === null) {
-            foreach ($selectedColumns as $column) {
-                if (strcasecmp($column, 'id_transaction') === 0) {
-                    $transactionPk = $column;
-                    break;
-                }
-            }
-        }
-
-        if ($transactionPk === null) {
-            throw new RuntimeException('Colonne id_transaction introuvable dans Transaction');
-        }
-
-        if ($selectedColumns === []) {
-            return ['columns' => [], 'rows' => []];
-        }
-
-        $selectSql = implode(
-            ', ',
-            array_map(
-                static fn (string $column): string => sprintf(
-                    't.`%s` AS `%s`',
-                    str_replace('`', '``', $column),
-                    str_replace('`', '``', $column)
-                ),
-                $selectedColumns
-            )
-        );
-
-        $orderColumn = null;
-        foreach (['date_heure', 'horodatage', 'date_transaction', 'id_transaction'] as $candidate) {
-            foreach ($selectedColumns as $column) {
-                if (strcasecmp($column, $candidate) === 0) {
-                    $orderColumn = $column;
-                    break 2;
-                }
-            }
-        }
-
-        $query = sprintf(
-            'SELECT %s
-             FROM `Transaction` t
-             INNER JOIN `TransactionCCE` tcce ON tcce.id_transaction = t.`%s`
-             WHERE tcce.id_carte_CE = :id_carte%s',
-            $selectSql,
-            str_replace('`', '``', $transactionPk),
-            $orderColumn !== null
-                ? sprintf(' ORDER BY t.`%s` DESC', str_replace('`', '``', $orderColumn))
-                : ''
-        );
-
-        $rows = $this->db->query($query, ['id_carte' => $idCarte])->fetchAll(PDO::FETCH_ASSOC) ?: [];
-        return ['columns' => $selectedColumns, 'rows' => $rows];
+        return [
+            'columns' => ['id_transaction', 'carburant', 'quantite', 'montant_total', 'date_heure'],
+            'rows' => $rows,
+        ];
     }
 
     private function normalizeName(string $value, string $field): string
