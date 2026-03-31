@@ -128,6 +128,25 @@ window.TicketPayment = (() => {
     return method;
   }
 
+  function notifySimulator(message) {
+    if (typeof BroadcastChannel !== 'undefined') {
+      try {
+        const channel = new BroadcastChannel('unica-cce-scan');
+        channel.postMessage(message);
+        channel.close();
+      } catch (_) {}
+    }
+    try {
+      localStorage.setItem(
+        'unica_cce_balance_ping',
+        JSON.stringify({
+          ts: Date.now(),
+          id_carte_CE: Number(message?.id_carte_CE || 0),
+        }),
+      );
+    } catch (_) {}
+  }
+
   async function getScannedCceInfo() {
     const idCarte = getSelectedCceId();
     if (idCarte <= 0) return null;
@@ -1476,6 +1495,12 @@ window.TicketPayment = (() => {
           detail: { usedCce: cceAmountTotal > 0 },
         }),
       );
+      if (cceAmountTotal > 0 && cceCardId > 0) {
+        notifySimulator({
+          type: 'cce-balance-updated',
+          id_carte_CE: cceCardId,
+        });
+      }
       return { status: 'success', responses: commitResult.responses };
     } catch (err) {
       await Swal.fire({

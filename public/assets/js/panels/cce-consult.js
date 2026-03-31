@@ -102,6 +102,24 @@ const CceConsultPanel = (() => {
     return new Promise((resolve) => setTimeout(resolve, ms));
   }
 
+  function notifySimulatorCceUpdated(idCarte) {
+    const id = Number(idCarte || 0);
+    if (id <= 0) return;
+    if (typeof BroadcastChannel !== "undefined") {
+      try {
+        const channel = new BroadcastChannel("unica-cce-scan");
+        channel.postMessage({ type: "cce-balance-updated", id_carte_CE: id });
+        channel.close();
+      } catch (_) {}
+    }
+    try {
+      localStorage.setItem(
+        "unica_cce_balance_ping",
+        JSON.stringify({ ts: Date.now(), id_carte_CE: id }),
+      );
+    } catch (_) {}
+  }
+
   function renderState(root, message, isError = false) {
     const body = root.querySelector(".cce-consult-body");
     if (!body) return;
@@ -457,6 +475,7 @@ const CceConsultPanel = (() => {
         null;
       const bonusApplique = Number(rechargeInfo?.bonus_applique ?? 0);
       const montantCredite = Number(rechargeInfo?.montant_credite ?? montant);
+      notifySimulatorCceUpdated(Number(cceCourante.id_carte_CE));
       await refresh(root, Number(cceCourante.id_carte_CE));
       await Swal.fire({
         title: "Paiement accepté",
