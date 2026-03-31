@@ -6,6 +6,8 @@
   <title>UNICA — Simulateur Physique</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Familjen+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.all.min.js"></script>
   <?php
     $baseUrl = rtrim(dirname($_SERVER['SCRIPT_NAME'] ?? ''), '/');
     if ($baseUrl === '/' || $baseUrl === '\\') $baseUrl = '';
@@ -209,6 +211,46 @@
     }
     .sim-step.current { background:var(--accent); color:#fff; border-color:var(--accent); }
     .sim-step.done { background:var(--green-dim); color:var(--green); border-color:var(--green); }
+
+    /* ── Popups catalog ── */
+    .sim-popup-grid {
+      display:grid;
+      grid-template-columns:repeat(auto-fill,minmax(280px,1fr));
+      gap:12px;
+    }
+    .sim-popup-cat {
+      border:1.5px solid var(--border);
+      border-radius:12px;
+      background:var(--surface2);
+      padding:12px;
+    }
+    .sim-popup-cat-title {
+      font-family:var(--display);
+      font-size:14px;
+      font-weight:600;
+      margin-bottom:8px;
+    }
+    .sim-popup-list {
+      display:flex;
+      flex-wrap:wrap;
+      gap:8px;
+    }
+    .sim-popup-btn {
+      height:32px;
+      padding:0 10px;
+      border:1.5px solid var(--border);
+      border-radius:999px;
+      background:#fff;
+      color:var(--text-mid);
+      font-family:var(--mono);
+      font-size:11px;
+      cursor:pointer;
+      transition:all .12s;
+    }
+    .sim-popup-btn:hover {
+      border-color:var(--accent);
+      color:var(--accent);
+    }
   </style>
 </head>
 <body>
@@ -230,6 +272,7 @@
     <div class="sim-nav-title">Actions</div>
     <button class="sim-nav-btn active" data-panel="cce">Carte CCE</button>
     <button class="sim-nav-btn" data-panel="pompes">Pompes et Bornes</button>
+    <button class="sim-nav-btn" data-panel="popups">Catalogue Pop-ups</button>
   </nav>
 
   <!-- MAIN -->
@@ -346,6 +389,22 @@
       </div>
     </div>
 
+    <!-- ══════ CATALOGUE POPUPS ══════ -->
+    <div id="panel-popups" class="sim-panel">
+      <div class="sim-section">
+        <div class="sim-section-title">Catalogue Pop-ups</div>
+        <div class="sim-section-desc">
+          Déclenche toutes les pop-ups disponibles sur le site officiel, classées par catégorie.
+          Mode démonstration : affichage uniquement, sans exécuter les actions métier.
+        </div>
+
+        <div class="sim-card">
+          <div class="sim-card-title"><span class="dot dot--orange"></span> Démonstrateur SweetAlert</div>
+          <div id="popup-catalog" class="sim-popup-grid"></div>
+        </div>
+      </div>
+    </div>
+
   </div>
 </div>
 
@@ -405,6 +464,84 @@ var Sim = (function() {
   var pompesSseRetryTimer = null;
   var startRequestRunning = false;
   var endRequestRunning = false;
+  var popupTriggerChannelName = 'unica-popup-trigger';
+  var popupTriggerStorageKey = 'unica_popup_trigger';
+
+  // ══════════════════════════════════════════════════════
+  //  CATALOGUE POPUPS (démo uniquement)
+  // ══════════════════════════════════════════════════════
+  var POPUP_CATALOG = [
+    {
+      category: 'Caisse — Achats',
+      items: [
+        { id: 'achat-erreur', label: 'Erreur produit', kind: 'simple', opts: { icon: 'error', title: 'Erreur', text: 'Produit invalide.' } },
+        { id: 'achat-ajoute', label: 'Article ajouté', kind: 'simple', opts: { icon: 'success', title: 'Article ajouté', text: 'L’article a été ajouté au panier.' } },
+        { id: 'achat-liste', label: 'Liste articles', kind: 'simple', opts: { title: 'Liste articles', html: '<div style="text-align:left">• 3760123456789 — Eau 1L<br>• 3017620425035 — Chips</div>' } },
+        { id: 'achat-panier-vide', label: 'Panier vide', kind: 'simple', opts: { icon: 'warning', title: 'Panier vide', text: 'Ajoutez au moins un produit avant encaissement.' } },
+        { id: 'achat-retirer', label: 'Retirer produit', kind: 'confirm', opts: { title: 'Retirer ce produit ?', text: 'La ligne sera supprimée du panier.' } },
+        { id: 'achat-stock', label: 'Stock insuffisant', kind: 'simple', opts: { icon: 'warning', title: 'Stock insuffisant', text: 'Cet article n’est plus en stock.' } }
+      ]
+    },
+    {
+      category: 'Paiement',
+      items: [
+        { id: 'pay-encaissement', label: 'Encaissement', kind: 'simple', opts: { title: 'Encaissement', html: '<div>Encaisser tout / Encaisser par article</div>' } },
+        { id: 'pay-par-article', label: 'Encaisser par article', kind: 'simple', opts: { title: 'Encaisser par article', html: '<div style="text-align:left">☑ Eau 1L (Qté 2)<br>☑ Carburant SP95 pompe 2</div>' } },
+        { id: 'pay-choix', label: 'Choix du paiement', kind: 'simple', opts: { title: 'Choix du paiement', html: '<div>Total à régler : <strong>42,80 €</strong><br><br>Modes : CB / CCE / Espèces</div>' } },
+        { id: 'pay-scan-indispo', label: 'Scan CCE indisponible', kind: 'simple', opts: { icon: 'error', title: 'Scan CCE indisponible', text: 'Ce navigateur ne supporte pas le canal de communication du scan CCE.' } },
+        { id: 'pay-scan-cce', label: 'Scanner CCE', kind: 'simple', opts: { title: 'Scanner CCE', html: '<div>En attente de la sélection d’une carte sur le site de simulation...</div>' } },
+        { id: 'pay-solde-ko', label: 'Solde CCE insuffisant', kind: 'simple', opts: { icon: 'warning', title: 'Solde CCE insuffisant', html: 'Solde courant : <strong>5.00 EUR</strong><br>Montant CCE : <strong>18.20 EUR</strong>' } },
+        { id: 'pay-cce-invalide', label: 'Carte CCE invalide', kind: 'simple', opts: { icon: 'error', title: 'Carte CCE invalide', text: 'Aucune carte CCE valide n’a été scannée.' } },
+        { id: 'pay-cce-indispo', label: 'Carte CCE indisponible', kind: 'simple', opts: { icon: 'error', title: 'Carte CCE indisponible', text: 'Impossible de charger la carte CCE scannée.' } },
+        { id: 'pay-cce-loading', label: 'Paiement CCE en cours', kind: 'loading', opts: { title: 'Paiement CCE en cours', html: 'Validation du paiement CCE...' } },
+        { id: 'pay-cb-loading', label: 'Paiement CB en cours', kind: 'loading', opts: { title: 'Paiement carte bleue en cours', html: 'Connexion au terminal CB...' } },
+        { id: 'pay-especes', label: 'Saisie espèces', kind: 'simple', opts: { title: 'Saisie espèces', html: '<div style="font-size:24px;letter-spacing:1px;margin-bottom:10px">0.00 EUR</div><div>Clavier numérique TPE</div>' } },
+        { id: 'pay-recu', label: 'Demande de reçu', kind: 'yesno', opts: { title: 'Souhaitez-vous un reçu ?', html: 'Voulez-vous imprimer un reçu de paiement ?' } },
+        { id: 'pay-ok', label: 'Paiement accepté', kind: 'simple', opts: { icon: 'success', title: 'Paiement accepté', html: 'CCE : <strong>12.50 EUR</strong><br>Espèces : <strong>10.00 EUR</strong><br>Impression en cours...' } },
+        { id: 'pay-ko', label: 'Paiement refusé', kind: 'simple', opts: { icon: 'error', title: 'Paiement refusé', text: 'Impossible d’enregistrer la transaction.' } }
+      ]
+    },
+    {
+      category: 'CCE',
+      items: [
+        { id: 'cce-scanner', label: 'Scanner CCE', kind: 'simple', opts: { title: 'Scanner CCE', html: 'En attente de la sélection d’une carte sur le simulateur...' } },
+        { id: 'cce-actions', label: 'Actions', kind: 'simple', opts: { title: 'Actions', html: '<div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap"><button class="sim-popup-btn">Recharger CCE</button><button class="sim-popup-btn">Consulter transactions</button><button class="sim-popup-btn">Informations bonus</button><button class="sim-popup-btn">Fin consultation</button></div>' } },
+        { id: 'cce-min', label: 'Montant insuffisant', kind: 'simple', opts: { icon: 'warning', title: 'Montant insuffisant', text: 'Le montant minimum de rechargement est de 50.00 EUR.' } },
+        { id: 'cce-bonus', label: 'Informations bonus', kind: 'simple', opts: { title: 'Informations bonus', html: 'Bonus à partir de 100 EUR : <strong>10.00 EUR</strong><br>Bonus à partir de 200 EUR : <strong>25.00 EUR</strong>' } },
+        { id: 'cce-tx', label: 'Transactions CCE', kind: 'simple', opts: { title: 'Transactions CCE', html: '<div style="text-align:left">12/03/2026 — Paiement — -18.40€<br>10/03/2026 — Rechargement — +50.00€</div>' } },
+        { id: 'cce-recharge-ko', label: 'Rechargement impossible', kind: 'simple', opts: { icon: 'error', title: 'Rechargement impossible', text: 'Une erreur est survenue.' } },
+        { id: 'cce-create-confirm', label: 'Confirmer création', kind: 'confirm', opts: { title: 'Confirmer la création de la carte CCE', text: 'Valider la création de cette carte ?' } },
+        { id: 'cce-code', label: 'Client choisit son code', kind: 'timer', opts: { title: 'Le client choisit son code', html: 'Veuillez patienter...', icon: 'info' } },
+        { id: 'cce-create-cancel', label: 'Création annulée', kind: 'simple', opts: { icon: 'info', title: 'Création CCE annulée', text: 'La création de la carte a été annulée.' } },
+        { id: 'cce-create-ok', label: 'Création terminée', kind: 'simple', opts: { icon: 'success', title: 'Création CCE terminée', text: 'La carte CCE a bien été créée.' } },
+        { id: 'cce-create-ko', label: 'Création impossible', kind: 'simple', opts: { icon: 'error', title: 'Création CCE impossible', text: 'Une erreur est survenue pendant la création.' } }
+      ]
+    },
+    {
+      category: 'Gérant',
+      items: [
+        { id: 'gerant-bdd-add-ko', label: 'Ajout non disponible', kind: 'simple', opts: { icon: 'warning', title: 'Ajout non disponible', text: 'Ajout indisponible sur cette table.' } },
+        { id: 'gerant-bdd-add', label: 'Ajouter une ligne', kind: 'simple', opts: { title: 'Ajouter une ligne', html: '<div>Formulaire d’ajout (prévisualisation)</div>' } },
+        { id: 'gerant-bdd-edit', label: 'Modifier la ligne', kind: 'simple', opts: { title: 'Modifier la ligne', html: '<div>Formulaire de modification (prévisualisation)</div>' } },
+        { id: 'gerant-horaires-ko', label: 'Horaires erreur', kind: 'simple', opts: { icon: 'error', title: 'Erreur : Valeurs Incorrectes.', text: 'Format des horaires invalide.' } },
+        { id: 'gerant-horaires-ok', label: 'Horaires succès', kind: 'simple', opts: { icon: 'success', title: 'Nouveaux horaires bien enregistrés !', text: 'Les horaires ont été mis à jour.' } },
+        { id: 'gerant-horaires-copy', label: 'Appliquer aux jours', kind: 'yesno', opts: { title: 'Appliquer pareil pour les jours suivants ?', html: 'Voulez-vous dupliquer cet horaire sur les jours suivants ?' } },
+        { id: 'gerant-incident-cancel', label: 'Incident annulé', kind: 'simple', opts: { icon: 'info', title: 'Opération Annulée', text: 'Aucune fiche incident créée.' } },
+        { id: 'gerant-incident-ok', label: 'Incident créé', kind: 'simple', opts: { icon: 'success', title: 'Fiche incident #INC-2026-001 a été créée', text: 'L’incident a bien été enregistré.' } },
+        { id: 'gerant-incident-ko', label: 'Incident erreur', kind: 'simple', opts: { icon: 'error', title: 'Création impossible', text: 'Erreur pendant la création de la fiche incident.' } },
+        { id: 'gerant-reappro-arrivee', label: 'Réappro arrivée', kind: 'confirm', opts: { title: 'Réapprovisionnement #42', text: 'Confirmer la réception de la livraison ?' } },
+        { id: 'gerant-reappro-annuler', label: 'Annuler réappro', kind: 'confirm', opts: { title: 'Annuler le réapprovisionnement #42', text: 'Cette action est irréversible.' } },
+        { id: 'gerant-reappro-ok', label: 'Commande envoyée', kind: 'simple', opts: { icon: 'success', title: 'Commande envoyée', text: 'Le réapprovisionnement manuel a été créé.' } },
+        { id: 'gerant-validation', label: 'Validation journée', kind: 'confirm', opts: { title: 'Confirmer la validation ?', text: 'Les tables du jour seront verrouillées.' } }
+      ]
+    },
+    {
+      category: 'Système',
+      items: [
+        { id: 'sys-seuil', label: 'Seuil d’alerte', kind: 'simple', opts: { icon: 'warning', title: 'Seuil d’alerte atteint', text: 'Un produit est passé sous le seuil d’alerte.' } }
+      ]
+    }
+  ];
 
   // ══════════════════════════════════════════════════════
   //  BROADCAST CHANNEL — CCE
@@ -421,6 +558,12 @@ var Sim = (function() {
       document.getElementById('cce-waiting').classList.add('visible');
       refreshCCE();
       log('cce-log', 'info', 'La caisse demande le scan d\'une carte CCE.');
+      return;
+    }
+
+    if (ev.data && ev.data.type === 'cce-balance-updated') {
+      refreshCCE();
+      log('cce-log', 'info', 'Solde CCE mis à jour après paiement.');
     }
   };
 
@@ -490,9 +633,95 @@ var Sim = (function() {
     return api('GET', '/json/pompes').then(function(data) {
       pompes = data;
       renderPompes();
+      syncParcoursAfterPompeUpdate();
+      // Garde les soldes CCE frais même si le message BroadcastChannel
+      // n'est pas reçu (fallback robuste inter-onglets).
+      refreshCCE();
     }).catch(function(e) {
       log('pompe-log','err','Erreur chargement pompes : ' + e.message);
     });
+  }
+
+  function renderPopupCatalog() {
+    var root = document.getElementById('popup-catalog');
+    if (!root) return;
+    root.innerHTML = POPUP_CATALOG.map(function(cat) {
+      var buttons = (cat.items || []).map(function(item) {
+        return '<button type="button" class="sim-popup-btn" onclick="Sim.showPopup(\'' + item.id + '\')">'
+          + esc(item.label) + '</button>';
+      }).join('');
+      return '<section class="sim-popup-cat">'
+        + '<div class="sim-popup-cat-title">' + esc(cat.category) + '</div>'
+        + '<div class="sim-popup-list">' + buttons + '</div>'
+        + '</section>';
+    }).join('');
+  }
+
+  function getPopupItemById(id) {
+    for (var i = 0; i < POPUP_CATALOG.length; i += 1) {
+      var items = POPUP_CATALOG[i].items || [];
+      for (var j = 0; j < items.length; j += 1) {
+        if (items[j].id === id) return items[j];
+      }
+    }
+    return null;
+  }
+
+  function triggerOfficialPopup(item) {
+    if (!item) return;
+    var message = {
+      type: 'popup-trigger',
+      payload: {
+        id: item.id,
+        kind: item.kind,
+        opts: item.opts || {}
+      }
+    };
+
+    if (typeof BroadcastChannel !== 'undefined') {
+      try {
+        var channel = new BroadcastChannel(popupTriggerChannelName);
+        channel.postMessage(message);
+        channel.close();
+      } catch (_) {}
+    }
+
+    try {
+      localStorage.setItem(
+        popupTriggerStorageKey,
+        JSON.stringify({
+          ts: Date.now(),
+          type: message.type,
+          payload: message.payload
+        })
+      );
+    } catch (_) {}
+  }
+
+  async function showPopup(id) {
+    var item = getPopupItemById(String(id || ''));
+    if (!item) return;
+    triggerOfficialPopup(item);
+    console.info('[Simulator] Popup envoyée au site officiel :', item.id);
+  }
+
+  function syncParcoursAfterPompeUpdate() {
+    if (!selectedPompeId) return;
+    if (currentStep !== 'done' && currentStep !== 'end') return;
+
+    var p = pompes.find(function(x) { return Number(x.id_pompe) === Number(selectedPompeId); });
+    if (!p) return;
+
+    if (p.statut === 'active') {
+      document.getElementById('pompe-carburant-opts').style.display = p.type_pompe === 'carburant' ? '' : 'none';
+      document.getElementById('pompe-elec-opts').style.display = p.type_pompe === 'electricite' ? '' : 'none';
+      if (p.type_pompe === 'carburant') {
+        if (!carburants.length) refreshCarburants();
+        else renderCarburantsButtons();
+      }
+      setStep('start');
+      log('pompe-log', 'info', 'Pompe réactivée : vous pouvez démarrer une nouvelle livraison.');
+    }
   }
 
   function refreshCarburants() {
@@ -685,7 +914,6 @@ var Sim = (function() {
     if (!btn) return;
     startRequestRunning = true;
     btn.disabled = true;
-    btn.textContent = '...';
 
     api('POST', '/json/pompes/' + selectedPompeId + '/demarrer', body).then(function() {
       var typeLabel = p.type_pompe === 'carburant' ? 'pompe' : 'borne';
@@ -708,7 +936,6 @@ var Sim = (function() {
       startRequestRunning = false;
       if (currentStep === 'start') {
         btn.disabled = false;
-        btn.textContent = 'Demarrer la livraison';
       }
     });
   }
@@ -723,7 +950,6 @@ var Sim = (function() {
     if (!btn) return;
     endRequestRunning = true;
     btn.disabled = true;
-    btn.textContent = '...';
 
     api('POST', '/json/pompes/' + selectedPompeId + '/terminer').then(function() {
       var typeLabel = p.type_pompe === 'carburant' ? 'pompe' : 'borne';
@@ -737,7 +963,6 @@ var Sim = (function() {
       endRequestRunning = false;
       if (currentStep === 'end') {
         btn.disabled = false;
-        btn.textContent = 'Terminer la livraison';
       }
     });
   }
@@ -759,11 +984,18 @@ var Sim = (function() {
   }
 
   // ── Init ──
+  function onStoragePing(event) {
+    if (!event || event.key !== 'unica_cce_balance_ping') return;
+    refreshCCE();
+  }
+
   function init() {
     initNav();
+    renderPopupCatalog();
     refreshCCE();
     refreshCarburants();
     startPompesSSE();
+    window.addEventListener('storage', onStoragePing);
   }
 
   document.addEventListener('DOMContentLoaded', init);
@@ -771,6 +1003,7 @@ var Sim = (function() {
   return {
     refreshPompes: refreshPompes,
     selectPompe: selectPompe,
+    showPopup: showPopup,
     demarrerLivraison: demarrerLivraison,
     terminerLivraison: terminerLivraison,
     resetPompe: resetPompe,

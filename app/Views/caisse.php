@@ -135,6 +135,7 @@
 <script src="<?= $assetsUrl ?>/js/core/requetes.js"></script>
 <script src="<?= $assetsUrl ?>/js/core/toast.js"></script>
 <script src="<?= $assetsUrl ?>/js/core/windows.js"></script>
+<script src="<?= $assetsUrl ?>/js/core/sim_popup_bridge.js"></script>
 
 <!-- Panels (tous "À VENIR" pour l'instant) -->
 <script src="<?= $assetsUrl ?>/js/panels/ticket_cart.js"></script>

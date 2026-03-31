@@ -129,6 +129,7 @@
 <script src="<?= $assetsUrl ?>/js/core/requetes.js"></script>
 <script src="<?= $assetsUrl ?>/js/core/toast.js"></script>
 <script src="<?= $assetsUrl ?>/js/core/windows.js"></script>
+<script src="<?= $assetsUrl ?>/js/core/sim_popup_bridge.js"></script>
 
 <!-- Panels gérant — 12 fenêtres maquette -->
 <script src="<?= $assetsUrl ?>/js/panels/gerant/reappro.js"></script>
