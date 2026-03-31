@@ -20,6 +20,7 @@
   <link rel="stylesheet" href="<?= $assetsUrl ?>/css/panels/pompes.css">
   <link rel="stylesheet" href="<?= $assetsUrl ?>/css/panels/ticket.css">
   <link rel="stylesheet" href="<?= $assetsUrl ?>/css/panels/ticket_barcode.css">
+  <link rel="stylesheet" href="<?= $assetsUrl ?>/css/core/caisse_dialogs.css">
 
   <?php
   // SESSION injectée par PHP

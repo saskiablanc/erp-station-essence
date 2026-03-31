@@ -1,0 +1,330 @@
+/* Shared alert/confirm dialogs */
+:root {
+  --dialog-popup-w: min(30rem, 94vw);
+  --dialog-popup-radius: 24px;
+  --dialog-popup-px: 1.65rem;
+  --dialog-popup-py: 1.8rem;
+  --dialog-icon-size: 96px;
+  --dialog-icon-border: 4px;
+  --dialog-title-size: 20px;
+  --dialog-text-size: 14px;
+  --dialog-btn-h: 36px;
+  --dialog-btn-px: 20px;
+  --dialog-btn-min-w: 120px;
+  --dialog-btn-font: 13px;
+  --dialog-info: #3b82f6;
+  --dialog-warning: #f4b740;
+  --dialog-popup-bg: rgba(255, 255, 255, 0.98);
+}
+
+.swal2-popup.swal2-modal:has(.swal2-icon):not(.ticket-swal-popup-split):not(.ticket-swal-popup-items):not(.ticket-swal-popup-barcode):not(.ticket-swal-popup-cash):not(.ticket-swal-popup-list):not(.cce-swal-popup-actions):not(.cce-swal-popup-transactions):not(.cce-swal-popup-recharge-choice) {
+  width: var(--dialog-popup-w) !important;
+  max-width: var(--dialog-popup-w) !important;
+  padding: var(--dialog-popup-py) var(--dialog-popup-px) 1.3rem !important;
+  border: 2px solid var(--border) !important;
+  border-radius: var(--dialog-popup-radius) !important;
+  background: var(--dialog-popup-bg) !important;
+  box-shadow: 0 24px 60px rgba(99, 102, 241, 0.18) !important;
+}
+
+.swal2-popup.swal2-modal:has(.swal2-icon):not(.ticket-swal-popup-split):not(.ticket-swal-popup-items):not(.ticket-swal-popup-barcode):not(.ticket-swal-popup-cash):not(.ticket-swal-popup-list):not(.cce-swal-popup-actions):not(.cce-swal-popup-transactions):not(.cce-swal-popup-recharge-choice) .swal2-title,
+.swal2-popup.swal2-modal:has(.swal2-icon):not(.ticket-swal-popup-split):not(.ticket-swal-popup-items):not(.ticket-swal-popup-barcode):not(.ticket-swal-popup-cash):not(.ticket-swal-popup-list):not(.cce-swal-popup-actions):not(.cce-swal-popup-transactions):not(.cce-swal-popup-recharge-choice) .ticket-swal-title,
+.swal2-popup.swal2-modal:has(.swal2-icon):not(.ticket-swal-popup-split):not(.ticket-swal-popup-items):not(.ticket-swal-popup-barcode):not(.ticket-swal-popup-cash):not(.ticket-swal-popup-list):not(.cce-swal-popup-actions):not(.cce-swal-popup-transactions):not(.cce-swal-popup-recharge-choice) .cce-swal-title,
+.swal2-popup.swal2-modal:has(.swal2-icon):not(.ticket-swal-popup-split):not(.ticket-swal-popup-items):not(.ticket-swal-popup-barcode):not(.ticket-swal-popup-cash):not(.ticket-swal-popup-list):not(.cce-swal-popup-actions):not(.cce-swal-popup-transactions):not(.cce-swal-popup-recharge-choice) .hb-swal-title,
+.swal2-popup.swal2-modal:has(.swal2-icon):not(.ticket-swal-popup-split):not(.ticket-swal-popup-items):not(.ticket-swal-popup-barcode):not(.ticket-swal-popup-cash):not(.ticket-swal-popup-list):not(.cce-swal-popup-actions):not(.cce-swal-popup-transactions):not(.cce-swal-popup-recharge-choice) .fi-swal-title,
+.swal2-popup.swal2-modal:has(.swal2-icon):not(.ticket-swal-popup-split):not(.ticket-swal-popup-items):not(.ticket-swal-popup-barcode):not(.ticket-swal-popup-cash):not(.ticket-swal-popup-list):not(.cce-swal-popup-actions):not(.cce-swal-popup-transactions):not(.cce-swal-popup-recharge-choice) .bdd-swal-title {
+  margin: 0 0 0.45rem !important;
+  color: var(--text) !important;
+  font-family: var(--display) !important;
+  font-size: var(--dialog-title-size) !important;
+  font-weight: 700 !important;
+  line-height: 1.2 !important;
+  text-align: center !important;
+}
+
+.swal2-popup.swal2-modal:has(.swal2-icon):not(.ticket-swal-popup-split):not(.ticket-swal-popup-items):not(.ticket-swal-popup-barcode):not(.ticket-swal-popup-cash):not(.ticket-swal-popup-list):not(.cce-swal-popup-actions):not(.cce-swal-popup-transactions):not(.cce-swal-popup-recharge-choice) .swal2-html-container,
+.swal2-popup.swal2-modal:has(.swal2-icon):not(.ticket-swal-popup-split):not(.ticket-swal-popup-items):not(.ticket-swal-popup-barcode):not(.ticket-swal-popup-cash):not(.ticket-swal-popup-list):not(.cce-swal-popup-actions):not(.cce-swal-popup-transactions):not(.cce-swal-popup-recharge-choice) .ticket-swal-text,
+.swal2-popup.swal2-modal:has(.swal2-icon):not(.ticket-swal-popup-split):not(.ticket-swal-popup-items):not(.ticket-swal-popup-barcode):not(.ticket-swal-popup-cash):not(.ticket-swal-popup-list):not(.cce-swal-popup-actions):not(.cce-swal-popup-transactions):not(.cce-swal-popup-recharge-choice) .cce-swal-text,
+.swal2-popup.swal2-modal:has(.swal2-icon):not(.ticket-swal-popup-split):not(.ticket-swal-popup-items):not(.ticket-swal-popup-barcode):not(.ticket-swal-popup-cash):not(.ticket-swal-popup-list):not(.cce-swal-popup-actions):not(.cce-swal-popup-transactions):not(.cce-swal-popup-recharge-choice) .hb-swal-text,
+.swal2-popup.swal2-modal:has(.swal2-icon):not(.ticket-swal-popup-split):not(.ticket-swal-popup-items):not(.ticket-swal-popup-barcode):not(.ticket-swal-popup-cash):not(.ticket-swal-popup-list):not(.cce-swal-popup-actions):not(.cce-swal-popup-transactions):not(.cce-swal-popup-recharge-choice) .fi-swal-text,
+.swal2-popup.swal2-modal:has(.swal2-icon):not(.ticket-swal-popup-split):not(.ticket-swal-popup-items):not(.ticket-swal-popup-barcode):not(.ticket-swal-popup-cash):not(.ticket-swal-popup-list):not(.cce-swal-popup-actions):not(.cce-swal-popup-transactions):not(.cce-swal-popup-recharge-choice) .bdd-swal-html {
+  margin: 0 !important;
+  color: var(--text-mid) !important;
+  font-family: var(--mono) !important;
+  font-size: var(--dialog-text-size) !important;
+  line-height: 1.55 !important;
+  text-align: center !important;
+}
+
+.swal2-popup.swal2-modal:has(.swal2-icon):not(.ticket-swal-popup-split):not(.ticket-swal-popup-items):not(.ticket-swal-popup-barcode):not(.ticket-swal-popup-cash):not(.ticket-swal-popup-list):not(.cce-swal-popup-actions):not(.cce-swal-popup-transactions):not(.cce-swal-popup-recharge-choice) .swal2-html-container strong,
+.swal2-popup.swal2-modal:has(.swal2-icon):not(.ticket-swal-popup-split):not(.ticket-swal-popup-items):not(.ticket-swal-popup-barcode):not(.ticket-swal-popup-cash):not(.ticket-swal-popup-list):not(.cce-swal-popup-actions):not(.cce-swal-popup-transactions):not(.cce-swal-popup-recharge-choice) .ticket-swal-text strong,
+.swal2-popup.swal2-modal:has(.swal2-icon):not(.ticket-swal-popup-split):not(.ticket-swal-popup-items):not(.ticket-swal-popup-barcode):not(.ticket-swal-popup-cash):not(.ticket-swal-popup-list):not(.cce-swal-popup-actions):not(.cce-swal-popup-transactions):not(.cce-swal-popup-recharge-choice) .cce-swal-text strong,
+.swal2-popup.swal2-modal:has(.swal2-icon):not(.ticket-swal-popup-split):not(.ticket-swal-popup-items):not(.ticket-swal-popup-barcode):not(.ticket-swal-popup-cash):not(.ticket-swal-popup-list):not(.cce-swal-popup-actions):not(.cce-swal-popup-transactions):not(.cce-swal-popup-recharge-choice) .hb-swal-text strong,
+.swal2-popup.swal2-modal:has(.swal2-icon):not(.ticket-swal-popup-split):not(.ticket-swal-popup-items):not(.ticket-swal-popup-barcode):not(.ticket-swal-popup-cash):not(.ticket-swal-popup-list):not(.cce-swal-popup-actions):not(.cce-swal-popup-transactions):not(.cce-swal-popup-recharge-choice) .fi-swal-text strong,
+.swal2-popup.swal2-modal:has(.swal2-icon):not(.ticket-swal-popup-split):not(.ticket-swal-popup-items):not(.ticket-swal-popup-barcode):not(.ticket-swal-popup-cash):not(.ticket-swal-popup-list):not(.cce-swal-popup-actions):not(.cce-swal-popup-transactions):not(.cce-swal-popup-recharge-choice) .bdd-swal-html strong {
+  color: var(--text) !important;
+  font-weight: 700 !important;
+}
+
+.swal2-popup.swal2-modal:has(.swal2-icon):not(.ticket-swal-popup-split):not(.ticket-swal-popup-items):not(.ticket-swal-popup-barcode):not(.ticket-swal-popup-cash):not(.ticket-swal-popup-list):not(.cce-swal-popup-actions):not(.cce-swal-popup-transactions):not(.cce-swal-popup-recharge-choice) .swal2-icon {
+  width: 5em !important;
+  min-width: 5em !important;
+  height: 5em !important;
+  margin: 0 auto 1.2rem !important;
+  border-width: var(--dialog-icon-border) !important;
+  font-size: calc(var(--dialog-icon-size) / 5) !important;
+  box-shadow: none !important;
+}
+
+.swal2-popup.swal2-modal:has(.swal2-icon):not(.ticket-swal-popup-split):not(.ticket-swal-popup-items):not(.ticket-swal-popup-barcode):not(.ticket-swal-popup-cash):not(.ticket-swal-popup-list):not(.cce-swal-popup-actions):not(.cce-swal-popup-transactions):not(.cce-swal-popup-recharge-choice) .swal2-icon.swal2-success .swal2-success-ring {
+  border-color: var(--green) !important;
+}
+
+.swal2-popup.swal2-modal:has(.swal2-icon):not(.ticket-swal-popup-split):not(.ticket-swal-popup-items):not(.ticket-swal-popup-barcode):not(.ticket-swal-popup-cash):not(.ticket-swal-popup-list):not(.cce-swal-popup-actions):not(.cce-swal-popup-transactions):not(.cce-swal-popup-recharge-choice) .swal2-icon.swal2-success [class*="swal2-success-circular-line"],
+.swal2-popup.swal2-modal:has(.swal2-icon):not(.ticket-swal-popup-split):not(.ticket-swal-popup-items):not(.ticket-swal-popup-barcode):not(.ticket-swal-popup-cash):not(.ticket-swal-popup-list):not(.cce-swal-popup-actions):not(.cce-swal-popup-transactions):not(.cce-swal-popup-recharge-choice) .swal2-icon.swal2-success .swal2-success-fix {
+  background: var(--dialog-popup-bg) !important;
+}
+
+.swal2-popup.swal2-modal:has(.swal2-icon):not(.ticket-swal-popup-split):not(.ticket-swal-popup-items):not(.ticket-swal-popup-barcode):not(.ticket-swal-popup-cash):not(.ticket-swal-popup-list):not(.cce-swal-popup-actions):not(.cce-swal-popup-transactions):not(.cce-swal-popup-recharge-choice) .swal2-icon.swal2-success [class*="swal2-success-line"] {
+  background-color: var(--green) !important;
+}
+
+.swal2-popup.swal2-modal:has(.swal2-icon):not(.ticket-swal-popup-split):not(.ticket-swal-popup-items):not(.ticket-swal-popup-barcode):not(.ticket-swal-popup-cash):not(.ticket-swal-popup-list):not(.cce-swal-popup-actions):not(.cce-swal-popup-transactions):not(.cce-swal-popup-recharge-choice) .swal2-icon.swal2-error {
+  border-color: var(--danger) !important;
+  color: var(--danger) !important;
+}
+
+.swal2-popup.swal2-modal:has(.swal2-icon):not(.ticket-swal-popup-split):not(.ticket-swal-popup-items):not(.ticket-swal-popup-barcode):not(.ticket-swal-popup-cash):not(.ticket-swal-popup-list):not(.cce-swal-popup-actions):not(.cce-swal-popup-transactions):not(.cce-swal-popup-recharge-choice) .swal2-icon.swal2-error [class*="swal2-x-mark-line"] {
+  background-color: var(--danger) !important;
+}
+
+.swal2-popup.swal2-modal:has(.swal2-icon):not(.ticket-swal-popup-split):not(.ticket-swal-popup-items):not(.ticket-swal-popup-barcode):not(.ticket-swal-popup-cash):not(.ticket-swal-popup-list):not(.cce-swal-popup-actions):not(.cce-swal-popup-transactions):not(.cce-swal-popup-recharge-choice) .swal2-icon.swal2-question {
+  border-color: var(--warn) !important;
+  color: var(--warn) !important;
+}
+
+.swal2-popup.swal2-modal:has(.swal2-icon):not(.ticket-swal-popup-split):not(.ticket-swal-popup-items):not(.ticket-swal-popup-barcode):not(.ticket-swal-popup-cash):not(.ticket-swal-popup-list):not(.cce-swal-popup-actions):not(.cce-swal-popup-transactions):not(.cce-swal-popup-recharge-choice) .swal2-icon.swal2-warning {
+  border-color: var(--dialog-warning) !important;
+  color: var(--dialog-warning) !important;
+}
+
+.swal2-popup.swal2-modal:has(.swal2-icon):not(.ticket-swal-popup-split):not(.ticket-swal-popup-items):not(.ticket-swal-popup-barcode):not(.ticket-swal-popup-cash):not(.ticket-swal-popup-list):not(.cce-swal-popup-actions):not(.cce-swal-popup-transactions):not(.cce-swal-popup-recharge-choice) .swal2-icon.swal2-info {
+  border-color: var(--dialog-info) !important;
+  color: var(--dialog-info) !important;
+}
+
+.swal2-popup.swal2-modal:has(.swal2-icon):not(.ticket-swal-popup-split):not(.ticket-swal-popup-items):not(.ticket-swal-popup-barcode):not(.ticket-swal-popup-cash):not(.ticket-swal-popup-list):not(.cce-swal-popup-actions):not(.cce-swal-popup-transactions):not(.cce-swal-popup-recharge-choice) .swal2-actions {
+  gap: 12px !important;
+  margin: 1.2rem auto 0 !important;
+}
+
+.swal2-popup.swal2-modal:has(.swal2-icon):not(.ticket-swal-popup-split):not(.ticket-swal-popup-items):not(.ticket-swal-popup-barcode):not(.ticket-swal-popup-cash):not(.ticket-swal-popup-list):not(.cce-swal-popup-actions):not(.cce-swal-popup-transactions):not(.cce-swal-popup-recharge-choice) .swal2-confirm,
+.swal2-popup.swal2-modal:has(.swal2-icon):not(.ticket-swal-popup-split):not(.ticket-swal-popup-items):not(.ticket-swal-popup-barcode):not(.ticket-swal-popup-cash):not(.ticket-swal-popup-list):not(.cce-swal-popup-actions):not(.cce-swal-popup-transactions):not(.cce-swal-popup-recharge-choice) .swal2-deny,
+.swal2-popup.swal2-modal:has(.swal2-icon):not(.ticket-swal-popup-split):not(.ticket-swal-popup-items):not(.ticket-swal-popup-barcode):not(.ticket-swal-popup-cash):not(.ticket-swal-popup-list):not(.cce-swal-popup-actions):not(.cce-swal-popup-transactions):not(.cce-swal-popup-recharge-choice) .swal2-cancel,
+.swal2-popup.swal2-modal:has(.swal2-icon):not(.ticket-swal-popup-split):not(.ticket-swal-popup-items):not(.ticket-swal-popup-barcode):not(.ticket-swal-popup-cash):not(.ticket-swal-popup-list):not(.cce-swal-popup-actions):not(.cce-swal-popup-transactions):not(.cce-swal-popup-recharge-choice) .ticket-swal-btn,
+.swal2-popup.swal2-modal:has(.swal2-icon):not(.ticket-swal-popup-split):not(.ticket-swal-popup-items):not(.ticket-swal-popup-barcode):not(.ticket-swal-popup-cash):not(.ticket-swal-popup-list):not(.cce-swal-popup-actions):not(.cce-swal-popup-transactions):not(.cce-swal-popup-recharge-choice) .cce-swal-btn,
+.swal2-popup.swal2-modal:has(.swal2-icon):not(.ticket-swal-popup-split):not(.ticket-swal-popup-items):not(.ticket-swal-popup-barcode):not(.ticket-swal-popup-cash):not(.ticket-swal-popup-list):not(.cce-swal-popup-actions):not(.cce-swal-popup-transactions):not(.cce-swal-popup-recharge-choice) .hb-swal-btn,
+.swal2-popup.swal2-modal:has(.swal2-icon):not(.ticket-swal-popup-split):not(.ticket-swal-popup-items):not(.ticket-swal-popup-barcode):not(.ticket-swal-popup-cash):not(.ticket-swal-popup-list):not(.cce-swal-popup-actions):not(.cce-swal-popup-transactions):not(.cce-swal-popup-recharge-choice) .fi-swal-btn,
+.swal2-popup.swal2-modal:has(.swal2-icon):not(.ticket-swal-popup-split):not(.ticket-swal-popup-items):not(.ticket-swal-popup-barcode):not(.ticket-swal-popup-cash):not(.ticket-swal-popup-list):not(.cce-swal-popup-actions):not(.cce-swal-popup-transactions):not(.cce-swal-popup-recharge-choice) .bdd-swal-btn {
+  min-width: var(--dialog-btn-min-w) !important;
+  height: var(--dialog-btn-h) !important;
+  padding: 0 var(--dialog-btn-px) !important;
+  border: 1.5px solid rgba(31, 41, 55, 0.25) !important;
+  border-radius: 999px !important;
+  background: rgba(255, 255, 255, 0.98) !important;
+  color: var(--text) !important;
+  font-family: var(--mono) !important;
+  font-size: var(--dialog-btn-font) !important;
+  font-weight: 500 !important;
+  box-shadow: 0 2px 0 rgba(31, 41, 55, 0.06) !important;
+}
+
+.swal2-popup.swal2-modal:has(.swal2-icon):not(.ticket-swal-popup-split):not(.ticket-swal-popup-items):not(.ticket-swal-popup-barcode):not(.ticket-swal-popup-cash):not(.ticket-swal-popup-list):not(.cce-swal-popup-actions):not(.cce-swal-popup-transactions):not(.cce-swal-popup-recharge-choice) .swal2-confirm:hover,
+.swal2-popup.swal2-modal:has(.swal2-icon):not(.ticket-swal-popup-split):not(.ticket-swal-popup-items):not(.ticket-swal-popup-barcode):not(.ticket-swal-popup-cash):not(.ticket-swal-popup-list):not(.cce-swal-popup-actions):not(.cce-swal-popup-transactions):not(.cce-swal-popup-recharge-choice) .swal2-deny:hover,
+.swal2-popup.swal2-modal:has(.swal2-icon):not(.ticket-swal-popup-split):not(.ticket-swal-popup-items):not(.ticket-swal-popup-barcode):not(.ticket-swal-popup-cash):not(.ticket-swal-popup-list):not(.cce-swal-popup-actions):not(.cce-swal-popup-transactions):not(.cce-swal-popup-recharge-choice) .swal2-cancel:hover,
+.swal2-popup.swal2-modal:has(.swal2-icon):not(.ticket-swal-popup-split):not(.ticket-swal-popup-items):not(.ticket-swal-popup-barcode):not(.ticket-swal-popup-cash):not(.ticket-swal-popup-list):not(.cce-swal-popup-actions):not(.cce-swal-popup-transactions):not(.cce-swal-popup-recharge-choice) .ticket-swal-btn:hover,
+.swal2-popup.swal2-modal:has(.swal2-icon):not(.ticket-swal-popup-split):not(.ticket-swal-popup-items):not(.ticket-swal-popup-barcode):not(.ticket-swal-popup-cash):not(.ticket-swal-popup-list):not(.cce-swal-popup-actions):not(.cce-swal-popup-transactions):not(.cce-swal-popup-recharge-choice) .cce-swal-btn:hover,
+.swal2-popup.swal2-modal:has(.swal2-icon):not(.ticket-swal-popup-split):not(.ticket-swal-popup-items):not(.ticket-swal-popup-barcode):not(.ticket-swal-popup-cash):not(.ticket-swal-popup-list):not(.cce-swal-popup-actions):not(.cce-swal-popup-transactions):not(.cce-swal-popup-recharge-choice) .hb-swal-btn:hover,
+.swal2-popup.swal2-modal:has(.swal2-icon):not(.ticket-swal-popup-split):not(.ticket-swal-popup-items):not(.ticket-swal-popup-barcode):not(.ticket-swal-popup-cash):not(.ticket-swal-popup-list):not(.cce-swal-popup-actions):not(.cce-swal-popup-transactions):not(.cce-swal-popup-recharge-choice) .fi-swal-btn:hover,
+.swal2-popup.swal2-modal:has(.swal2-icon):not(.ticket-swal-popup-split):not(.ticket-swal-popup-items):not(.ticket-swal-popup-barcode):not(.ticket-swal-popup-cash):not(.ticket-swal-popup-list):not(.cce-swal-popup-actions):not(.cce-swal-popup-transactions):not(.cce-swal-popup-recharge-choice) .bdd-swal-btn:hover {
+  border-color: rgba(99, 102, 241, 0.4) !important;
+  color: var(--accent) !important;
+}
+
+.swal2-popup.swal2-modal:has(.swal2-icon):not(.ticket-swal-popup-split):not(.ticket-swal-popup-items):not(.ticket-swal-popup-barcode):not(.ticket-swal-popup-cash):not(.ticket-swal-popup-list):not(.cce-swal-popup-actions):not(.cce-swal-popup-transactions):not(.cce-swal-popup-recharge-choice) .swal2-close {
+  width: 28px !important;
+  height: 28px !important;
+  margin: -0.2rem -0.1rem 0 auto !important;
+  border: 1px solid var(--border) !important;
+  border-radius: 999px !important;
+  color: var(--text-dim) !important;
+  font-size: 22px !important;
+  line-height: 1 !important;
+}
+
+.swal2-popup.swal2-modal:has(.swal2-icon):not(.ticket-swal-popup-split):not(.ticket-swal-popup-items):not(.ticket-swal-popup-barcode):not(.ticket-swal-popup-cash):not(.ticket-swal-popup-list):not(.cce-swal-popup-actions):not(.cce-swal-popup-transactions):not(.cce-swal-popup-recharge-choice) .swal2-close:hover {
+  border-color: rgba(99, 102, 241, 0.35) !important;
+  color: var(--accent) !important;
+}
+
+.cp-global-overlay {
+  background: rgba(17, 24, 39, 0.26) !important;
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+
+.cp-popup {
+  width: var(--dialog-popup-w) !important;
+  max-width: var(--dialog-popup-w) !important;
+  min-width: 0 !important;
+  padding: var(--dialog-popup-py) var(--dialog-popup-px) 1.3rem !important;
+  border: 2px solid var(--border) !important;
+  border-radius: var(--dialog-popup-radius) !important;
+  background: var(--dialog-popup-bg) !important;
+  box-shadow: 0 24px 60px rgba(99, 102, 241, 0.18) !important;
+  gap: 0.8rem !important;
+}
+
+.cp-popup-icon {
+  width: var(--dialog-icon-size);
+  height: var(--dialog-icon-size);
+  margin: 0 auto 0.1rem;
+  border: var(--dialog-icon-border) solid currentColor;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: calc(var(--dialog-icon-size) / 2);
+  font-weight: 500;
+  line-height: 1;
+}
+
+.cp-popup-icon--success {
+  color: var(--green);
+}
+
+.cp-popup-icon--error {
+  color: var(--danger);
+}
+
+.cp-popup-icon--question {
+  color: var(--warn);
+}
+
+.cp-popup-icon--warning {
+  color: var(--dialog-warning);
+}
+
+.cp-popup-icon--info {
+  color: var(--dialog-info);
+}
+
+.cp-popup-title {
+  color: var(--text);
+  font-family: var(--display);
+  font-size: var(--dialog-title-size);
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.cp-popup-msg {
+  color: var(--text-mid);
+  font-family: var(--mono);
+  font-size: var(--dialog-text-size);
+  line-height: 1.55;
+}
+
+.cp-popup-close {
+  min-width: var(--dialog-btn-min-w);
+  height: var(--dialog-btn-h);
+  margin-top: 0.1rem;
+  padding: 0 var(--dialog-btn-px);
+  border: 1.5px solid rgba(31, 41, 55, 0.25);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.98);
+  color: var(--text);
+  font-family: var(--mono);
+  font-size: var(--dialog-btn-font);
+  box-shadow: 0 2px 0 rgba(31, 41, 55, 0.06);
+}
+
+.cp-popup-close:hover {
+  border-color: rgba(99, 102, 241, 0.4);
+  background: rgba(255, 255, 255, 0.98);
+  color: var(--accent);
+}
+
+.confirm-box {
+  max-width: var(--dialog-popup-w) !important;
+  width: var(--dialog-popup-w) !important;
+  padding: var(--dialog-popup-py) var(--dialog-popup-px) 1.3rem !important;
+  border: 2px solid var(--border) !important;
+  border-radius: var(--dialog-popup-radius) !important;
+  background: var(--dialog-popup-bg) !important;
+  box-shadow: 0 24px 60px rgba(99, 102, 241, 0.18) !important;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.confirm-box::before {
+  content: "?";
+  width: var(--dialog-icon-size);
+  height: var(--dialog-icon-size);
+  margin-bottom: 0.95rem;
+  border: var(--dialog-icon-border) solid var(--warn);
+  border-radius: 50%;
+  color: var(--warn);
+  font-family: var(--display);
+  font-size: calc(var(--dialog-icon-size) / 2);
+  font-weight: 500;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.confirm-title {
+  margin: 0 0 0.45rem !important;
+  color: var(--text) !important;
+  font-family: var(--display) !important;
+  font-size: var(--dialog-title-size) !important;
+  font-weight: 700 !important;
+  line-height: 1.2 !important;
+}
+
+.confirm-msg {
+  margin: 0 0 1.2rem !important;
+  color: var(--text-mid) !important;
+  font-family: var(--mono) !important;
+  font-size: var(--dialog-text-size) !important;
+  line-height: 1.55 !important;
+}
+
+.confirm-actions {
+  justify-content: center !important;
+  gap: 12px !important;
+  flex-wrap: wrap;
+}
+
+.confirm-actions .btn-secondary,
+.confirm-actions .btn-danger {
+  min-width: var(--dialog-btn-min-w);
+  height: var(--dialog-btn-h);
+  padding: 0 var(--dialog-btn-px);
+  border: 1.5px solid rgba(31, 41, 55, 0.25);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.98);
+  color: var(--text);
+  font-family: var(--mono);
+  font-size: var(--dialog-btn-font);
+  box-shadow: 0 2px 0 rgba(31, 41, 55, 0.06);
+}
+
+.confirm-actions .btn-secondary:hover,
+.confirm-actions .btn-danger:hover {
+  border-color: rgba(99, 102, 241, 0.4);
+  background: rgba(255, 255, 255, 0.98);
+  color: var(--accent);
+}

@@ -17,6 +17,7 @@
   $assetsUrl = $baseUrl . '/assets';
   ?>
   <link rel="stylesheet" href="<?= $assetsUrl ?>/css/caisse.css">
+  <link rel="stylesheet" href="<?= $assetsUrl ?>/css/core/caisse_dialogs.css">
 
   <?php
   $role        = htmlspecialchars($employe['role']        ?? 'gerant',  ENT_QUOTES);

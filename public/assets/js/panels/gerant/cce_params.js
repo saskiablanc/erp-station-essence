@@ -59,6 +59,15 @@ WM.register("gerant_cce_params", {
     // ── Popup globale (sur body = centre de la caisse entière) ──
     // US14 E50 (erreur) / E51 (confirmation)
     function showPopup(type, title, msg) {
+      var iconMap = {
+        success: "✓",
+        error: "✕",
+        question: "?",
+        warning: "!",
+        info: "i",
+      };
+      var resolvedType = iconMap[type] ? type : "info";
+
       // Réutiliser un overlay existant ou en créer un
       var overlay = document.getElementById("cp-global-overlay");
       if (!overlay) {
@@ -82,9 +91,9 @@ WM.register("gerant_cce_params", {
       }
 
       document.getElementById("cp-popup-icon").className =
-        "cp-popup-icon cp-popup-icon--" + type;
+        "cp-popup-icon cp-popup-icon--" + resolvedType;
       document.getElementById("cp-popup-icon").textContent =
-        type === "success" ? "✓" : "✗";
+        iconMap[resolvedType];
       document.getElementById("cp-popup-title").textContent = title;
       document.getElementById("cp-popup-msg").textContent = msg || "";
       overlay.style.display = "flex";

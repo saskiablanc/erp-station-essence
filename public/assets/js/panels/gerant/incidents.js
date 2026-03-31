@@ -206,8 +206,7 @@ const IncidentPanel = (() => {
       ...swalBase,
       icon: "error",
       title: "Opération Annulée",
-      showCloseButton: true,
-      showConfirmButton: false,
+      confirmButtonText: "Fermer",
       allowOutsideClick: false,
     });
   }
@@ -217,8 +216,7 @@ const IncidentPanel = (() => {
       ...swalBase,
       icon: "success",
       title: `Fiche incident #${incident.id_ref_unique} a été créée`,
-      showCloseButton: true,
-      showConfirmButton: false,
+      confirmButtonText: "Fermer",
       allowOutsideClick: false,
     });
   }
@@ -229,8 +227,7 @@ const IncidentPanel = (() => {
       icon: "error",
       title: "Création impossible",
       html: escapeHtml(message || "Impossible d'enregistrer la fiche incident"),
-      showCloseButton: true,
-      showConfirmButton: false,
+      confirmButtonText: "Fermer",
       allowOutsideClick: false,
     });
   }

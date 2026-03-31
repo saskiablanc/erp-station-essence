@@ -39,6 +39,15 @@ WM.register("gerant_prix", {
     // ── Popup globale (body) ─────────────────────────────────
     // US12 E41/E42 / US13 E47/E48 : popup confirmation ou erreur
     function showPopup(type, title, msg) {
+      var iconMap = {
+        success: "✓",
+        error: "✕",
+        question: "?",
+        warning: "!",
+        info: "i",
+      };
+      var resolvedType = iconMap[type] ? type : "info";
+
       var overlay = document.getElementById("pc-global-overlay");
       if (!overlay) {
         overlay = document.createElement("div");
@@ -60,9 +69,9 @@ WM.register("gerant_prix", {
           });
       }
       document.getElementById("pc-popup-icon").className =
-        "cp-popup-icon cp-popup-icon--" + type;
+        "cp-popup-icon cp-popup-icon--" + resolvedType;
       document.getElementById("pc-popup-icon").textContent =
-        type === "success" ? "✓" : "✗";
+        iconMap[resolvedType];
       document.getElementById("pc-popup-title").textContent = title;
       document.getElementById("pc-popup-msg").textContent = msg || "";
       overlay.style.display = "flex";

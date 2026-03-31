@@ -91,8 +91,7 @@ const BddPanel = (() => {
       ...swalBase,
       icon: "success",
       title: msg,
-      showCloseButton: true,
-      showConfirmButton: false,
+      confirmButtonText: "Fermer",
       allowOutsideClick: false,
     });
   }
@@ -103,8 +102,7 @@ const BddPanel = (() => {
       icon: "error",
       title,
       html: safeHtml,
-      showCloseButton: true,
-      showConfirmButton: false,
+      confirmButtonText: "Fermer",
       allowOutsideClick: false,
     });
   }
@@ -1558,8 +1556,7 @@ const BddPanel = (() => {
         icon: "info",
         title: "Ajout non disponible",
         html: "Cette table se gère via son panel dédié.",
-        showCloseButton: true,
-        showConfirmButton: false,
+        confirmButtonText: "Fermer",
       });
       return;
     }

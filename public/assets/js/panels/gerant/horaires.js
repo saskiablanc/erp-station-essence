@@ -185,8 +185,7 @@ const HorairesBoutiquePanel = (() => {
       icon: "error",
       title: "Erreur : Valeurs Incorrectes.",
       html: "Les nouveaux horaires n’ont pas pu être enregistrés !",
-      showCloseButton: true,
-      showConfirmButton: false,
+      confirmButtonText: "Fermer",
     });
   }
 
@@ -213,8 +212,7 @@ const HorairesBoutiquePanel = (() => {
       ...swalBase,
       icon: "success",
       title: `Nouveaux horaires bien enregistrés pour ${formatDaysLabel(days)} !`,
-      showCloseButton: true,
-      showConfirmButton: false,
+      confirmButtonText: "Fermer",
     });
   }
 
