@@ -31,12 +31,13 @@ final class Pompe
             return [];
         }
 
-        // ── 1.b Dernière carte utilisée par pompe (CCE / CB) ─────────────
+        // ── 1.b Dernière transaction payée par pompe (carte + détails) ───
         $pompeIds = array_values(array_filter(
             array_map(static fn($p) => (int) ($p['id_pompe'] ?? 0), $pompes),
             static fn(int $id): bool => $id > 0
         ));
         $lastCardByPompe = [];
+        $lastTransactionByPompe = [];
         if (!empty($pompeIds)) {
             $placeholdersPompes = implode(',', array_fill(0, count($pompeIds), '?'));
             $pkColumn = $this->getTransactionEnergiePkColumn();
@@ -45,7 +46,30 @@ final class Pompe
             $rows = $this->db->query(
                 sprintf(
                     "SELECT te.id_pompe,
-                            CASE WHEN tc.id_transaction IS NULL THEN 'CB' ELSE 'CCE' END AS derniere_carte
+                            te.%s AS id_transaction_energie,
+                            te.id_energie,
+                            te.quantite_delivree,
+                            te.temps_charge,
+                            te.statut AS te_statut,
+                            t.id_transaction,
+                            t.date_heure,
+                            CASE WHEN tc.id_transaction IS NULL THEN 'CB' ELSE 'CCE' END AS derniere_carte,
+                            e.type_energie,
+                            c.libelle,
+                            c.prix_litre,
+                            el.type_charge,
+                            el.prix_kwh,
+                            COALESCE(
+                              t.prix_total,
+                              ROUND(
+                                te.quantite_delivree
+                                * CASE
+                                    WHEN e.type_energie = 'carburant' THEN COALESCE(c.prix_litre, 0)
+                                    ELSE COALESCE(el.prix_kwh, 0)
+                                  END,
+                                3
+                              )
+                            ) AS prix_total
                      FROM TransactionEnergie te
                      JOIN (
                        SELECT id_pompe, MAX(%s) AS max_te
@@ -57,8 +81,17 @@ final class Pompe
                      ) latest
                        ON latest.id_pompe = te.id_pompe
                       AND latest.max_te = te.%s
+                     JOIN Energie e
+                       ON e.id_energie = te.id_energie
+                     LEFT JOIN Carburant c
+                       ON c.id_energie = e.id_energie
+                     LEFT JOIN Electricite el
+                       ON el.id_energie = e.id_energie
+                     LEFT JOIN `Transaction` t
+                       ON t.id_transaction = te.id_transaction
                      LEFT JOIN TransactionCCE tc
                        ON tc.id_transaction = te.id_transaction",
+                    $pkQuoted,
                     $pkQuoted,
                     $placeholdersPompes,
                     $pkQuoted
@@ -70,6 +103,19 @@ final class Pompe
                 $idPompe = (int) ($row['id_pompe'] ?? 0);
                 if ($idPompe <= 0) continue;
                 $lastCardByPompe[$idPompe] = strtoupper((string) ($row['derniere_carte'] ?? 'CB'));
+                $lastTransactionByPompe[$idPompe] = [
+                    'id_transaction_energie' => (int) ($row['id_transaction_energie'] ?? 0),
+                    'id_energie' => (int) ($row['id_energie'] ?? 0),
+                    'libelle' => $row['libelle'],
+                    'prix_litre' => $row['prix_litre'] !== null ? (float) $row['prix_litre'] : null,
+                    'prix_kwh' => $row['prix_kwh'] !== null ? (float) $row['prix_kwh'] : null,
+                    'type_charge' => $row['type_charge'],
+                    'quantite_delivree' => (float) ($row['quantite_delivree'] ?? 0),
+                    'temps_charge' => $row['temps_charge'],
+                    'prix_total' => (float) ($row['prix_total'] ?? 0),
+                    'date_heure' => $row['date_heure'],
+                    'statut' => $row['te_statut'],
+                ];
             }
         }
 
@@ -149,7 +195,7 @@ final class Pompe
         }
 
         // ── 3. Assembler ─────────────────────────────────────
-        return array_map(function (array $p) use ($txDetails, $lastCardByPompe): array {
+        return array_map(function (array $p) use ($txDetails, $lastCardByPompe, $lastTransactionByPompe): array {
             $idTe = isset($p['id_transaction_energie']) && $p['id_transaction_energie'] !== ''
                   ? (int) $p['id_transaction_energie']
                   : null;
@@ -165,6 +211,7 @@ final class Pompe
                 'statut'     => $p['statut'],               // 'active' | 'en_cours' | 'desactivee'
                 'date_debut' => $p['date_debut'],
                 'derniere_carte' => $lastCardByPompe[(int) $p['id_pompe']] ?? 'CB',
+                'derniere_transaction' => $lastTransactionByPompe[(int) $p['id_pompe']] ?? null,
                 'transaction' => $tx ? [
                     'id_transaction_energie' => (int) $tx['id_transaction_energie'],
                     'id_energie'             => (int) $tx['id_energie'],

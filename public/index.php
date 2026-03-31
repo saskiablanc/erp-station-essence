@@ -15,6 +15,7 @@ use App\Controllers\IncidentController;
 use App\Controllers\ValidationController;
 use App\Controllers\BddController;
 use App\Controllers\SimulatorController;
+use App\Controllers\SseController;
 
 
 $uri = $_SERVER['REQUEST_URI'] ?? '';
@@ -92,6 +93,9 @@ $router->get('simulator', function () {
 // ── Auth ─────────────────────────────────────────────────
 $router->get( 'json/auth/session',  [new AuthController(), 'jsonSession']);
 $router->post('json/auth/logout',   [new AuthController(), 'jsonLogout']);
+
+// ── SSE (temps réel) ─────────────────────────────────────
+$router->get('events/pompes', [new SseController(), 'pompes']);
 
 // ── Articles & stock ─────────────────────────────────────
 $router->get('json/articles/random', [new CaisseController(), 'getRandomArticle']);

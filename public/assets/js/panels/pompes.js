@@ -66,6 +66,9 @@ WM.register("pompes", {
 var _pollingTimer = null;
 var _pollingRunning = false;
 var POLLING_DELAY = 30000;
+var _sseSource = null;
+var _sseRetryTimer = null;
+var SSE_RETRY_DELAY = 3000;
 
 function _setStatus(state, txt) {
   var dot = document.getElementById("pompes-dot");
@@ -131,6 +134,7 @@ async function _fetchEtMajAffichage() {
 }
 
 function _demarrerPolling() {
+  _demarrerSSE();
   _fetchEtMajAffichage();
   if (_pollingTimer) clearInterval(_pollingTimer);
   _pollingTimer = setInterval(_fetchEtMajAffichage, POLLING_DELAY);
@@ -138,4 +142,43 @@ function _demarrerPolling() {
 
 function PompesPanelRefresh() {
   _fetchEtMajAffichage();
+}
+
+function _demarrerSSE() {
+  if (typeof EventSource === "undefined") return;
+  if (_sseSource) return;
+
+  try {
+    _sseSource = new EventSource(Requetes.ssePompesUrl());
+  } catch (_) {
+    _planifierReconnectSSE();
+    return;
+  }
+
+  _sseSource.addEventListener("pompes-update", function () {
+    _fetchEtMajAffichage();
+  });
+
+  _sseSource.onopen = function () {
+    if (_sseRetryTimer) {
+      clearTimeout(_sseRetryTimer);
+      _sseRetryTimer = null;
+    }
+  };
+
+  _sseSource.onerror = function () {
+    if (_sseSource) {
+      _sseSource.close();
+      _sseSource = null;
+    }
+    _planifierReconnectSSE();
+  };
+}
+
+function _planifierReconnectSSE() {
+  if (_sseRetryTimer) return;
+  _sseRetryTimer = setTimeout(function () {
+    _sseRetryTimer = null;
+    _demarrerSSE();
+  }, SSE_RETRY_DELAY);
 }

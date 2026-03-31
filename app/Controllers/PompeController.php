@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace App\Controllers;
 
 use App\Core\Controller;
+use App\Core\SseBroker;
 use App\Models\Pompe;
 use RuntimeException;
 
@@ -95,6 +96,10 @@ final class PompeController extends Controller
 
         try {
             $result = $this->model->activer($idPompe);
+            SseBroker::publishPompesUpdate([
+                'action' => 'activer',
+                'id_pompe' => $idPompe,
+            ]);
             $this->json([
                 'id_pompe' => $result['id_pompe'],
                 'statut'   => $result['statut'],
@@ -140,6 +145,11 @@ final class PompeController extends Controller
                 $tempsCharge
             );
 
+            SseBroker::publishPompesUpdate([
+                'action' => 'demarrer',
+                'id_pompe' => $idPompe,
+                'id_transaction_energie' => $idTransactionEnergie,
+            ]);
             $this->json([
                 'success' => true,
                 'id_pompe' => $idPompe,
@@ -170,6 +180,10 @@ final class PompeController extends Controller
 
         try {
             $this->model->terminerLivraison($idPompe);
+            SseBroker::publishPompesUpdate([
+                'action' => 'terminer',
+                'id_pompe' => $idPompe,
+            ]);
             $this->json([
                 'success' => true,
                 'id_pompe' => $idPompe,
@@ -215,6 +229,12 @@ final class PompeController extends Controller
                 $idTransactionEnergie,
                 $idTransaction
             );
+            SseBroker::publishPompesUpdate([
+                'action' => 'encaisser',
+                'id_pompe' => $idPompe,
+                'id_transaction_energie' => $idTransactionEnergie,
+                'id_transaction' => $idTransaction,
+            ]);
             $this->json([
                 'success' => true,
                 'id_pompe' => $idPompe,

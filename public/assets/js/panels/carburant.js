@@ -73,8 +73,10 @@ const PompeCarburant = (() => {
   }
 
   function _cardHTML(p) {
-    const tx = p.transaction || null;
-    const carb = tx ? tx.libelle : null;
+    const txCurrent = p.transaction || null;
+    const txLast = p.derniere_transaction || null;
+    const txDisplay = txCurrent || txLast;
+    const carb = txDisplay ? txDisplay.libelle : null;
     const colors = carb ? CARBURANT_COLORS[carb] || {} : {};
     const isManuel = p.mode === "manuel";
     const isDesact = p.statut === "desactivee";
@@ -89,14 +91,16 @@ const PompeCarburant = (() => {
       ? `<span class="pc-mode-badge">MANUEL</span>`
       : `<span class="pc-mode-badge pc-mode-badge--auto">${_lastCardLabel(p)}</span>`;
 
-    const qte = tx ? `${_fmt(tx.quantite_delivree, 2)} L` : "\u2014";
-    const total = tx ? `${_fmt(tx.prix_total, 2)} \u20ac` : "\u2014";
-    const date = _formatDate(p.date_debut);
+    const qte = txDisplay ? `${_fmt(txDisplay.quantite_delivree, 2)} L` : "\u2014";
+    const total = txDisplay ? `${_fmt(txDisplay.prix_total, 2)} \u20ac` : "\u2014";
+    const date = _formatDate(
+      txCurrent ? (p.date_debut || txCurrent.date_heure) : (txDisplay?.date_heure || p.date_debut),
+    );
 
     let actionBtn = "";
-    if (isManuel && isDesact && tx) {
+    if (isManuel && isDesact && txCurrent) {
       actionBtn = `<button class="pc-btn pc-btn--encaisser" onclick="PompeCarburant.encaisser(${p.id_pompe})">Encaisser</button>`;
-    } else if (isDesact && !tx) {
+    } else if (isDesact && !txCurrent) {
       actionBtn = `<button class="pc-btn pc-btn--activer" onclick="PompeCarburant.activer(${p.id_pompe})">Activer</button>`;
     } else if (isManuel && isEnCours) {
       actionBtn = `<span class="pc-mode-badge" style="background:var(--warn-dim);color:var(--warn);border-color:var(--warn);">EN COURS</span>`;

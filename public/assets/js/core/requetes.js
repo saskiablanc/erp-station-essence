@@ -42,6 +42,7 @@ const Requetes = (() => {
     // ── Auth ──────────────────────────────────────────────
     session: () => appel("GET", "/json/auth/session"),
     logout: () => appel("POST", "/json/auth/logout"),
+    ssePompesUrl: () => withBase("/events/pompes"),
 
     // ── Articles ──────────────────────────────────────────
     getArticles: () => appel("GET", "/json/articles"),

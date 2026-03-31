@@ -61,15 +61,19 @@ const PompeElectricite = (() => {
   }
 
   function _cardHTML(p) {
-    const tx = p.transaction || null;
+    const txCurrent = p.transaction || null;
+    const txLast = p.derniere_transaction || null;
+    const txDisplay = txCurrent || txLast;
     const isDesact = p.statut === "desactivee";
     const isEnCours = p.statut === "en_cours";
     const isRapide = p.sous_type === "rapide";
 
-    const kwh = tx ? `${_fmt(tx.quantite_delivree, 2)}` : "\u2014";
-    const total = tx ? `${_fmt(tx.prix_total, 2)} \u20ac` : "\u2014";
-    const temps = _formatTemps(tx ? tx.temps_charge : null);
-    const date = _formatDate(p.date_debut);
+    const kwh = txDisplay ? `${_fmt(txDisplay.quantite_delivree, 2)}` : "\u2014";
+    const total = txDisplay ? `${_fmt(txDisplay.prix_total, 2)} \u20ac` : "\u2014";
+    const temps = _formatTemps(txDisplay ? txDisplay.temps_charge : null);
+    const date = _formatDate(
+      txCurrent ? (p.date_debut || txCurrent.date_heure) : (txDisplay?.date_heure || p.date_debut),
+    );
     const num = _numAff(p);
     const typeLabel = isRapide ? "Rapide" : "Lent";
 
