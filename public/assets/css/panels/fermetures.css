@@ -260,10 +260,16 @@
   height: 36px;
   border: none;
   background: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   color: var(--text-mid);
   font-family: var(--mono);
   font-size: 12px;
   font-weight: 600;
+  line-height: 1;
+  text-align: center;
+  padding: 0 10px;
   cursor: pointer;
   transition: all 0.15s;
 }

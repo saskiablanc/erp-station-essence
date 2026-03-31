@@ -1,0 +1,100 @@
+/* Unified manager button language based on incidents primary button */
+
+:is(
+  .fi-create-btn,
+  .bdd-add-btn,
+  .vd-btn-confirm,
+  .rm-btn-add,
+  .rm-btn,
+  .pc-btn-modifier,
+  .cp-btn-ajout,
+  .cp-btn-modifier,
+  .cp-popup-close,
+  .hb-submit,
+  .gf-submit-btn,
+  .gv-footer-btn,
+  .gv-nav-btn,
+  .gv-tab
+) {
+  border: 2px solid var(--border);
+  border-radius: 12px;
+  background: var(--btn-grad);
+  box-shadow: var(--shadow-soft);
+  color: var(--accent);
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 500;
+  transition:
+    filter 0.15s,
+    opacity 0.15s,
+    border-color 0.15s,
+    box-shadow 0.15s;
+}
+
+:is(
+  .fi-create-btn,
+  .bdd-add-btn,
+  .vd-btn-confirm,
+  .rm-btn-add,
+  .rm-btn,
+  .pc-btn-modifier,
+  .cp-btn-ajout,
+  .cp-btn-modifier,
+  .cp-popup-close,
+  .hb-submit,
+  .gf-submit-btn,
+  .gv-footer-btn,
+  .gv-nav-btn,
+  .gv-tab
+):hover:not(:disabled) {
+  filter: brightness(0.98);
+}
+
+:is(
+  .fi-create-btn,
+  .bdd-add-btn,
+  .vd-btn-confirm,
+  .rm-btn-add,
+  .rm-btn,
+  .pc-btn-modifier,
+  .cp-btn-ajout,
+  .cp-btn-modifier,
+  .cp-popup-close,
+  .hb-submit,
+  .gf-submit-btn,
+  .gv-footer-btn,
+  .gv-nav-btn,
+  .gv-tab
+):disabled {
+  cursor: not-allowed;
+  opacity: 0.75;
+}
+
+.bdd-add-btn,
+.vd-btn-confirm,
+.rm-btn-add,
+.rm-btn,
+.pc-btn-modifier,
+.cp-btn-ajout,
+.cp-btn-modifier,
+.cp-popup-close,
+.hb-submit,
+.gf-submit-btn,
+.gv-footer-btn,
+.fi-create-btn {
+  min-height: 30px;
+}
+
+.gv-nav-btn {
+  min-width: 30px;
+}
+
+.gv-tab.active {
+  border-color: var(--border-active);
+  color: var(--accent);
+}
+
+.rm-btn--send,
+.rm-btn--cancel {
+  color: var(--accent);
+}

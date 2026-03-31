@@ -32,6 +32,7 @@ const BddPanel = (() => {
     "transaction",
     "transaction_produit",
     "transaction_energie",
+    "recu",
     "fiche_incident",
   ]);
 
@@ -67,6 +68,7 @@ const BddPanel = (() => {
     if (tableId === "transaction") return (row.date_heure || "").slice(0, 10);
     if (tableId === "transaction_produit") return null; // pas de date dans la row — géré via join côté PHP
     if (tableId === "transaction_energie") return null;
+    if (tableId === "recu") return (row.horodatage || "").slice(0, 10);
     if (tableId === "fiche_incident") return row.date_creation || null;
     return null;
   }

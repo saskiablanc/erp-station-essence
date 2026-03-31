@@ -421,6 +421,16 @@ class Bdd
         }
     }
 
+    private function guardTransactionDate(string $dateTime): void
+    {
+        $dateTime = trim($dateTime);
+        if ($dateTime === '') return;
+        $jour = substr($dateTime, 0, 10);
+        if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $jour) && $this->isJourneeTxValidee($jour)) {
+            throw new RuntimeException('Transactions du ' . $jour . ' déjà validées — modification impossible');
+        }
+    }
+
     private function guardTransactionProduit(int $id): void
     {
         $row = $this->db->query(
@@ -450,6 +460,20 @@ class Bdd
         }
     }
 
+    private function guardRecu(int $id): void
+    {
+        $row = $this->db->query(
+            'SELECT DATE(t.date_heure) AS jour
+             FROM `Recu` r
+             JOIN `Transaction` t ON t.id_transaction = r.id_transaction
+             WHERE r.id_recu = :id LIMIT 1',
+            ['id' => $id]
+        )->fetch(\PDO::FETCH_ASSOC);
+        if ($row && $this->isJourneeTxValidee($row['jour'])) {
+            throw new RuntimeException('Transactions du ' . $row['jour'] . ' déjà validées — modification impossible');
+        }
+    }
+
     private function guardIncident(int $id): void
     {
         $row = $this->db->query(
@@ -472,6 +496,7 @@ class Bdd
     {
         $prix=(float)($d['prix_total']??0);
         $date=trim((string)($d['date_heure']??date('Y-m-d H:i:s')));
+        $this->guardTransactionDate($date);
         $this->db->execute("INSERT INTO `Transaction`(prix_total,date_heure) VALUES(:p,:d)",[':p'=>$prix,':d'=>$date]);
         return $this->getTransaction();
     }
@@ -524,6 +549,7 @@ class Bdd
     {
         $idT=(int)($d['id_transaction']??0); $idC=(int)($d['id_carte_CE']??0);
         if ($idT<=0||$idC<=0) throw new RuntimeException('Données invalides');
+        $this->guardTransaction($idT);
         $this->db->execute("INSERT INTO TransactionCCE(id_transaction,id_carte_CE) VALUES(:t,:c)",[':t'=>$idT,':c'=>$idC]);
         return $this->getTransactionCCE();
     }
@@ -532,12 +558,14 @@ class Bdd
         // id = id_transaction (partie de la PK composite)
         $idC=(int)($d['id_carte_CE']??0);
         if ($idC<=0) throw new RuntimeException('id_carte_CE invalide');
+        $this->guardTransaction($id);
         $this->db->execute("UPDATE TransactionCCE SET id_carte_CE=:c WHERE id_transaction=:id",[':c'=>$idC,':id'=>$id]);
         return $this->getTransactionCCE();
     }
     public function deleteTransactionCCE(int $id): void
     {
         // id = id_transaction
+        $this->guardTransaction($id);
         $this->db->execute("DELETE FROM TransactionCCE WHERE id_transaction=:id",[':id'=>$id]);
     }
 
@@ -562,6 +590,7 @@ class Bdd
         $idT=(int)($d['id_transaction']??0); $cb=trim((string)($d['code_barres']??''));
         $qty=(int)($d['quantite_produit_totale']??0);
         if ($idT<=0||$cb==='') throw new RuntimeException('Données invalides');
+        $this->guardTransaction($idT);
         // INSERT avec le nom de colonne exact (espace)
         $this->db->execute(
             "INSERT INTO TransactionProduit(`" . " id_transaction" . "`,code_barres,quantite_produit_totale) VALUES(:t,:c,:q)",
@@ -607,6 +636,9 @@ class Bdd
         $statut=trim((string)($d['statut']??'en_cours'));
         $idP=isset($d['id_pompe'])&&$d['id_pompe']!==''&&$d['id_pompe']!==null?(int)$d['id_pompe']:null;
         if ($idE<=0) throw new RuntimeException('id_energie requis');
+        if ($idT > 0) {
+            $this->guardTransaction($idT);
+        }
         $pkQ = '`' . self::TE_PK . '`';
         $this->db->execute(
             "INSERT INTO TransactionEnergie(id_transaction,id_energie,quantite_delivree,temps_charge,statut,id_pompe) VALUES(:t,:e,:q,:c,:s,:p)",
@@ -644,17 +676,20 @@ class Bdd
     {
         $idT=(int)($d['id_transaction']??0); $num=(int)($d['num_carte']??0);
         if ($idT<=0) throw new RuntimeException('id_transaction requis');
+        $this->guardTransaction($idT);
         $this->db->execute("INSERT INTO `Recu`(id_transaction,num_carte,horodatage) VALUES(:t,:n,NOW())",[':t'=>$idT,':n'=>$num]);
         return $this->getRecu();
     }
     public function updateRecu(int $id, array $d): array
     {
+        $this->guardRecu($id);
         $num=(int)($d['num_carte']??0);
         $this->db->execute("UPDATE `Recu` SET num_carte=:n WHERE id_recu=:id",[':n'=>$num,':id'=>$id]);
         return $this->getRecu();
     }
     public function deleteRecu(int $id): void
     {
+        $this->guardRecu($id);
         $this->db->execute("DELETE FROM `Recu` WHERE id_recu=:id",[':id'=>$id]);
     }
 
