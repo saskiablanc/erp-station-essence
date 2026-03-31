@@ -266,10 +266,14 @@ WM.register("gerant_reappro_manuel", {
         selectArticle.value = "";
         inputQty.value = 1;
 
-        // Rafraîchir le panel de consultation si ouvert
-        if (window.ReapproEvents && window.ReapproEvents.refresh) {
-          window.ReapproEvents.refresh();
-        }
+        window.dispatchEvent(
+          new CustomEvent("reappro:changed", {
+            detail: {
+              type: "manual-create",
+              id_reappro: Number(res.id_reappro || 0),
+            },
+          }),
+        );
       } catch (err) {
         Toast.err(err.message || "Erreur lors de l'envoi");
       }

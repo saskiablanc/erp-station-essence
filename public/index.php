@@ -156,6 +156,7 @@ $router->post('json/reappros/valeurs-defaut-type', [new ReapproController(), 'up
 $router->post('json/reappros/valeurs-defaut/{id}', [new ReapproController(), 'updateValeurDefaut']);
 $router->get( 'json/reappros',                     [new ReapproController(), 'getAll']);
 $router->post('json/reappros',                     [new ReapproController(), 'creerManuel']);
+$router->post('json/reappros/auto',                [new ReapproController(), 'creerAuto']);
 $router->get( 'json/reappros/{id}',                [new ReapproController(), 'getById']);
 $router->post('json/reappros/{id}/statut',         [new ReapproController(), 'updateStatut']);
 $router->post('json/reappros/{id}/annuler',        [new ReapproController(), 'annuler']);

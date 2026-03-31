@@ -55,6 +55,81 @@ class Reappro
     }
 
     /**
+     * Crée un réapprovisionnement automatique pour tous les articles
+     * actuellement sous leur seuil d'alerte, à condition qu'aucun réappro
+     * auto actif n'existe déjà pour l'article.
+     *
+     * @return array{
+     *   id_reappro: int|null,
+     *   created_count: int,
+     *   created: array<int, array<string, mixed>>
+     * }
+     */
+    public function creerAutomatiqueDepuisSeuils(): array
+    {
+        $articles = $this->getArticlesSousSeuilSansReapproAutoActif();
+        if (empty($articles)) {
+            return [
+                'id_reappro' => null,
+                'created_count' => 0,
+                'created' => [],
+            ];
+        }
+
+        $dateSouhaitee = date('Y-m-d', strtotime('+1 day'));
+
+        $this->db->beginTransaction();
+        try {
+            $this->db->execute(
+                "INSERT INTO Reapprovisionnement (statut_reappro, date_reappro, date_souhaitee, est_auto)
+                 VALUES ('En cours', CURRENT_DATE, :date_souhaitee, 1)",
+                [':date_souhaitee' => $dateSouhaitee]
+            );
+            $idReappro = (int) $this->db->lastInsertId();
+            if ($idReappro <= 0) {
+                throw new \RuntimeException('Création du réapprovisionnement automatique impossible');
+            }
+
+            foreach ($articles as $article) {
+                $this->db->execute(
+                    "INSERT INTO LigneReappro (id_reappro, id_article, quantite, date_arrivee)
+                     VALUES (:id_reappro, :id_article, :quantite, NULL)",
+                    [
+                        ':id_reappro' => $idReappro,
+                        ':id_article' => (int) $article['id_article'],
+                        ':quantite' => (float) $article['volume'],
+                    ]
+                );
+            }
+
+            $this->db->commit();
+
+            return [
+                'id_reappro' => $idReappro,
+                'created_count' => count($articles),
+                'created' => array_map(
+                    static function (array $article) use ($idReappro, $dateSouhaitee): array {
+                        return [
+                            'id_reappro' => $idReappro,
+                            'id_article' => (int) ($article['id_article'] ?? 0),
+                            'nom_article' => (string) ($article['nom_article'] ?? ''),
+                            'type_article' => (string) ($article['type_article'] ?? ''),
+                            'quantite_stock' => (float) ($article['quantite_stock'] ?? 0),
+                            'seuil_alerte' => (float) ($article['seuil_alerte'] ?? 0),
+                            'volume' => (float) ($article['volume'] ?? 0),
+                            'date_souhaitee' => $dateSouhaitee,
+                        ];
+                    },
+                    $articles
+                ),
+            ];
+        } catch (\Throwable $e) {
+            $this->db->rollBack();
+            throw $e;
+        }
+    }
+
+    /**
      * Détail d'un réapprovisionnement par ID
      */
     public function getById(int $id): ?array
@@ -394,5 +469,53 @@ class Reappro
              . " WHERE a.type_article = :type";
 
         return $this->db->execute($sql, $params);
+    }
+
+    /**
+     * @return array<int, array<string, mixed>>
+     */
+    private function getArticlesSousSeuilSansReapproAutoActif(): array
+    {
+        $stmt = $this->db->query(
+            "SELECT
+                vd.id_article,
+                vd.seuil_alerte,
+                vd.volume,
+                a.type_article,
+                COALESCE(p.libelle_produit, c.libelle) AS nom_article,
+                s.quantite_stock
+             FROM ValeursDefautReappro vd
+             JOIN Stock s
+               ON s.id_article = vd.id_article
+             JOIN Article a
+               ON a.id_article = vd.id_article
+             LEFT JOIN Produit p
+               ON p.id_article = a.id_article
+             LEFT JOIN Energie e
+               ON e.id_article = a.id_article
+             LEFT JOIN Carburant c
+               ON c.id_energie = e.id_energie
+             WHERE s.quantite_stock <= vd.seuil_alerte
+               AND vd.volume > 0
+               AND NOT EXISTS (
+                 SELECT 1
+                 FROM LigneReappro lr
+                 JOIN Reapprovisionnement r
+                   ON r.id_reappro = lr.id_reappro
+                 WHERE lr.id_article = vd.id_article
+                   AND r.est_auto = 1
+                   AND r.statut_reappro IN ('En cours', 'En retard')
+               )
+             ORDER BY a.type_article, nom_article, vd.id_article"
+        );
+        $rows = $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+
+        foreach ($rows as &$row) {
+            $row['seuil_alerte'] = (float) ($row['seuil_alerte'] ?? 0);
+            $row['volume'] = (float) ($row['volume'] ?? 0);
+            $row['quantite_stock'] = (float) ($row['quantite_stock'] ?? 0);
+        }
+
+        return $rows;
     }
 }

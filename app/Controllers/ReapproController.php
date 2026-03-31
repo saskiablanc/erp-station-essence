@@ -99,6 +99,18 @@ final class ReapproController extends Controller
         }
     }
 
+    // POST /json/reappros/auto
+    public function creerAuto(): void
+    {
+        $this->requireAuth();
+        try {
+            $result = $this->model->creerAutomatiqueDepuisSeuils();
+            $this->json(['success' => true] + $result);
+        } catch (\Throwable $e) {
+            $this->jsonError($e->getMessage(), 500);
+        }
+    }
+
     // US21 — GET /json/reappros/articles
     public function getArticles(): void
     {
