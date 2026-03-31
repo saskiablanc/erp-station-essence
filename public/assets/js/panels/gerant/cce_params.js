@@ -24,9 +24,9 @@ WM.register("gerant_cce_params", {
           <!-- US14 critère 2 : section bonus dynamique -->
           <div class="cp-bonus-header">
             <span class="cp-bonus-title">Bonus</span>
-            <button class="cp-btn-ajout" id="cp-btn-ajout">Ajout Bonus</button>
+            <button class="cp-btn-ajout" id="cp-btn-ajout">+ Ajouter Bonus</button>
           </div>
-
+    
           <div class="cp-bonus-thead">
             <span>Tranche de Bonus</span>
             <span>Montant du Bonus</span>

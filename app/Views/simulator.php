@@ -141,8 +141,88 @@
     .sim-log .info { color:var(--accent); }
     .sim-log .ts { color:var(--text-dim); margin-right:6px; }
 
-    /* ── Pompes grid ── */
-    .sim-pompes-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(190px,1fr)); gap:10px; margin-bottom:14px; }
+    /* ── Pompes layout ── */
+    .sim-pompes-layout {
+      display:flex;
+      flex-direction:column;
+      gap:18px;
+      margin-bottom:14px;
+    }
+    .sim-pompes-family {
+      border:1.5px solid var(--border);
+      border-radius:14px;
+      background:linear-gradient(180deg, rgba(255,255,255,.96) 0%, rgba(244,248,255,.96) 100%);
+      overflow:hidden;
+    }
+    .sim-pompes-family-head {
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      padding:10px 14px;
+      border-bottom:1px solid var(--border);
+      background:var(--surface2);
+    }
+    .sim-pompes-family-title {
+      font-size:12px;
+      font-weight:700;
+      letter-spacing:.08em;
+      text-transform:uppercase;
+      color:var(--text-mid);
+    }
+    .sim-pompes-family-meta {
+      font-size:10px;
+      color:var(--text-dim);
+      text-transform:uppercase;
+      letter-spacing:.06em;
+    }
+    .sim-pompes-family-body {
+      padding:12px;
+      display:grid;
+      grid-template-columns:repeat(2, minmax(0, 1fr));
+      align-items:start;
+      gap:12px;
+    }
+    .sim-pompes-subgroup {
+      display:flex;
+      flex-direction:column;
+      gap:8px;
+      min-width:0;
+      padding:10px;
+      border:1px dashed var(--border);
+      border-radius:12px;
+      background:rgba(255,255,255,.58);
+    }
+    .sim-pompes-subhead {
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:8px;
+    }
+    .sim-pompes-subtitle {
+      font-size:11px;
+      font-weight:700;
+      letter-spacing:.04em;
+      text-transform:uppercase;
+      color:var(--accent);
+    }
+    .sim-pompes-submeta {
+      font-size:10px;
+      color:var(--text-dim);
+    }
+    .sim-pompes-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(170px,1fr)); gap:10px; }
+    .sim-pompes-empty {
+      padding:10px 12px;
+      border:1px dashed var(--border);
+      border-radius:10px;
+      background:var(--surface2);
+      color:var(--text-dim);
+      font-size:11px;
+      font-style:italic;
+    }
+    @media (max-width: 900px) {
+      .sim-pompes-family-body { grid-template-columns:1fr; }
+    }
     .sim-pompe-chip {
       padding:10px 14px; border-radius:10px; border:1.5px solid var(--border);
       background:var(--surface2); font-size:11px; cursor:pointer; transition:all .12s;
@@ -812,27 +892,73 @@ var Sim = (function() {
     }, 3000);
   }
 
+  function renderPompeChip(p) {
+    var typeLabel = p.type_pompe === 'carburant' ? 'Pompe' : 'Borne';
+    var sousType = p.sous_type ? ' (' + p.sous_type + ')' : '';
+    var mode = p.mode === 'auto' ? 'Auto 24' : 'Manuel';
+    var sel = p.id_pompe == selectedPompeId ? 'selected' : '';
+    var html = '<div class="sim-pompe-chip ' + sel + '" onclick="Sim.selectPompe(' + p.id_pompe + ')">'
+      + '<div class="label">' + typeLabel + ' n' + p.numero + sousType + '</div>'
+      + '<div class="meta">' + mode + '</div>'
+      + '<span class="status status--' + p.statut + '">' + p.statut + '</span>';
+    if (p.transaction) {
+      html += '<div class="meta" style="margin-top:4px;">'
+        + esc(p.transaction.libelle || p.transaction.type_charge || '')
+        + ' - ' + Number(p.transaction.quantite_delivree || 0).toFixed(1)
+        + ' ' + (p.type_pompe === 'carburant' ? 'L' : 'kWh')
+        + ' - ' + Number(p.transaction.prix_total || 0).toFixed(2) + ' EUR</div>';
+    }
+    html += '</div>';
+    return html;
+  }
+
+  function renderPompeSubgroup(title, items, meta) {
+    var cards = items.length
+      ? '<div class="sim-pompes-grid">' + items.map(renderPompeChip).join('') + '</div>'
+      : '<div class="sim-pompes-empty">Aucun element dans cette categorie.</div>';
+
+    return '<div class="sim-pompes-subgroup">'
+      + '<div class="sim-pompes-subhead">'
+      + '<div class="sim-pompes-subtitle">' + esc(title) + '</div>'
+      + '<div class="sim-pompes-submeta">' + esc(meta) + '</div>'
+      + '</div>'
+      + cards
+      + '</div>';
+  }
+
+  function renderPompeFamily(title, meta, subgroups) {
+    return '<section class="sim-pompes-family">'
+      + '<div class="sim-pompes-family-head">'
+      + '<div class="sim-pompes-family-title">' + esc(title) + '</div>'
+      + '<div class="sim-pompes-family-meta">' + esc(meta) + '</div>'
+      + '</div>'
+      + '<div class="sim-pompes-family-body">' + subgroups.join('') + '</div>'
+      + '</section>';
+  }
+
+  function countLabel(count, singular, plural) {
+    return count + ' ' + (count > 1 ? plural : singular);
+  }
+
   function renderPompes() {
     var grid = document.getElementById('pompes-grid');
-    grid.innerHTML = pompes.map(function(p) {
-      var typeLabel = p.type_pompe === 'carburant' ? 'Pompe' : 'Borne';
-      var sousType = p.sous_type ? ' (' + p.sous_type + ')' : '';
-      var mode = p.mode === 'auto' ? 'Auto 24' : 'Manuel';
-      var sel = p.id_pompe == selectedPompeId ? 'selected' : '';
-      var html = '<div class="sim-pompe-chip ' + sel + '" onclick="Sim.selectPompe(' + p.id_pompe + ')">'
-        + '<div class="label">' + typeLabel + ' n' + p.numero + sousType + '</div>'
-        + '<div class="meta">' + mode + '</div>'
-        + '<span class="status status--' + p.statut + '">' + p.statut + '</span>';
-      if (p.transaction) {
-        html += '<div class="meta" style="margin-top:4px;">'
-          + esc(p.transaction.libelle || p.transaction.type_charge || '')
-          + ' - ' + Number(p.transaction.quantite_delivree || 0).toFixed(1)
-          + ' ' + (p.type_pompe === 'carburant' ? 'L' : 'kWh')
-          + ' - ' + Number(p.transaction.prix_total || 0).toFixed(2) + ' EUR</div>';
-      }
-      html += '</div>';
-      return html;
-    }).join('');
+    var pompesCarburant = pompes.filter(function(p) { return p.type_pompe === 'carburant'; });
+    var pompesElec = pompes.filter(function(p) { return p.type_pompe === 'electricite'; });
+    var carburantsManuels = pompesCarburant.filter(function(p) { return p.mode === 'manuel'; });
+    var carburantsAuto = pompesCarburant.filter(function(p) { return p.mode === 'auto'; });
+    var bornesRapides = pompesElec.filter(function(p) { return p.sous_type === 'rapide'; });
+    var bornesLentes = pompesElec.filter(function(p) { return p.sous_type === 'lente'; });
+
+    grid.innerHTML = '<div class="sim-pompes-layout">'
+      + renderPompeFamily('Carburants', countLabel(pompesCarburant.length, 'pompe', 'pompes'), [
+        renderPompeSubgroup('Pompes manuelles', carburantsManuels, countLabel(carburantsManuels.length, 'pompe', 'pompes')),
+        renderPompeSubgroup('Pompes automatiques', carburantsAuto, countLabel(carburantsAuto.length, 'pompe', 'pompes'))
+      ])
+      + renderPompeFamily('Electricite', countLabel(pompesElec.length, 'borne', 'bornes'), [
+        renderPompeSubgroup('Super chargeurs', bornesRapides, countLabel(bornesRapides.length, 'rapide', 'rapides')),
+        renderPompeSubgroup('Chargeurs', bornesLentes, countLabel(bornesLentes.length, 'lent', 'lents'))
+      ])
+      + '</div>';
   }
 
   function selectPompe(id) {

@@ -37,6 +37,10 @@
   --taskbar-h: 38px;
   --win-radius: 10px;
   --title-h: 38px;
+  --pill-compact-h: 26px;
+  --pill-compact-px: 8px;
+  --pill-compact-font: 11px;
+  --pill-compact-radius: 999px;
 }
 
 /* ── Reset ────────────────────────────────────────────────── */
@@ -113,8 +117,9 @@ input[type="email"] {
   border: 2px solid var(--border);
   background: #fff;
   box-shadow: var(--shadow-soft);
-  padding: 0 16px;
-  height: 42px;
+  padding: 0 var(--pill-compact-px);
+  height: var(--pill-compact-h);
   color: var(--text);
+  font-size: var(--pill-compact-font);
 }
 
