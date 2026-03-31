@@ -55,30 +55,46 @@ const PompeElectricite = (() => {
     return mode === "CCE" ? "CCE" : "Carte bancaire";
   }
 
+  function _toggleBtnHTML(p, options = {}) {
+    const disabled = Boolean(options.disabled);
+    const isOn = p.statut === "active";
+    const title = isOn ? "Désactiver" : "Activer";
+    return `
+      <button
+        type="button"
+        class="pe-toggle-btn ${isOn ? "is-on" : "is-off"}${disabled ? " is-disabled" : ""}"
+        onclick="PompeElectricite.toggle(${p.id_pompe})"
+        title="${title}"
+        ${disabled ? "disabled" : ""}
+      >⏻</button>
+    `;
+  }
+
   // numero affiché : rapides 1-8, lents réindexés 1-2
   function _numAff(p) {
     return p.sous_type === "lente" ? p.numero - 8 : p.numero;
   }
 
   function _cardHTML(p) {
-    const tx = p.transaction || null;
+    const txCurrent = p.transaction || null;
+    const txLast = p.derniere_transaction || null;
+    const txDisplay = txCurrent || txLast;
     const isDesact = p.statut === "desactivee";
     const isEnCours = p.statut === "en_cours";
     const isRapide = p.sous_type === "rapide";
 
-    const kwh = tx ? `${_fmt(tx.quantite_delivree, 2)}` : "\u2014";
-    const total = tx ? `${_fmt(tx.prix_total, 2)} \u20ac` : "\u2014";
-    const temps = _formatTemps(tx ? tx.temps_charge : null);
-    const date = _formatDate(p.date_debut);
+    const kwh = txDisplay ? `${_fmt(txDisplay.quantite_delivree, 2)}` : "\u2014";
+    const total = txDisplay ? `${_fmt(txDisplay.prix_total, 2)} \u20ac` : "\u2014";
+    const temps = _formatTemps(txDisplay ? txDisplay.temps_charge : null);
+    const date = _formatDate(
+      txCurrent ? (p.date_debut || txCurrent.date_heure) : (txDisplay?.date_heure || p.date_debut),
+    );
     const num = _numAff(p);
     const typeLabel = isRapide ? "Rapide" : "Lent";
 
-    let actionBtn = "";
-    if (isDesact) {
-      actionBtn = `<button class="pe-btn pe-btn--activer" onclick="PompeElectricite.activer(${p.id_pompe})">Activer</button>`;
-    } else {
-      actionBtn = `<span class="pe-carte-label">${_lastCardLabel(p)}</span>`;
-    }
+    const toggleDisabled = isEnCours;
+    const topToggleBtn = _toggleBtnHTML(p, { disabled: toggleDisabled });
+    const actionBtn = `<span class="pe-carte-label">${_lastCardLabel(p)}</span>`;
 
     const borderColor = isEnCours
       ? "var(--warn)"
@@ -92,6 +108,7 @@ const PompeElectricite = (() => {
           <img class="pe-card-type-icon" src="${ELEC_ICON_SRC}" alt="" aria-hidden="true">
           <span class="pe-card-num">${num}</span>
           <span class="pe-card-type">${typeLabel}</span>
+          ${topToggleBtn}
           ${_ledHTML(p.statut)}
         </div>
         <div class="pe-card-date">${date}</div>
@@ -170,5 +187,31 @@ const PompeElectricite = (() => {
     }
   }
 
-  return { buildHTML, onData, activer };
+
+  async function toggle(idPompe) {
+    const btn = document.querySelector(`#pe-card-${idPompe} .pe-toggle-btn`);
+    const previous = btn ? btn.textContent : "";
+    if (btn) {
+      btn.disabled = true;
+      btn.textContent = "...";
+    }
+    try {
+      const result = await Requetes.togglePompe(idPompe);
+      const statut = String(result?.statut || "");
+      Toast.ok(
+        statut === "active"
+          ? `Borne ${idPompe} activée`
+          : `Borne ${idPompe} désactivée`,
+      );
+      if (typeof PompesPanelRefresh === "function") PompesPanelRefresh();
+    } catch (e) {
+      Toast.err(`Échec bascule : ${e.message}`);
+      if (btn) {
+        btn.disabled = false;
+        btn.textContent = previous || "⏻";
+      }
+    }
+  }
+
+  return { buildHTML, onData, activer, toggle };
 })();

@@ -15,6 +15,7 @@ use App\Controllers\IncidentController;
 use App\Controllers\ValidationController;
 use App\Controllers\BddController;
 use App\Controllers\SimulatorController;
+use App\Controllers\SseController;
 
 
 $uri = $_SERVER['REQUEST_URI'] ?? '';
@@ -93,6 +94,9 @@ $router->get('simulator', function () {
 $router->get( 'json/auth/session',  [new AuthController(), 'jsonSession']);
 $router->post('json/auth/logout',   [new AuthController(), 'jsonLogout']);
 
+// ── SSE (temps réel) ─────────────────────────────────────
+$router->get('events/pompes', [new SseController(), 'pompes']);
+
 // ── Articles & stock ─────────────────────────────────────
 $router->get('json/articles/random', [new CaisseController(), 'getRandomArticle']);
 $router->get('json/articles',        [new CaisseController(), 'getArticles']);
@@ -114,6 +118,7 @@ $router->post('json/fermetures/{id}/suppr', [new FermetureController(), 'delete'
 // ── Pompes ───────────────────────────────────────────────
 $router->get( 'json/pompes',                [new PompeController(), 'getAll']);
 $router->post('json/pompes/{id}/activer',   [new PompeController(), 'activer']);
+$router->post('json/pompes/{id}/toggle',    [new PompeController(), 'toggle']);
 $router->post('json/pompes/{id}/demarrer',  [new PompeController(), 'demarrer']);
 $router->post('json/pompes/{id}/terminer',  [new PompeController(), 'terminer']);
 $router->post('json/pompes/{id}/encaisser', [new PompeController(), 'encaisser']);

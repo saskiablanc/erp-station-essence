@@ -362,6 +362,8 @@ var Sim = (function() {
   var currentStep = 'select';
   var cces = [];
   var waitingForScan = false;
+  var pompesSse = null;
+  var pompesSseRetryTimer = null;
 
   // ══════════════════════════════════════════════════════
   //  BROADCAST CHANNEL — CCE
@@ -450,6 +452,45 @@ var Sim = (function() {
     }).catch(function(e) {
       log('pompe-log','err','Erreur chargement pompes : ' + e.message);
     });
+  }
+
+  function startPompesSSE() {
+    if (typeof EventSource === 'undefined') return;
+    if (pompesSse) return;
+
+    try {
+      pompesSse = new EventSource(API + '/events/pompes');
+    } catch (_) {
+      planPompesSSEReconnect();
+      return;
+    }
+
+    pompesSse.addEventListener('pompes-update', function() {
+      refreshPompes();
+    });
+
+    pompesSse.onopen = function() {
+      if (pompesSseRetryTimer) {
+        clearTimeout(pompesSseRetryTimer);
+        pompesSseRetryTimer = null;
+      }
+    };
+
+    pompesSse.onerror = function() {
+      if (pompesSse) {
+        pompesSse.close();
+        pompesSse = null;
+      }
+      planPompesSSEReconnect();
+    };
+  }
+
+  function planPompesSSEReconnect() {
+    if (pompesSseRetryTimer) return;
+    pompesSseRetryTimer = setTimeout(function() {
+      pompesSseRetryTimer = null;
+      startPompesSSE();
+    }, 3000);
   }
 
   function renderPompes() {
@@ -596,6 +637,7 @@ var Sim = (function() {
   function init() {
     initNav();
     refreshCCE();
+    startPompesSSE();
   }
 
   document.addEventListener('DOMContentLoaded', init);

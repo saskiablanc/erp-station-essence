@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace App\Controllers;
 
 use App\Core\Controller;
+use App\Core\SseBroker;
 use App\Models\Pompe;
 use RuntimeException;
 
@@ -95,6 +96,10 @@ final class PompeController extends Controller
 
         try {
             $result = $this->model->activer($idPompe);
+            SseBroker::publishPompesUpdate([
+                'action' => 'activer',
+                'id_pompe' => $idPompe,
+            ]);
             $this->json([
                 'id_pompe' => $result['id_pompe'],
                 'statut'   => $result['statut'],
@@ -103,6 +108,40 @@ final class PompeController extends Controller
         } catch (RuntimeException $e) {
             // Le code est encodé dans le message via convention (404, 409…)
             $code = $this->_parseErrorCode($e->getMessage());
+            $this->jsonError($e->getMessage(), $code);
+        }
+    }
+
+    // ──────────────────────────────────────────────────────────
+    //  POST /json/pompes/{id}/toggle
+    // ──────────────────────────────────────────────────────────
+
+    public function toggle(string $id): void
+    {
+        $this->requireAuth();
+
+        $idPompe = (int) $id;
+        if ($idPompe <= 0) {
+            $this->jsonError('Identifiant de pompe invalide.', 400);
+        }
+
+        try {
+            $result = $this->model->basculerActivation($idPompe);
+            SseBroker::publishPompesUpdate([
+                'action' => 'toggle',
+                'id_pompe' => $idPompe,
+                'statut' => $result['statut'] ?? null,
+            ]);
+            $this->json([
+                'id_pompe' => $result['id_pompe'],
+                'statut' => $result['statut'],
+                'message' => "Pompe $idPompe mise à jour.",
+            ]);
+        } catch (RuntimeException $e) {
+            $code = $e->getCode();
+            if ($code < 400 || $code > 599) {
+                $code = 400;
+            }
             $this->jsonError($e->getMessage(), $code);
         }
     }
@@ -140,6 +179,11 @@ final class PompeController extends Controller
                 $tempsCharge
             );
 
+            SseBroker::publishPompesUpdate([
+                'action' => 'demarrer',
+                'id_pompe' => $idPompe,
+                'id_transaction_energie' => $idTransactionEnergie,
+            ]);
             $this->json([
                 'success' => true,
                 'id_pompe' => $idPompe,
@@ -170,10 +214,33 @@ final class PompeController extends Controller
 
         try {
             $this->model->terminerLivraison($idPompe);
+            $pompe = $this->model->findById($idPompe);
+            $idTransaction = null;
+            $statut = 'desactivee';
+
+            // Pompes/chargeurs AUTO : paiement immédiat à la borne/pompe
+            // => réactivation automatique sans passage par la caisse.
+            if (($pompe['mode'] ?? '') === 'auto') {
+                $idTe = isset($pompe['id_transaction_energie']) && $pompe['id_transaction_energie'] !== ''
+                    ? (int) $pompe['id_transaction_energie']
+                    : 0;
+                if ($idTe > 0) {
+                    $idTransaction = $this->model->validerPaiement($idPompe, $idTe);
+                }
+                $statut = 'active';
+            }
+
+            SseBroker::publishPompesUpdate([
+                'action' => 'terminer',
+                'id_pompe' => $idPompe,
+                'statut' => $statut,
+                'id_transaction' => $idTransaction,
+            ]);
             $this->json([
                 'success' => true,
                 'id_pompe' => $idPompe,
-                'statut' => 'desactivee',
+                'statut' => $statut,
+                'id_transaction' => $idTransaction,
             ]);
         } catch (RuntimeException $e) {
             $code = $e->getCode();
@@ -215,6 +282,12 @@ final class PompeController extends Controller
                 $idTransactionEnergie,
                 $idTransaction
             );
+            SseBroker::publishPompesUpdate([
+                'action' => 'encaisser',
+                'id_pompe' => $idPompe,
+                'id_transaction_energie' => $idTransactionEnergie,
+                'id_transaction' => $idTransaction,
+            ]);
             $this->json([
                 'success' => true,
                 'id_pompe' => $idPompe,
