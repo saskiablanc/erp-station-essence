@@ -1,5 +1,6 @@
 const CceConsultPanel = (() => {
   const listeners = new Map();
+  const CCE_STORAGE_KEY = "cce_selected_card_id";
 
   function escapeHtml(value) {
     return String(value ?? "")
@@ -37,7 +38,25 @@ const CceConsultPanel = (() => {
       solde_client: Number(cce?.solde_client ?? 0) || 0,
     };
     window.CCESelection = selected;
+    try {
+      if (selected.id_carte_CE > 0) {
+        sessionStorage.setItem(CCE_STORAGE_KEY, String(selected.id_carte_CE));
+      } else {
+        sessionStorage.removeItem(CCE_STORAGE_KEY);
+      }
+    } catch (_) {}
     window.dispatchEvent(new CustomEvent("cce:selected", { detail: selected }));
+  }
+
+  function getRememberedCardId() {
+    const fromWindow = Number(window.CCESelection?.id_carte_CE ?? 0);
+    if (fromWindow > 0) return fromWindow;
+    try {
+      const fromStorage = Number(sessionStorage.getItem(CCE_STORAGE_KEY) || 0);
+      return fromStorage > 0 ? fromStorage : 0;
+    } catch (_) {
+      return 0;
+    }
   }
 
   function formatMoney(value) {
@@ -900,7 +919,7 @@ const CceConsultPanel = (() => {
       }
     };
 
-    const onPaymentSuccess = () => {
+    const onPaymentSuccess = (event) => {
       const currentRoot = document.getElementById("win-" + id);
       if (!currentRoot || !document.body.contains(currentRoot)) {
         window.removeEventListener("cce:created", onCreated);
@@ -910,6 +929,8 @@ const CceConsultPanel = (() => {
         return;
       }
 
+      const usedCce = Boolean(event?.detail?.usedCce);
+      if (!usedCce) return;
       resetConsultation(currentRoot);
     };
 
@@ -939,6 +960,11 @@ const CceConsultPanel = (() => {
     root._cceCurrentId = null;
 
     bindRefreshListeners(id, root);
+    const rememberedId = getRememberedCardId();
+    if (rememberedId > 0) {
+      void refresh(root, rememberedId);
+      return;
+    }
     renderScannerState(
       root,
       'Cliquez sur "Scanner CCE" pour sélectionner une carte.',
