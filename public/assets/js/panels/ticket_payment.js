@@ -1386,7 +1386,11 @@ window.TicketPayment = (() => {
       });
 
       window.dispatchEvent(new CustomEvent('stock:changed'));
-      window.dispatchEvent(new CustomEvent('caisse:payment:success'));
+      window.dispatchEvent(
+        new CustomEvent('caisse:payment:success', {
+          detail: { usedCce: cceAmountTotal > 0 },
+        }),
+      );
       return { status: 'success', responses: commitResult.responses };
     } catch (err) {
       await Swal.fire({

@@ -333,14 +333,32 @@
 <script>
 var Sim = (function() {
   // ── API helper ──
-  function api(method, route, body) {
+  function api(method, route, body, timeoutMs) {
+    var timeout = Number(timeoutMs || 10000);
+    var controller = (typeof AbortController !== 'undefined') ? new AbortController() : null;
     var opts = { method: method, headers: { 'Accept':'application/json', 'Content-Type':'application/json' } };
     if (body) opts.body = JSON.stringify(body);
+    if (controller) opts.signal = controller.signal;
+
+    var timeoutId = null;
+    if (controller && timeout > 0) {
+      timeoutId = setTimeout(function() {
+        controller.abort();
+      }, timeout);
+    }
+
     return fetch(API + route, opts).then(function(r) {
       return r.json().then(function(d) {
         if (!r.ok) throw new Error(d.message || 'Erreur ' + r.status);
         return d;
       });
+    }).catch(function(err) {
+      if (err && err.name === 'AbortError') {
+        throw new Error('Le serveur met trop de temps à répondre');
+      }
+      throw err;
+    }).finally(function() {
+      if (timeoutId) clearTimeout(timeoutId);
     });
   }
 
@@ -364,6 +382,8 @@ var Sim = (function() {
   var waitingForScan = false;
   var pompesSse = null;
   var pompesSseRetryTimer = null;
+  var startRequestRunning = false;
+  var endRequestRunning = false;
 
   // ══════════════════════════════════════════════════════
   //  BROADCAST CHANNEL — CCE
@@ -562,6 +582,7 @@ var Sim = (function() {
   }
 
   function demarrerLivraison() {
+    if (startRequestRunning) return;
     if (!selectedPompeId) return;
     var p = pompes.find(function(x) { return x.id_pompe == selectedPompeId; });
     if (!p) return;
@@ -577,6 +598,8 @@ var Sim = (function() {
     }
 
     var btn = document.getElementById('btn-demarrer');
+    if (!btn) return;
+    startRequestRunning = true;
     btn.disabled = true;
     btn.textContent = '...';
 
@@ -585,25 +608,34 @@ var Sim = (function() {
       log('pompe-log','ok','Livraison demarree sur ' + typeLabel + ' n' + p.numero + ' -- ' + body.quantite_delivree + ' ' + unit);
 
       var recap = document.getElementById('pompe-recap');
-      recap.innerHTML = 'En cours : <strong>' + (p.type_pompe === 'carburant' ? 'Pompe' : 'Borne')
-        + ' n' + p.numero + '</strong> -- ' + body.quantite_delivree + ' ' + unit;
+      if (recap) {
+        recap.innerHTML = 'En cours : <strong>' + (p.type_pompe === 'carburant' ? 'Pompe' : 'Borne')
+          + ' n' + p.numero + '</strong> -- ' + body.quantite_delivree + ' ' + unit;
+      }
 
       return refreshPompes().then(function() {
         setStep('end');
       });
     }).catch(function(e) {
       log('pompe-log','err','Echec demarrage : ' + e.message);
-      btn.disabled = false;
-      btn.textContent = 'Demarrer la livraison';
+    }).finally(function() {
+      startRequestRunning = false;
+      if (currentStep === 'start') {
+        btn.disabled = false;
+        btn.textContent = 'Demarrer la livraison';
+      }
     });
   }
 
   function terminerLivraison() {
+    if (endRequestRunning) return;
     if (!selectedPompeId) return;
     var p = pompes.find(function(x) { return x.id_pompe == selectedPompeId; });
     if (!p) return;
 
     var btn = document.getElementById('btn-terminer');
+    if (!btn) return;
+    endRequestRunning = true;
     btn.disabled = true;
     btn.textContent = '...';
 
@@ -615,13 +647,19 @@ var Sim = (function() {
       });
     }).catch(function(e) {
       log('pompe-log','err','Echec fin livraison : ' + e.message);
-      btn.disabled = false;
-      btn.textContent = 'Terminer la livraison';
+    }).finally(function() {
+      endRequestRunning = false;
+      if (currentStep === 'end') {
+        btn.disabled = false;
+        btn.textContent = 'Terminer la livraison';
+      }
     });
   }
 
   function resetPompe() {
     selectedPompeId = null;
+    startRequestRunning = false;
+    endRequestRunning = false;
     document.getElementById('pompe-select').innerHTML = '<option value="">Aucune</option>';
     document.getElementById('pompe-carburant-opts').style.display = 'none';
     document.getElementById('pompe-elec-opts').style.display = 'none';
