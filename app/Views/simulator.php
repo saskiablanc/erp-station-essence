@@ -108,6 +108,7 @@
       padding:0 12px; font-family:var(--mono); font-size:12px; color:var(--text);
       background:#fff; min-width:140px;
     }
+    .sim-field--full { width:100%; }
     .sim-field select { cursor:pointer; }
     .sim-field input[type=range] { padding:0; min-width:180px; }
 
@@ -169,6 +170,18 @@
 
     /* ── Range display ── */
     .sim-range-val { font-weight:600; color:var(--accent); min-width:60px; text-align:right; }
+
+    /* ── Carburants selector ── */
+    .sim-fuel-list { display:flex; flex-wrap:wrap; gap:8px; }
+    .sim-fuel-btn {
+      height:34px; padding:0 14px; border-radius:999px;
+      border:1.5px solid var(--border); background:#fff;
+      color:var(--text-mid); font-family:var(--mono); font-size:12px;
+      cursor:pointer; transition:all .12s;
+    }
+    .sim-fuel-btn:hover { border-color:var(--accent); color:var(--accent); }
+    .sim-fuel-btn.selected { background:var(--accent); border-color:var(--accent); color:#fff; }
+    .sim-fuel-empty { color:var(--text-dim); font-size:11px; }
 
     /* ── Waiting banner ── */
     .sim-waiting {
@@ -289,6 +302,12 @@
           <div id="pompe-step-start" style="display:none;">
             <div id="pompe-carburant-opts" style="display:none;">
               <div class="sim-row">
+                <div class="sim-field sim-field--full">
+                  <label>Type de carburant</label>
+                  <div id="pompe-fuel-buttons" class="sim-fuel-list"></div>
+                </div>
+              </div>
+              <div class="sim-row">
                 <div class="sim-field">
                   <label>Quantite (litres)</label>
                   <input type="range" id="pompe-qty" min="5" max="60" value="25" oninput="document.getElementById('pompe-qty-val').textContent=this.value+' L'">
@@ -376,7 +395,9 @@ var Sim = (function() {
 
   // ── State ──
   var pompes = [];
+  var carburants = [];
   var selectedPompeId = null;
+  var selectedCarburantId = null;
   var currentStep = 'select';
   var cces = [];
   var waitingForScan = false;
@@ -474,6 +495,55 @@ var Sim = (function() {
     });
   }
 
+  function refreshCarburants() {
+    return api('GET', '/json/pompes/carburants').then(function(data) {
+      carburants = Array.isArray(data) ? data : [];
+      renderCarburantsButtons();
+    }).catch(function(e) {
+      carburants = [];
+      renderCarburantsButtons();
+      log('pompe-log', 'err', 'Erreur chargement carburants : ' + e.message);
+    });
+  }
+
+  function getSelectedCarburant() {
+    return carburants.find(function(c) {
+      return Number(c.id_energie) === Number(selectedCarburantId);
+    }) || null;
+  }
+
+  function renderCarburantsButtons() {
+    var wrap = document.getElementById('pompe-fuel-buttons');
+    if (!wrap) return;
+
+    if (!carburants.length) {
+      selectedCarburantId = null;
+      wrap.innerHTML = '<span class="sim-fuel-empty">Aucun carburant disponible.</span>';
+      return;
+    }
+
+    var stillExists = carburants.some(function(c) {
+      return Number(c.id_energie) === Number(selectedCarburantId);
+    });
+    if (!stillExists) {
+      selectedCarburantId = Number(carburants[0].id_energie || 0);
+    }
+
+    wrap.innerHTML = carburants.map(function(c) {
+      var idEnergie = Number(c.id_energie || 0);
+      var selectedClass = idEnergie === Number(selectedCarburantId) ? ' selected' : '';
+      return '<button type="button" class="sim-fuel-btn' + selectedClass + '"'
+        + ' onclick="Sim.selectCarburant(' + idEnergie + ')">'
+        + esc(c.libelle || ('Carburant #' + idEnergie))
+        + '</button>';
+    }).join('');
+  }
+
+  function selectCarburant(idEnergie) {
+    selectedCarburantId = Number(idEnergie || 0);
+    renderCarburantsButtons();
+  }
+
   function startPompesSSE() {
     if (typeof EventSource === 'undefined') return;
     if (pompesSse) return;
@@ -552,6 +622,15 @@ var Sim = (function() {
 
     document.getElementById('pompe-carburant-opts').style.display = p.type_pompe === 'carburant' ? '' : 'none';
     document.getElementById('pompe-elec-opts').style.display = p.type_pompe === 'electricite' ? '' : 'none';
+    if (p.type_pompe === 'carburant') {
+      if (!carburants.length) {
+        refreshCarburants();
+      } else {
+        renderCarburantsButtons();
+      }
+    } else {
+      selectedCarburantId = null;
+    }
 
     setStep('start');
     renderPompes();
@@ -590,6 +669,11 @@ var Sim = (function() {
     var body = {};
     var unit;
     if (p.type_pompe === 'carburant') {
+      if (!selectedCarburantId) {
+        log('pompe-log', 'err', 'Veuillez choisir un type de carburant avant de démarrer.');
+        return;
+      }
+      body.id_energie = Number(selectedCarburantId);
       body.quantite_delivree = Number(document.getElementById('pompe-qty').value);
       unit = 'L';
     } else {
@@ -605,12 +689,14 @@ var Sim = (function() {
 
     api('POST', '/json/pompes/' + selectedPompeId + '/demarrer', body).then(function() {
       var typeLabel = p.type_pompe === 'carburant' ? 'pompe' : 'borne';
+      var carburant = p.type_pompe === 'carburant' ? getSelectedCarburant() : null;
+      var carburantSuffix = carburant ? (' [' + carburant.libelle + ']') : '';
       log('pompe-log','ok','Livraison demarree sur ' + typeLabel + ' n' + p.numero + ' -- ' + body.quantite_delivree + ' ' + unit);
 
       var recap = document.getElementById('pompe-recap');
       if (recap) {
         recap.innerHTML = 'En cours : <strong>' + (p.type_pompe === 'carburant' ? 'Pompe' : 'Borne')
-          + ' n' + p.numero + '</strong> -- ' + body.quantite_delivree + ' ' + unit;
+          + ' n' + p.numero + '</strong>' + carburantSuffix + ' -- ' + body.quantite_delivree + ' ' + unit;
       }
 
       return refreshPompes().then(function() {
@@ -658,6 +744,7 @@ var Sim = (function() {
 
   function resetPompe() {
     selectedPompeId = null;
+    selectedCarburantId = null;
     startRequestRunning = false;
     endRequestRunning = false;
     document.getElementById('pompe-select').innerHTML = '<option value="">Aucune</option>';
@@ -675,6 +762,7 @@ var Sim = (function() {
   function init() {
     initNav();
     refreshCCE();
+    refreshCarburants();
     startPompesSSE();
   }
 
@@ -686,6 +774,7 @@ var Sim = (function() {
     demarrerLivraison: demarrerLivraison,
     terminerLivraison: terminerLivraison,
     resetPompe: resetPompe,
+    selectCarburant: selectCarburant,
     refreshCCE: refreshCCE,
     selectCCE: selectCCE
   };

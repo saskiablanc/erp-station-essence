@@ -71,6 +71,22 @@ final class PompeController extends Controller
     }
 
     // ──────────────────────────────────────────────────────────
+    //  GET /json/pompes/carburants
+    // ──────────────────────────────────────────────────────────
+
+    public function getCarburants(): void
+    {
+        $this->requireAuth();
+
+        try {
+            $carburants = $this->model->getCarburantsDisponibles();
+            $this->json($carburants);
+        } catch (RuntimeException $e) {
+            $this->jsonError('Erreur lors de la récupération des carburants : ' . $e->getMessage(), 500);
+        }
+    }
+
+    // ──────────────────────────────────────────────────────────
     //  POST /json/pompes/{id}/activer
     // ──────────────────────────────────────────────────────────
 

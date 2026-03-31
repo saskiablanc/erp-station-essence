@@ -504,6 +504,30 @@ final class Pompe
     }
 
     /**
+     * Retourne la liste des carburants disponibles pour le simulateur.
+     *
+     * @return array<int, array{id_energie:int, libelle:string, prix_litre:float}>
+     */
+    public function getCarburantsDisponibles(): array
+    {
+        $rows = $this->db->query(
+            "SELECT c.id_energie, c.libelle, c.prix_litre
+             FROM Carburant c
+             JOIN Energie e ON e.id_energie = c.id_energie
+             WHERE e.type_energie = 'carburant'
+             ORDER BY c.libelle ASC"
+        )->fetchAll();
+
+        return array_map(static function (array $row): array {
+            return [
+                'id_energie' => (int) ($row['id_energie'] ?? 0),
+                'libelle' => (string) ($row['libelle'] ?? ''),
+                'prix_litre' => (float) ($row['prix_litre'] ?? 0),
+            ];
+        }, $rows);
+    }
+
+    /**
      * Paiement validé : desactivee → active + TransactionEnergie → payee
      * Transaction atomique.
      */

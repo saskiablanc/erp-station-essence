@@ -44,6 +44,24 @@ const PompeCarburant = (() => {
 
   let _pompes = [];
 
+  function _isTxInCaisse(idTransactionEnergie) {
+    const idTe = Number(idTransactionEnergie || 0);
+    if (idTe <= 0) return false;
+
+    const cart = window.__ticketCartShared;
+    if (!cart || typeof cart.getItems !== "function") return false;
+
+    const items = cart.getItems() || [];
+    return items.some((item) => {
+      const source = String(item?.source || "").toLowerCase();
+      const isEnergy = source === "energie" || source === "carburant" || source === "electricite";
+      return (
+        isEnergy &&
+        Number(item?.idTransactionEnergie || item?.id_transaction_energie || 0) === idTe
+      );
+    });
+  }
+
   function _fmt(n, dec) {
     if (n == null) return "\u2014";
     return parseFloat(n).toFixed(dec);
@@ -118,8 +136,12 @@ const PompeCarburant = (() => {
     const topToggleBtn = _toggleBtnHTML(p, { disabled: toggleDisabled });
 
     let actionBtn = "";
+    const inCaisse = txCurrent && _isTxInCaisse(txCurrent.id_transaction_energie);
+
     if (isManuel && isDesact && txCurrent) {
-      actionBtn = `<button class="pc-btn pc-btn--encaisser" onclick="PompeCarburant.encaisser(${p.id_pompe})">Encaisser</button>`;
+      actionBtn = inCaisse
+        ? `<button class="pc-btn pc-btn--encaisser pc-btn--disabled" disabled>En caisse...</button>`
+        : `<button class="pc-btn pc-btn--encaisser" onclick="PompeCarburant.encaisser(${p.id_pompe})">Encaisser</button>`;
     } else if (isManuel && isEnCours) {
       actionBtn = `<span class="pc-mode-badge" style="background:var(--warn-dim);color:var(--warn);border-color:var(--warn);">EN COURS</span>`;
     } else if (isManuel && isActive) {

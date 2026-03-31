@@ -21,6 +21,83 @@ window.TicketPayment = (() => {
     return Number(window.CCESelection?.id_carte_CE ?? 0);
   }
 
+  function setSelectedCce(cce) {
+    const selected = {
+      id_carte_CE: Number(cce?.id_carte_CE ?? 0) || 0,
+      nom: String(cce?.nom ?? ''),
+      prenom: String(cce?.prenom ?? ''),
+      solde_client: Number(cce?.solde_client ?? 0) || 0,
+    };
+    window.CCESelection = selected;
+    try {
+      if (selected.id_carte_CE > 0) {
+        sessionStorage.setItem('cce_selected_card_id', String(selected.id_carte_CE));
+      } else {
+        sessionStorage.removeItem('cce_selected_card_id');
+      }
+    } catch (_) {}
+    window.dispatchEvent(new CustomEvent('cce:selected', { detail: selected }));
+  }
+
+  async function requestCceScanFromSimulator() {
+    if (typeof BroadcastChannel === 'undefined') {
+      await Swal.fire({
+        ...swalBase,
+        icon: 'error',
+        title: 'Scan CCE indisponible',
+        html: 'Ce navigateur ne supporte pas le canal de communication du scan CCE.',
+        confirmButtonText: 'Fermer',
+      });
+      return null;
+    }
+
+    const channel = new BroadcastChannel('unica-cce-scan');
+    let onMessage = null;
+
+    try {
+      channel.postMessage({ type: 'cce-scan-request' });
+
+      const responsePromise = new Promise((resolve) => {
+        onMessage = (event) => {
+          if (event?.data?.type === 'cce-scan-response' && event?.data?.carte) {
+            resolve({ source: 'simulator', carte: event.data.carte });
+          }
+        };
+        channel.addEventListener('message', onMessage);
+      });
+
+      const popupPromise = Swal.fire({
+        ...swalBase,
+        title: 'Scanner CCE',
+        html: `
+          <div style="text-align:center;padding:10px 0;">
+            <div style="margin-bottom:14px;color:var(--text-mid,#4b5563);font-size:13px;">
+              En attente de la sélection d'une carte sur le site de simulation...
+            </div>
+            <div style="display:inline-block;width:10px;height:10px;border-radius:50%;background:var(--accent,#6366f1);animation:ticket-wait-pulse 1.2s ease-in-out infinite;"></div>
+            <style>@keyframes ticket-wait-pulse{0%,100%{opacity:.3}50%{opacity:1}}</style>
+          </div>
+        `,
+        showConfirmButton: false,
+        showCancelButton: true,
+        cancelButtonText: 'Annuler',
+        allowOutsideClick: false,
+      }).then(() => ({ source: 'swal' }));
+
+      const raceResult = await Promise.race([responsePromise, popupPromise]);
+      if (raceResult?.source === 'simulator' && raceResult.carte) {
+        Swal.close();
+        return raceResult.carte;
+      }
+      return null;
+    } finally {
+      if (onMessage) {
+        channel.removeEventListener('message', onMessage);
+      }
+      channel.close();
+    }
+  }
+
   function formatMoney(value) {
     return `${Number(value || 0).toFixed(2)} EUR`;
   }
@@ -985,16 +1062,24 @@ window.TicketPayment = (() => {
       return { idCarte: overrideId };
     }
 
-    const idCarte = getSelectedCceId();
+    let idCarte = getSelectedCceId();
     if (idCarte <= 0) {
-      await Swal.fire({
-        ...swalBase,
-        icon: 'error',
-        title: 'Carte CCE non scannée',
-        html: 'Scannez une carte CCE dans le panneau CCE avant de payer avec ce mode.',
-        confirmButtonText: 'Fermer',
-      });
-      return null;
+      const scanned = await requestCceScanFromSimulator();
+      if (!scanned) {
+        return null;
+      }
+      setSelectedCce(scanned);
+      idCarte = getSelectedCceId();
+      if (idCarte <= 0) {
+        await Swal.fire({
+          ...swalBase,
+          icon: 'error',
+          title: 'Carte CCE invalide',
+          html: 'Aucune carte CCE valide n’a été scannée.',
+          confirmButtonText: 'Fermer',
+        });
+        return null;
+      }
     }
 
     let cce = null;

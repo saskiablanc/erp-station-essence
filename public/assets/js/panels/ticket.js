@@ -32,6 +32,13 @@ const AchatsBridge = (() => {
   return { push, consumeWith };
 })();
 
+function getSharedTicketCart() {
+  if (!window.__ticketCartShared) {
+    window.__ticketCartShared = TicketCart.create();
+  }
+  return window.__ticketCartShared;
+}
+
 window.Achats = window.Achats || {};
 window.Achats.ajouterArticle = (article) => {
   AchatsBridge.push(article);
@@ -50,7 +57,7 @@ WM.register('ticket', {
     if (!root) return;
 
     const panel = root.querySelector('.ticket-panel');
-    const cart = TicketCart.create();
+    const cart = getSharedTicketCart();
 
     const escapeHtml = (value) =>
       String(value ?? '')
@@ -282,8 +289,14 @@ WM.register('ticket', {
       const row = btn.closest('.ticket-row');
       if (!row) return;
       const index = Number(row.dataset.index);
+      const removedItem = cart.getItems()?.[index] || null;
       cart.removeAt(index);
       render();
+      if (String(removedItem?.source || '').toLowerCase() === 'energie') {
+        if (typeof PompesPanelRefresh === 'function') {
+          PompesPanelRefresh();
+        }
+      }
     });
 
     if (typeof ResizeObserver !== 'undefined') {

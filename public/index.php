@@ -117,6 +117,7 @@ $router->post('json/fermetures/{id}/suppr', [new FermetureController(), 'delete'
 
 // ── Pompes ───────────────────────────────────────────────
 $router->get( 'json/pompes',                [new PompeController(), 'getAll']);
+$router->get( 'json/pompes/carburants',     [new PompeController(), 'getCarburants']);
 $router->post('json/pompes/{id}/activer',   [new PompeController(), 'activer']);
 $router->post('json/pompes/{id}/toggle',    [new PompeController(), 'toggle']);
 $router->post('json/pompes/{id}/demarrer',  [new PompeController(), 'demarrer']);
