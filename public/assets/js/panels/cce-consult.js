@@ -44,6 +44,34 @@ const CceConsultPanel = (() => {
     return `${Number(value || 0).toFixed(2)} EUR`;
   }
 
+  function formatConsultMoney(value) {
+    const amount = Number(value ?? 0);
+    if (!Number.isFinite(amount)) return "—";
+    return `${amount.toFixed(2)}€`;
+  }
+
+  function formatConsultQuantity(value) {
+    const quantity = Number(value ?? 0);
+    if (!Number.isFinite(quantity)) return "—";
+    return `${quantity.toFixed(1)}L`;
+  }
+
+  function formatConsultDate(value) {
+    if (!value) return "—";
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return "—";
+    const pad = (part) => String(part).padStart(2, "0");
+    return `${pad(date.getDate())}/${pad(date.getMonth() + 1)}/${date.getFullYear()}`;
+  }
+
+  function formatConsultTime(value) {
+    if (!value) return "—";
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return "—";
+    const pad = (part) => String(part).padStart(2, "0");
+    return `${pad(date.getHours())}:${pad(date.getMinutes())}`;
+  }
+
   function wait(ms) {
     return new Promise((resolve) => setTimeout(resolve, ms));
   }
@@ -649,7 +677,7 @@ const CceConsultPanel = (() => {
       return;
     }
     if (action === "transactions") {
-      await openTransactionsPopup(cceCourante);
+      await openTransactionsPopup(root, cceCourante);
       return;
     }
     if (action === "bonus") {
@@ -704,53 +732,109 @@ const CceConsultPanel = (() => {
     }
   }
 
-  async function openTransactionsPopup(cce) {
+  async function openTransactionsPopup(root, cce) {
     try {
       const payload = await Requetes.getCCETransactions(
         Number(cce.id_carte_CE),
       );
-      const columns = Array.isArray(payload?.columns) ? payload.columns : [];
       const rows = Array.isArray(payload?.rows) ? payload.rows : [];
-
-      const headHtml = columns
-        .map((column) => `<th>${escapeHtml(column)}</th>`)
-        .join("");
-
       const bodyHtml = rows
         .map(
           (row) => `
-          <tr>
-            ${columns
-              .map((column) => `<td>${escapeHtml(row?.[column] ?? "—")}</td>`)
-              .join("")}
-          </tr>
-        `,
+            <tr>
+              <td>${escapeHtml(row?.id_transaction ?? "—")}</td>
+              <td>${escapeHtml(row?.carburant ?? "—")}</td>
+              <td>${escapeHtml(formatConsultQuantity(row?.quantite))}</td>
+              <td>${escapeHtml(formatConsultMoney(row?.montant_total))}</td>
+              <td>${escapeHtml(formatConsultDate(row?.date_heure))}</td>
+              <td>${escapeHtml(formatConsultTime(row?.date_heure))}</td>
+            </tr>
+          `,
         )
         .join("");
 
+      const lastAmount = Number(cce?.montant_dernier_apport ?? 0);
+      const lastDate = cce?.date_dernier_apport
+        ? formatConsultDate(cce.date_dernier_apport)
+        : "—";
+
       await Swal.fire({
         title: `Transactions CCE — carte #${escapeHtml(cce.id_carte_CE)}`,
-        html:
-          columns.length > 0
-            ? rows.length > 0
-              ? `
-              <div class="cce-consult-popup-wrap">
-                <table class="cce-consult-popup-table">
-                  <thead><tr>${headHtml}</tr></thead>
-                  <tbody>${bodyHtml}</tbody>
-                </table>
+        html: `
+          <div class="cce-transactions-view">
+            <div class="cce-transactions-meta">
+              <div class="cce-transactions-meta-cell">
+                <span class="cce-transactions-meta-label">ID CCE</span>
+                <span class="cce-transactions-meta-value">${escapeHtml(cce?.id_carte_CE ?? "—")}</span>
               </div>
-            `
-              : `<div class="cce-consult-popup-empty">Aucune transaction CCE pour cette carte.</div>`
-            : `<div class="cce-consult-popup-empty">Aucune colonne exploitable dans Transaction.</div>`,
+              <div class="cce-transactions-meta-cell">
+                <span class="cce-transactions-meta-label">ID CLIENT</span>
+                <span class="cce-transactions-meta-value">${escapeHtml(cce?.id_client ?? "—")}</span>
+              </div>
+              <div class="cce-transactions-meta-cell">
+                <span class="cce-transactions-meta-label">Nom</span>
+                <span class="cce-transactions-meta-value">${escapeHtml(cce?.nom ?? "—")}</span>
+              </div>
+              <div class="cce-transactions-meta-cell">
+                <span class="cce-transactions-meta-label">Prénom</span>
+                <span class="cce-transactions-meta-value">${escapeHtml(cce?.prenom ?? "—")}</span>
+              </div>
+              <div class="cce-transactions-meta-cell cce-transactions-meta-cell--solde">
+                <span class="cce-transactions-meta-label">Solde</span>
+                <span class="cce-transactions-meta-value">${escapeHtml(formatConsultMoney(cce?.solde_client))}</span>
+              </div>
+            </div>
+
+            <div class="cce-transactions-subhead">
+              <div class="cce-transactions-last">
+                Dernier apport : ${escapeHtml(formatConsultMoney(lastAmount))} (${escapeHtml(lastDate)})
+              </div>
+              <button type="button" class="cce-transactions-recharge" data-cce-transactions-recharge>
+                Rechargement CCE
+              </button>
+            </div>
+
+            <div class="cce-transactions-title">Transactions</div>
+
+            <div class="cce-transactions-table-wrap">
+              <table class="cce-transactions-table">
+                <thead>
+                  <tr>
+                    <th>ID Transaction</th>
+                    <th>Carburants</th>
+                    <th>Quantité</th>
+                    <th>Montant Total</th>
+                    <th>Date</th>
+                    <th>Heure</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${
+                    rows.length > 0
+                      ? bodyHtml
+                      : '<tr><td colspan="6" class="cce-transactions-empty">Aucune transaction carburant CCE pour cette carte.</td></tr>'
+                  }
+                </tbody>
+              </table>
+            </div>
+          </div>
+        `,
         customClass: {
-          popup: "cce-swal-popup",
+          popup: "cce-swal-popup cce-swal-popup-transactions",
           title: "cce-swal-title",
           htmlContainer: "cce-swal-text",
           confirmButton: "cce-swal-btn",
         },
         buttonsStyling: false,
         confirmButtonText: "Fermer",
+        didOpen: (popup) => {
+          popup
+            .querySelector("[data-cce-transactions-recharge]")
+            ?.addEventListener("click", async () => {
+              Swal.close();
+              await openRechargePopup(root, cce);
+            });
+        },
       });
     } catch (error) {
       await Swal.fire({

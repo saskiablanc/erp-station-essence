@@ -16,3 +16,8 @@ Thumbs.db
 # Config db
 
 config/database.php
+
+
+.yml
+
+.env

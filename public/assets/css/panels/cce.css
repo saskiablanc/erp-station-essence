@@ -534,3 +534,164 @@
   border-radius: 14px;
   background: rgba(255, 255, 255, 0.86);
 }
+
+.swal2-popup.cce-swal-popup.cce-swal-popup-transactions {
+  width: min(74rem, 96vw);
+}
+
+.cce-transactions-view {
+  border: 2px solid var(--border);
+  border-radius: 16px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.9);
+}
+
+.cce-transactions-meta {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  border-bottom: 1px solid var(--border);
+}
+
+.cce-transactions-meta-cell {
+  min-height: 60px;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 4px;
+  border-right: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.84);
+  text-align: center;
+}
+
+.cce-transactions-meta-cell:last-child {
+  border-right: 0;
+}
+
+.cce-transactions-meta-cell--solde {
+  background: rgba(209, 250, 229, 0.22);
+}
+
+.cce-transactions-meta-label {
+  color: var(--text-dim);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+}
+
+.cce-transactions-meta-value {
+  color: var(--text);
+  font-family: var(--display);
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.cce-transactions-subhead {
+  min-height: 56px;
+  padding: 0 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border-bottom: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.78);
+}
+
+.cce-transactions-last {
+  color: var(--text);
+  font-size: 13px;
+}
+
+.cce-transactions-recharge {
+  min-height: 36px;
+  padding: 0 16px;
+  border: 2px solid var(--border);
+  border-radius: 12px;
+  background: var(--btn-grad);
+  color: var(--accent);
+  box-shadow: var(--shadow-soft);
+  font-family: var(--display);
+  font-size: 13px;
+}
+
+.cce-transactions-title {
+  padding: 8px 14px;
+  border-bottom: 1px solid var(--border);
+  background: rgba(244, 242, 254, 0.55);
+  color: var(--text);
+  font-family: var(--display);
+  font-size: 16px;
+  font-weight: 600;
+  text-align: center;
+}
+
+.cce-transactions-table-wrap {
+  max-height: min(54vh, 520px);
+  overflow: auto;
+}
+
+.cce-transactions-table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+  background: rgba(255, 255, 255, 0.92);
+}
+
+.cce-transactions-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  padding: 10px 8px;
+  border-right: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.97);
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 600;
+  text-align: center;
+}
+
+.cce-transactions-table thead th:last-child {
+  border-right: 0;
+}
+
+.cce-transactions-table tbody td {
+  height: 58px;
+  padding: 12px 8px;
+  border-right: 1px solid var(--border);
+  border-bottom: 1px dashed rgba(123, 97, 255, 0.28);
+  color: var(--text-mid);
+  font-size: 12px;
+  text-align: center;
+  vertical-align: middle;
+}
+
+.cce-transactions-table tbody td:last-child {
+  border-right: 0;
+}
+
+.cce-transactions-empty {
+  color: var(--text-dim);
+  font-style: italic;
+}
+
+@media (max-width: 900px) {
+  .swal2-popup.cce-swal-popup.cce-swal-popup-transactions {
+    width: min(96vw, 96vw);
+    padding: 1rem;
+  }
+
+  .cce-transactions-meta {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .cce-transactions-meta-cell--solde {
+    grid-column: 1 / -1;
+  }
+
+  .cce-transactions-subhead {
+    flex-direction: column;
+    align-items: stretch;
+    padding: 10px 12px;
+  }
+}
