@@ -72,6 +72,22 @@ const PompeCarburant = (() => {
     return mode === "CCE" ? "CCE" : "Carte bancaire";
   }
 
+  function _toggleBtnHTML(p, options = {}) {
+    const disabled = Boolean(options.disabled);
+    const isOn = p.statut === "active";
+    const title =
+      isOn ? "Désactiver" : "Activer";
+    return `
+      <button
+        type="button"
+        class="pc-toggle-btn ${isOn ? "is-on" : "is-off"}${disabled ? " is-disabled" : ""}"
+        onclick="PompeCarburant.toggle(${p.id_pompe})"
+        title="${title}"
+        ${disabled ? "disabled" : ""}
+      >⏻</button>
+    `;
+  }
+
   function _cardHTML(p) {
     const txCurrent = p.transaction || null;
     const txLast = p.derniere_transaction || null;
@@ -79,6 +95,7 @@ const PompeCarburant = (() => {
     const carb = txDisplay ? txDisplay.libelle : null;
     const colors = carb ? CARBURANT_COLORS[carb] || {} : {};
     const isManuel = p.mode === "manuel";
+    const isAuto = !isManuel;
     const isDesact = p.statut === "desactivee";
     const isEnCours = p.statut === "en_cours";
     const isActive = p.statut === "active";
@@ -97,11 +114,12 @@ const PompeCarburant = (() => {
       txCurrent ? (p.date_debut || txCurrent.date_heure) : (txDisplay?.date_heure || p.date_debut),
     );
 
+    const toggleDisabled = isEnCours || (isDesact && txCurrent && !isAuto);
+    const topToggleBtn = _toggleBtnHTML(p, { disabled: toggleDisabled });
+
     let actionBtn = "";
     if (isManuel && isDesact && txCurrent) {
       actionBtn = `<button class="pc-btn pc-btn--encaisser" onclick="PompeCarburant.encaisser(${p.id_pompe})">Encaisser</button>`;
-    } else if (isDesact && !txCurrent) {
-      actionBtn = `<button class="pc-btn pc-btn--activer" onclick="PompeCarburant.activer(${p.id_pompe})">Activer</button>`;
     } else if (isManuel && isEnCours) {
       actionBtn = `<span class="pc-mode-badge" style="background:var(--warn-dim);color:var(--warn);border-color:var(--warn);">EN COURS</span>`;
     } else if (isManuel && isActive) {
@@ -124,6 +142,7 @@ const PompeCarburant = (() => {
             <span class="pc-card-num">${p.numero}</span>
             <span class="pc-card-mode-label${!isManuel ? " auto" : ""}">${isManuel ? "MANUEL" : "AUTO"}</span>
           </div>
+          ${topToggleBtn}
           ${_ledHTML(p.statut)}
         </div>
         <div class="pc-card-date">${date}</div>
@@ -230,5 +249,30 @@ const PompeCarburant = (() => {
     }
   }
 
-  return { buildHTML, onData, encaisser, activer };
+  async function toggle(idPompe) {
+    const btn = document.querySelector(`#pc-card-${idPompe} .pc-toggle-btn`);
+    const previous = btn ? btn.textContent : "";
+    if (btn) {
+      btn.disabled = true;
+      btn.textContent = "...";
+    }
+    try {
+      const result = await Requetes.togglePompe(idPompe);
+      const statut = String(result?.statut || "");
+      Toast.ok(
+        statut === "active"
+          ? `Pompe ${idPompe} activée`
+          : `Pompe ${idPompe} désactivée`,
+      );
+      if (typeof PompesPanelRefresh === "function") PompesPanelRefresh();
+    } catch (e) {
+      Toast.err(`Échec bascule : ${e.message}`);
+      if (btn) {
+        btn.disabled = false;
+        btn.textContent = previous || "⏻";
+      }
+    }
+  }
+
+  return { buildHTML, onData, encaisser, activer, toggle };
 })();

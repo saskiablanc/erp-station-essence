@@ -279,6 +279,76 @@ final class Pompe
     }
 
     /**
+     * Bascule l'activation manuelle d'une pompe :
+     * active <-> desactivee
+     * (interdit pendant une livraison en cours et pendant une transaction
+     * énergie en attente d'encaissement).
+     *
+     * @throws RuntimeException code 404 si introuvable, 409 si verrouillée
+     */
+    public function basculerActivation(int $idPompe): array
+    {
+        $pompe = $this->findById($idPompe);
+        if (!$pompe) {
+            throw new RuntimeException("Pompe $idPompe introuvable.", 404);
+        }
+
+        $statut = (string) ($pompe['statut'] ?? '');
+        $idTransactionEnergie = isset($pompe['id_transaction_energie']) && $pompe['id_transaction_energie'] !== ''
+            ? (int) $pompe['id_transaction_energie']
+            : 0;
+
+        if ($statut === 'en_cours') {
+            throw new RuntimeException("La pompe {$pompe['numero']} est en cours de livraison.", 409);
+        }
+
+        if ($statut === 'desactivee' && $idTransactionEnergie > 0) {
+            if (($pompe['mode'] ?? '') === 'auto') {
+                $pkColumn = $this->getTransactionEnergiePkColumn();
+                $pkQuoted = sprintf('`%s`', str_replace('`', '``', $pkColumn));
+                $te = $this->db->query(
+                    sprintf(
+                        "SELECT statut
+                         FROM TransactionEnergie
+                         WHERE %s = ?
+                         LIMIT 1",
+                        $pkQuoted
+                    ),
+                    [$idTransactionEnergie]
+                )->fetch();
+
+                if (!$te || ($te['statut'] ?? '') === 'payee') {
+                    $this->db->execute(
+                        "UPDATE Pompe
+                         SET statut = 'active', date_debut = NULL, id_transaction_energie = NULL
+                         WHERE id_pompe = ?",
+                        [$idPompe]
+                    );
+                    return ['id_pompe' => $idPompe, 'statut' => 'active'];
+                }
+
+                $this->validerPaiement($idPompe, $idTransactionEnergie);
+                return ['id_pompe' => $idPompe, 'statut' => 'active'];
+            }
+
+            throw new RuntimeException(
+                "La pompe {$pompe['numero']} est en attente d'encaissement.",
+                409
+            );
+        }
+
+        $next = ($statut === 'active') ? 'desactivee' : 'active';
+        $this->db->execute(
+            "UPDATE Pompe
+             SET statut = ?, date_debut = NULL
+             WHERE id_pompe = ?",
+            [$next, $idPompe]
+        );
+
+        return ['id_pompe' => $idPompe, 'statut' => $next];
+    }
+
+    /**
      * Démarre une livraison : active → en_cours
      * Appelé à la création d'une TransactionEnergie.
      */

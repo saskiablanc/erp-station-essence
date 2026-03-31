@@ -60,6 +60,7 @@ const Requetes = (() => {
     // ── Sprint 3 ──────────────────────────────────────────
     getPompes: () => appel("GET", "/json/pompes"),
     activerPompe: (id) => appel("POST", `/json/pompes/${id}/activer`),
+    togglePompe: (id) => appel("POST", `/json/pompes/${id}/toggle`),
     demarrerPompe: (id, data) =>
       appel("POST", `/json/pompes/${id}/demarrer`, data),
     terminerPompe: (id) => appel("POST", `/json/pompes/${id}/terminer`),
