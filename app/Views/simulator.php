@@ -995,12 +995,16 @@ var Sim = (function() {
     if (selectedAutoPaymentMethod === 'cce') {
       cceSelectWrap.style.display = '';
 
-      if ((!selectedCceCard || Number(selectedCceCard.id_carte_CE || 0) <= 0) && cces.length > 0) {
-        selectedCceCard = cces[0];
+      var cceList = cces.slice().sort(function(a, b) {
+        return Number(a.id_carte_CE || 0) - Number(b.id_carte_CE || 0);
+      });
+
+      if ((!selectedCceCard || Number(selectedCceCard.id_carte_CE || 0) <= 0) && cceList.length > 0) {
+        selectedCceCard = cceList[0];
       }
 
-      if (cces.length > 0) {
-        cceSelect.innerHTML = cces.map(function(c) {
+      if (cceList.length > 0) {
+        cceSelect.innerHTML = cceList.map(function(c) {
           var id = Number(c.id_carte_CE || 0);
           var selected = selectedCceCard && Number(selectedCceCard.id_carte_CE || 0) === id ? ' selected' : '';
           var label = 'Carte #' + id + ' — ' + (c.prenom || '') + ' ' + (c.nom || '') + ' — ' + Number(c.solde_client || 0).toFixed(2) + ' EUR';
