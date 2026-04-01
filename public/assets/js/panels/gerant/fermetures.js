@@ -274,6 +274,8 @@ WM.register("gerant_fermetures", {
   label: "Jours de fermetures de la boutique",
   icon: "JFB",
   sprint: 6,
+  fullscreenMinWidth: 860,
+  fullscreenMinHeight: 540,
   gerantOnly: true,
   buildHTML() {
     return GerantFermeturesPanel.buildHTML();

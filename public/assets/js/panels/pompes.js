@@ -9,6 +9,8 @@ WM.register("pompes", {
   label: "Pompes",
   icon: "PMP",
   sprint: 3,
+  fullscreenMinWidth: 1320,
+  fullscreenMinHeight: 700,
 
   buildHTML() {
     const carbHTML =

@@ -35,7 +35,7 @@
   background: rgba(255, 255, 255, 0.6);
   border-top: 1px solid var(--border);
   flex-shrink: 0;
-  font-size: 10px;
+  font-size: 11px;
   color: var(--text-dim);
 }
 .pompes-statusbar-dot {
@@ -62,7 +62,7 @@
   border: 1px solid var(--border);
   background: transparent;
   color: var(--text-dim);
-  font-size: 10px;
+  font-size: 11px;
   cursor: pointer;
   transition: all 0.12s;
 }
@@ -103,7 +103,7 @@
 
 .pompes-section-label {
   font-family: var(--display);
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 700;
   color: var(--text-mid);
   text-transform: uppercase;
@@ -174,14 +174,14 @@
 }
 .pc-card-num {
   font-family: var(--display);
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 800;
   color: var(--text);
   line-height: 1;
   flex-shrink: 0;
 }
 .pc-card-mode-label {
-  font-size: 8px;
+  font-size: 9px;
   font-weight: 700;
   color: var(--text-dim);
   letter-spacing: 0.2px;
@@ -242,7 +242,7 @@
 
 /* Date */
 .pc-card-date {
-  font-size: 7px;
+  font-size: 8px;
   color: var(--text-dim);
   font-family: var(--mono);
   min-height: 10px;
@@ -265,14 +265,14 @@
   min-width: 0;
 }
 .pc-row-label {
-  font-size: 8px;
+  font-size: 9px;
   color: var(--text-dim);
   white-space: nowrap;
   flex-shrink: 0;
 }
 .pc-row-val {
   font-family: var(--mono);
-  font-size: 9px;
+  font-size: 10px;
   font-weight: 600;
   color: var(--text-mid);
   min-width: 30px;
@@ -291,7 +291,7 @@
 
 /* Badge carburant coloré */
 .pc-carb-badge {
-  font-size: 8px;
+  font-size: 9px;
   padding: 1px 4px;
   border-radius: 3px;
   border: 1px solid;
@@ -325,7 +325,7 @@
   border-radius: 5px;
   border: 1.5px solid var(--border);
   font-family: var(--mono);
-  font-size: 9px;
+  font-size: 10px;
   font-weight: 700;
   cursor: pointer;
   transition: all 0.15s;
@@ -383,7 +383,7 @@
   border: 1px solid var(--border);
   background: var(--surface2);
   font-family: var(--mono);
-  font-size: 9px;
+  font-size: 10px;
   font-weight: 700;
   color: var(--text-dim);
   letter-spacing: 0.5px;
@@ -441,7 +441,7 @@
 /* Labels sous-section */
 .pe-subsection-label {
   font-family: var(--display);
-  font-size: 9px;
+  font-size: 10px;
   font-weight: 600;
   color: var(--text-dim);
   text-transform: uppercase;
@@ -516,14 +516,14 @@
 }
 .pe-card-num {
   font-family: var(--display);
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 800;
   color: var(--text);
   line-height: 1;
   flex-shrink: 0;
 }
 .pe-card-type {
-  font-size: 8px;
+  font-size: 9px;
   color: var(--text-dim);
   font-weight: 600;
   flex: 1;
@@ -574,7 +574,7 @@
 
 /* Date */
 .pe-card-date {
-  font-size: 7px;
+  font-size: 8px;
   color: var(--text-dim);
   font-family: var(--mono);
   min-height: 12px;
@@ -597,14 +597,14 @@
   min-width: 0;
 }
 .pe-row-label {
-  font-size: 7px;
+  font-size: 8px;
   color: var(--text-dim);
   white-space: nowrap;
   flex-shrink: 0;
 }
 .pe-row-val {
   font-family: var(--mono);
-  font-size: 8px;
+  font-size: 9px;
   font-weight: 600;
   color: var(--text-mid);
   min-width: 24px;
@@ -633,7 +633,7 @@
   background: rgba(245, 158, 11, 0.1);
   color: var(--warn);
   font-family: var(--mono);
-  font-size: 8px;
+  font-size: 9px;
   font-weight: 700;
   cursor: pointer;
   transition: all 0.12s;
@@ -659,7 +659,7 @@
   border: 1px solid var(--border);
   background: var(--surface2);
   font-family: var(--mono);
-  font-size: 8px;
+  font-size: 9px;
   font-weight: 700;
   color: var(--text-dim);
   letter-spacing: 0.5px;

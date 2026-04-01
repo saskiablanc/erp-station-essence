@@ -203,6 +203,84 @@ const WM = (() => {
     PANELS[id] = def;
   }
 
+  function getMaxViewportBounds() {
+    return {
+      maxW: Math.max(320, Math.floor(window.innerWidth * 0.94)),
+      maxH: Math.max(240, Math.floor(window.innerHeight * 0.9)),
+    };
+  }
+
+  function fitMaximizedWindow(el) {
+    if (!el || !el._maxOverlay) return;
+
+    const def = PANELS[el.dataset.id] || {};
+    const title = el.querySelector(".win-title");
+    const body = el.querySelector(".win-body");
+    if (!title || !body) return;
+
+    const { maxW, maxH } = getMaxViewportBounds();
+    const contentRoot = body.firstElementChild;
+
+    el.style.maxWidth = maxW + "px";
+    el.style.maxHeight = maxH + "px";
+    el.style.width = "auto";
+    el.style.height = "auto";
+
+    const prevOverflow = body.style.overflow;
+    body.style.overflow = "visible";
+
+    const contentWidth = Math.max(
+      el.scrollWidth,
+      title.scrollWidth + 24,
+      body.scrollWidth,
+      contentRoot?.scrollWidth || 0,
+    );
+    const minWidth = Math.max(
+      320,
+      Number(def.fullscreenMinWidth || 0),
+    );
+    const targetWidth = Math.min(maxW, Math.max(minWidth, Math.ceil(contentWidth)));
+
+    const contentHeight = Math.max(
+      el.scrollHeight,
+      title.offsetHeight + body.scrollHeight,
+      title.offsetHeight + (contentRoot?.scrollHeight || 0),
+    );
+    const minHeight = Math.max(
+      160,
+      Number(def.fullscreenMinHeight || 0),
+    );
+    const targetHeight = Math.min(maxH, Math.max(minHeight, Math.ceil(contentHeight)));
+
+    el._maxFitWidth = targetWidth;
+    el._maxFitHeight = targetHeight;
+    el.style.width = targetWidth + "px";
+    el.style.height = targetHeight + "px";
+    body.style.overflow = prevOverflow;
+  }
+
+  function unbindMaximizedFit(el) {
+    if (!el) return;
+    if (el._maxFitRaf) {
+      cancelAnimationFrame(el._maxFitRaf);
+      el._maxFitRaf = null;
+    }
+    if (el._maxResizeObserver) {
+      el._maxResizeObserver.disconnect();
+      el._maxResizeObserver = null;
+    }
+    if (el._maxMutationObserver) {
+      el._maxMutationObserver.disconnect();
+      el._maxMutationObserver = null;
+    }
+    if (el._maxWindowResizeHandler) {
+      window.removeEventListener("resize", el._maxWindowResizeHandler);
+      el._maxWindowResizeHandler = null;
+    }
+    el._maxFitWidth = null;
+    el._maxFitHeight = null;
+  }
+
   // ── Maximize / Restore ───────────────────────────────────
   function maximize(id) {
     const el = document.getElementById("win-" + id);
@@ -236,17 +314,19 @@ const WM = (() => {
     el._maxOverlay = overlay;
     el.classList.add("maximized");
 
-    // Style pour remplir le popup
+    // Style fullscreen responsive au contenu du panel
     el.style.cssText = [
       "position:relative",
-      "width:min(92vw,1100px)",
-      "height:min(88vh,780px)",
+      "width:auto",
+      "height:auto",
+      "max-width:94vw",
+      "max-height:90vh",
       "z-index:auto",
       "transform:none",
-      "animation:wmMaxSlideUp 0.2s cubic-bezier(0.25,0.46,0.45,0.94)",
     ].join(";");
     el.dataset.x = 0;
     el.dataset.y = 0;
+    fitMaximizedWindow(el);
 
     // Remplacer le bouton min par un bouton fermer ✕
     const minBtn = el.querySelector(".wc.min");
@@ -268,6 +348,8 @@ const WM = (() => {
   function restoreFromMax(id) {
     const el = document.getElementById("win-" + id);
     if (!el || !el._maxOverlay) return;
+
+    unbindMaximizedFit(el);
 
     const overlay = el._maxOverlay;
     const prevParent = el._maxPrevParent || document.getElementById("canvas");
