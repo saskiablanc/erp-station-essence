@@ -30,6 +30,18 @@ const GerantFermeturesPanel = (() => {
       .replaceAll("'", "&#39;");
   }
 
+  function confirmAction(icon, title, text, confirmText) {
+    return Swal.fire({
+      icon: icon || "question",
+      title: title || "",
+      text: text || "",
+      showCancelButton: true,
+      confirmButtonText: confirmText || "Confirmer",
+      cancelButtonText: "Annuler",
+      allowOutsideClick: false,
+    });
+  }
+
   function sortRows(rows) {
     rows.sort((a, b) => {
       // Sort by month-day regardless of year
@@ -184,6 +196,16 @@ const GerantFermeturesPanel = (() => {
         return;
       }
 
+      const confirmAdd = await confirmAction(
+        "question",
+        recurrent ? "Ajouter un jour annuel ?" : "Ajouter un jour exceptionnel ?",
+        recurrent
+          ? "Ce jour de fermeture sera répété chaque année."
+          : "Ce jour de fermeture sera ajouté une seule fois.",
+        "Confirmer l'ajout",
+      );
+      if (!confirmAdd.isConfirmed) return;
+
       if (submit) submit.disabled = true;
       try {
         const created = await Requetes.createFermeture({
@@ -222,6 +244,17 @@ const GerantFermeturesPanel = (() => {
 
       const rowId = Number(btn.dataset.gfDelete || 0);
       if (rowId <= 0) return;
+      const row = state.rows.find((item) => item.id === rowId);
+
+      const confirmDelete = await confirmAction(
+        "warning",
+        "Supprimer ce jour de fermeture ?",
+        row
+          ? `${row.motif} — ${toFrDate(row.date, row.recurrent)}`
+          : "Cette action est irréversible.",
+        "Supprimer",
+      );
+      if (!confirmDelete.isConfirmed) return;
 
       try {
         await Requetes.deleteFermeture(rowId);

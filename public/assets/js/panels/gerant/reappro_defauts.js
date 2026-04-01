@@ -24,6 +24,32 @@ WM.register("gerant_reappro_defauts", {
     var allData = [];
     var modified = {};
 
+    function showPopup(type, title, text) {
+      return Swal.fire({
+        icon: type || "info",
+        title: title || "",
+        text: text || "",
+        confirmButtonText: "Fermer",
+        allowOutsideClick: false,
+      });
+    }
+
+    function confirmSave(count) {
+      return Swal.fire({
+        icon: "question",
+        title: "Confirmer les nouvelles valeurs ?",
+        text:
+          "Les paramètres de réapprovisionnement seront mis à jour pour " +
+          count +
+          " article" +
+          (count > 1 ? "s." : "."),
+        showCancelButton: true,
+        confirmButtonText: "Confirmer",
+        cancelButtonText: "Annuler",
+        allowOutsideClick: false,
+      });
+    }
+
     function formatTypeLabel(type) {
       var value = String(type || "").trim();
       if (!value) return "Non défini";
@@ -172,24 +198,33 @@ WM.register("gerant_reappro_defauts", {
     // US20 critère 3-4 : sauvegarder toutes les modifications + confirmation
     btnConfirm.addEventListener("click", async function () {
       var ids = Object.keys(modified);
-      if (ids.length === 0) return;
+      if (ids.length === 0) {
+        await showPopup(
+          "info",
+          "Aucune modification",
+          "Aucune valeur n'a été modifiée.",
+        );
+        return;
+      }
+
+      var confirm = await confirmSave(ids.length);
+      if (!confirm.isConfirmed) return;
 
       try {
         for (var i = 0; i < ids.length; i++) {
           await Requetes.updateValeurDefaut(ids[i], modified[ids[i]]);
         }
-        // US20 critère 4 : message de confirmation
-        Toast.ok(
-          "Valeurs enregistrées (" +
-            ids.length +
+        await showPopup(
+          "success",
+          "Valeurs enregistrées",
+          ids.length +
             " article" +
-            (ids.length > 1 ? "s" : "") +
-            ")",
+            (ids.length > 1 ? "s ont été mis à jour." : " a été mis à jour."),
         );
         // US20 critère 5 : recharger
         charger();
       } catch (err) {
-        Toast.err(err.message);
+        await showPopup("error", "Erreur", err.message);
       }
     });
 
