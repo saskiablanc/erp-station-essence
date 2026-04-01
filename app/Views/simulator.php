@@ -137,7 +137,7 @@
       padding:10px 14px; margin-top:10px; max-height:150px; overflow-y:auto;
       font-size:11px; line-height:1.7;
     }
-    .sim-log:empty::before { content:"Aucune action pour l'instant."; color:var(--text-dim); font-style:italic; }
+    .sim-log:empty::before { content:"Aucune action pour l’instant."; color:var(--text-dim); font-style:italic; }
     .sim-log .ok { color:var(--green); }
     .sim-log .err { color:var(--danger); }
     .sim-log .info { color:var(--accent); }
@@ -266,6 +266,15 @@
     .sim-fuel-btn:hover { border-color:var(--accent); color:var(--accent); }
     .sim-fuel-btn.selected { background:var(--accent); border-color:var(--accent); color:#fff; }
     .sim-fuel-empty { color:var(--text-dim); font-size:11px; }
+    .sim-start-reason {
+      display:none;
+      margin-top:8px;
+      font-size:11px;
+      color:var(--text-dim);
+    }
+    .sim-start-reason--warn { color:var(--warn); }
+    .sim-start-reason--err { color:var(--danger); }
+    .sim-start-reason--info { color:var(--accent); }
 
     /* ── Waiting banner ── */
     .sim-waiting {
@@ -343,7 +352,7 @@
   <span class="sim-topbar-badge">Simulateur Physique</span>
   <span class="sim-topbar-sep"></span>
   <a class="sim-topbar-link" href="<?= $baseUrl ?>/caisse" target="_blank">Ouvrir la caisse</a>
-  <a class="sim-topbar-link" href="<?= $baseUrl ?>/gerant" target="_blank">Ouvrir le gerant</a>
+  <a class="sim-topbar-link" href="<?= $baseUrl ?>/gerant" target="_blank">Ouvrir le gérant</a>
 </div>
 
 <!-- BODY -->
@@ -363,21 +372,20 @@
     <!-- ══════ CARTE CCE ══════ -->
     <div id="panel-cce" class="sim-panel active">
       <div class="sim-section">
-        <div class="sim-section-title">Carte Credit Energie</div>
+        <div class="sim-section-title">Carte Crédit Énergie</div>
         <div class="sim-section-desc">
-          Quand un employe clique sur "Scanner CCE" sur la caisse, la liste des cartes s'affiche ici.
-          Selectionnez une carte pour l'envoyer a la caisse.
+          Quand un employé clique sur "Scanner CCE" sur la caisse, la liste des cartes s'affiche ici.
+          Sélectionnez une carte pour l'envoyer à la caisse.
         </div>
 
         <div id="cce-waiting" class="sim-waiting">
           <span class="sim-waiting-dot"></span>
-          <span>La caisse attend le scan d'une carte CCE. Selectionnez une carte ci-dessous.</span>
+          <span>La caisse attend le scan d'une carte CCE. Sélectionnez une carte ci-dessous.</span>
         </div>
 
         <div class="sim-card">
           <div class="sim-card-title"><span class="dot dot--green"></span> Cartes CCE disponibles</div>
           <div id="cce-grid" class="sim-cce-grid"></div>
-          <button class="sim-btn sim-btn--primary" onclick="Sim.refreshCCE()">Rafraichir</button>
           <div id="cce-log" class="sim-log"></div>
         </div>
       </div>
@@ -389,41 +397,40 @@
         <div class="sim-section-title">Pompes et Bornes</div>
         <div class="sim-section-desc">
           Simulez le parcours client complet :
-          1. Selectionnez une pompe disponible.
-          2. Choisissez la quantite puis demarrez.
+          1. Sélectionnez une pompe disponible.
+          2. Choisissez la quantité puis démarrez.
           3. Terminez la livraison quand le client a fini.
-          L'employe pourra ensuite encaisser sur la caisse.
+          L'employé pourra ensuite encaisser sur la caisse.
         </div>
 
         <div class="sim-card">
-          <div class="sim-card-title"><span class="dot dot--green"></span> Etat des pompes</div>
+          <div class="sim-card-title"><span class="dot dot--green"></span> État des pompes</div>
           <div id="pompes-grid" class="sim-pompes-grid"></div>
-          <button class="sim-btn sim-btn--primary" onclick="Sim.refreshPompes()">Rafraichir</button>
         </div>
 
         <div class="sim-card">
           <div class="sim-card-title"><span class="dot dot--orange"></span> Parcours client</div>
 
           <div class="sim-steps" id="pompe-steps">
-            <span class="sim-step current" id="step-select">1. Selectionner</span>
-            <span class="sim-step" id="step-start">2. Demarrer</span>
+            <span class="sim-step current" id="step-select">1. Sélectionner</span>
+            <span class="sim-step" id="step-start">2. Démarrer</span>
             <span class="sim-step" id="step-end">3. Terminer</span>
           </div>
 
-          <!-- Step 1: Selection -->
+          <!-- Étape 1: Sélection -->
           <div id="pompe-step-select">
             <div style="color:var(--text-dim);font-size:12px;margin-bottom:8px;">
               Cliquez sur une pompe disponible (statut : active) ci-dessus.
             </div>
             <div class="sim-row">
               <div class="sim-field">
-                <label>Pompe selectionnee</label>
+                <label>Pompe sélectionnée</label>
                 <select id="pompe-select" disabled><option value="">Aucune</option></select>
               </div>
             </div>
           </div>
 
-          <!-- Step 2: Configuration + Demarrer -->
+          <!-- Étape 2: Configuration + Démarrer -->
           <div id="pompe-step-start" style="display:none;">
             <div id="pompe-carburant-opts" style="display:none;">
               <div class="sim-row">
@@ -443,16 +450,33 @@
             <div id="pompe-elec-opts" style="display:none;">
               <div class="sim-row">
                 <div class="sim-field">
-                  <label>Energie chargee (kWh)</label>
-                  <input type="range" id="borne-kwh" min="5" max="80" value="30" oninput="document.getElementById('borne-kwh-val').textContent=this.value+' kWh'">
+                  <label>Temps de charge (minutes)</label>
+                  <input type="range" id="borne-minutes" min="5" max="120" value="30" oninput="Sim.updateBornePreview()">
                 </div>
-                <span class="sim-range-val" id="borne-kwh-val">30 kWh</span>
+                <span class="sim-range-val" id="borne-minutes-val">30 min (~11.0 kWh)</span>
+              </div>
+              <div style="font-size:11px;color:var(--text-dim);margin-top:4px;">
+                Estimation calculée selon la puissance du chargeur sélectionné.
               </div>
             </div>
-            <button class="sim-btn sim-btn--green" id="btn-demarrer" onclick="Sim.demarrerLivraison()">Demarrer la livraison</button>
+            <div id="pompe-auto-pay-opts" style="display:none;">
+              <div class="sim-row">
+                <div class="sim-field sim-field--full">
+                  <label>Méthode de paiement automatique</label>
+                  <div id="pompe-payment-buttons" class="sim-fuel-list"></div>
+                  <div id="pompe-payment-cce-select-wrap" class="sim-field" style="display:none;margin-top:8px;">
+                    <label>Carte CCE utilisée</label>
+                    <select id="pompe-payment-cce-select" onchange="Sim.selectAutoPaymentCce(this.value)"></select>
+                  </div>
+                  <div id="pompe-payment-cce-info" class="sim-fuel-empty" style="margin-top:6px;"></div>
+                </div>
+              </div>
+            </div>
+            <button class="sim-btn sim-btn--green" id="btn-demarrer" onclick="Sim.demarrerLivraison()">Démarrer la livraison</button>
+            <div id="pompe-start-reason" class="sim-start-reason"></div>
           </div>
 
-          <!-- Step 3: Terminer -->
+          <!-- Étape 3: Terminer -->
           <div id="pompe-step-end" style="display:none;">
             <div id="pompe-recap" style="font-size:12px;margin-bottom:12px;color:var(--text-mid);"></div>
             <button class="sim-btn sim-btn--orange" id="btn-terminer" onclick="Sim.terminerLivraison()">Terminer la livraison</button>
@@ -461,9 +485,9 @@
           <!-- Done -->
           <div id="pompe-step-done" style="display:none;">
             <div style="padding:12px;border-radius:8px;background:var(--green-dim);color:var(--green);font-size:12px;font-weight:500;margin-bottom:12px;">
-              Livraison terminee. L'employe peut maintenant encaisser sur la caisse.
+              Livraison terminée. L'employé peut maintenant encaisser sur la caisse.
             </div>
-            <button class="sim-btn sim-btn--primary" onclick="Sim.resetPompe()">Nouvelle operation</button>
+            <button class="sim-btn sim-btn--primary" onclick="Sim.resetPompe()">Nouvelle opération</button>
           </div>
 
           <div id="pompe-log" class="sim-log"></div>
@@ -539,6 +563,8 @@ var Sim = (function() {
   var carburants = [];
   var selectedPompeId = null;
   var selectedCarburantId = null;
+  var selectedAutoPaymentMethod = 'cb';
+  var selectedCceCard = null;
   var currentStep = 'select';
   var cces = [];
   var waitingForScan = false;
@@ -546,6 +572,7 @@ var Sim = (function() {
   var pompesSseRetryTimer = null;
   var startRequestRunning = false;
   var endRequestRunning = false;
+  var BORNE_PUISSANCE_KW = { rapide: 22, lente: 7.4 };
   var popupTriggerChannelName = 'unica-popup-trigger';
   var popupTriggerStorageKey = 'unica_popup_trigger';
 
@@ -678,7 +705,16 @@ var Sim = (function() {
   function refreshCCE() {
     return api('GET', '/json/cce').then(function(data) {
       cces = data;
+      if (selectedCceCard && Number(selectedCceCard.id_carte_CE || 0) > 0) {
+        var refreshed = cces.find(function(x) {
+          return Number(x.id_carte_CE) === Number(selectedCceCard.id_carte_CE);
+        });
+        if (refreshed) {
+          selectedCceCard = Object.assign({}, selectedCceCard, refreshed);
+        }
+      }
       renderCCE();
+      renderAutoPaymentButtons();
     }).catch(function(e) {
       log('cce-log','err','Erreur chargement CCE : ' + e.message);
     });
@@ -698,13 +734,15 @@ var Sim = (function() {
     var c = cces.find(function(x) { return x.id_carte_CE == id; });
     if (!c) return;
     api('GET', '/json/cce/' + id).then(function(carte) {
-      log('cce-log', 'ok', 'Carte #' + id + ' selectionnee -- ' + esc(carte.prenom) + ' ' + esc(carte.nom) + ' -- Solde : ' + Number(carte.solde_client).toFixed(2) + ' EUR');
+      selectedCceCard = carte || null;
+      log('cce-log', 'ok', 'Carte #' + id + ' sélectionnée -- ' + esc(carte.prenom) + ' ' + esc(carte.nom) + ' -- Solde : ' + Number(carte.solde_client).toFixed(2) + ' EUR');
+      renderAutoPaymentButtons();
       if (waitingForScan) {
         sendCCESelection(carte);
-        log('cce-log', 'ok', 'Carte #' + id + ' envoyee a la caisse.');
+        log('cce-log', 'ok', 'Carte #' + id + ' envoyée à la caisse.');
       }
     }).catch(function(e) {
-      log('cce-log', 'err', 'Echec lecture carte #' + id + ' : ' + e.message);
+      log('cce-log', 'err', 'Échec lecture carte #' + id + ' : ' + e.message);
     });
   }
 
@@ -716,11 +754,13 @@ var Sim = (function() {
       pompes = data;
       renderPompes();
       syncParcoursAfterPompeUpdate();
+      refreshStartButtonState();
       // Garde les soldes CCE frais même si le message BroadcastChannel
       // n'est pas reçu (fallback robuste inter-onglets).
       refreshCCE();
     }).catch(function(e) {
       log('pompe-log','err','Erreur chargement pompes : ' + e.message);
+      refreshStartButtonState();
     });
   }
 
@@ -797,13 +837,73 @@ var Sim = (function() {
     if (p.statut === 'active') {
       document.getElementById('pompe-carburant-opts').style.display = p.type_pompe === 'carburant' ? '' : 'none';
       document.getElementById('pompe-elec-opts').style.display = p.type_pompe === 'electricite' ? '' : 'none';
+      document.getElementById('pompe-auto-pay-opts').style.display = requiresAutoPaymentChoice(p) ? '' : 'none';
       if (p.type_pompe === 'carburant') {
         if (!carburants.length) refreshCarburants();
         else renderCarburantsButtons();
       }
+      renderAutoPaymentButtons();
       setStep('start');
       log('pompe-log', 'info', 'Pompe réactivée : vous pouvez démarrer une nouvelle livraison.');
     }
+  }
+
+  function getSelectedPompe() {
+    if (!selectedPompeId) return null;
+    return pompes.find(function(x) { return Number(x.id_pompe) === Number(selectedPompeId); }) || null;
+  }
+
+  function getStartBlockReason(p) {
+    if (!p) return 'Pompe introuvable.';
+    if (p.statut === 'active') return '';
+    if (p.statut === 'en_cours') {
+      return 'Une livraison est déjà en cours sur cette pompe.';
+    }
+    if (p.statut === 'desactivee' && p.transaction && p.transaction.statut !== 'payee') {
+      return 'La pompe est en attente de la livraison précédente.';
+    }
+    return 'La pompe est désactivée.';
+  }
+
+  function setStartReason(message, level) {
+    var node = document.getElementById('pompe-start-reason');
+    if (!node) return;
+    if (!message) {
+      node.style.display = 'none';
+      node.textContent = '';
+      node.className = 'sim-start-reason';
+      return;
+    }
+    node.style.display = 'block';
+    node.textContent = message;
+    node.className = 'sim-start-reason';
+    if (level) node.classList.add('sim-start-reason--' + level);
+  }
+
+  function refreshStartButtonState() {
+    var btnStart = document.getElementById('btn-demarrer');
+    var btnEnd = document.getElementById('btn-terminer');
+    if (btnStart) {
+      var canStart = currentStep === 'start' && !startRequestRunning && !!selectedPompeId;
+      var selectedPompe = getSelectedPompe();
+      btnStart.disabled = !canStart;
+      if (canStart && selectedPompe && selectedPompe.statut !== 'active') {
+        btnStart.disabled = false;
+      }
+    }
+    if (btnEnd) {
+      btnEnd.disabled = currentStep !== 'end' || endRequestRunning;
+    }
+  }
+
+  function tryAutoReactivatePompe(idPompe) {
+    return api('POST', '/json/pompes/' + idPompe + '/activer')
+      .then(function() {
+        return refreshPompes().then(function() {
+          var refreshed = pompes.find(function(x) { return Number(x.id_pompe) === Number(idPompe); });
+          return refreshed || null;
+        });
+      });
   }
 
   function refreshCarburants() {
@@ -821,6 +921,128 @@ var Sim = (function() {
     return carburants.find(function(c) {
       return Number(c.id_energie) === Number(selectedCarburantId);
     }) || null;
+  }
+
+  function getBornePowerKw(pompe) {
+    if (!pompe) return BORNE_PUISSANCE_KW.lente;
+    var key = String(pompe.sous_type || '').toLowerCase();
+    if (BORNE_PUISSANCE_KW[key]) return BORNE_PUISSANCE_KW[key];
+    return BORNE_PUISSANCE_KW.lente;
+  }
+
+  function minutesToKwh(minutes, pompe) {
+    var safeMinutes = Math.max(0, Number(minutes || 0));
+    var power = getBornePowerKw(pompe);
+    return Math.round((safeMinutes / 60) * power * 1000) / 1000;
+  }
+
+  function formatMinutesToTime(minutes) {
+    var total = Math.max(0, Math.round(Number(minutes || 0) * 60));
+    var h = Math.floor(total / 3600);
+    var m = Math.floor((total % 3600) / 60);
+    var s = total % 60;
+    var hh = String(h).padStart(2, '0');
+    var mm = String(m).padStart(2, '0');
+    var ss = String(s).padStart(2, '0');
+    return hh + ':' + mm + ':' + ss;
+  }
+
+  function updateBornePreview() {
+    var valueNode = document.getElementById('borne-minutes-val');
+    var input = document.getElementById('borne-minutes');
+    if (!valueNode || !input) return;
+    var minutes = Number(input.value || 0);
+    var pompe = getSelectedPompe();
+    var kwh = minutesToKwh(minutes, pompe);
+    valueNode.textContent = minutes + ' min (~' + kwh.toFixed(1) + ' kWh)';
+  }
+
+  function requiresAutoPaymentChoice(pompe) {
+    if (!pompe) return false;
+    return String(pompe.mode || '').toLowerCase() === 'auto'
+      || String(pompe.type_pompe || '').toLowerCase() === 'electricite';
+  }
+
+  function renderAutoPaymentButtons() {
+    var wrap = document.getElementById('pompe-payment-buttons');
+    var info = document.getElementById('pompe-payment-cce-info');
+    var cceSelectWrap = document.getElementById('pompe-payment-cce-select-wrap');
+    var cceSelect = document.getElementById('pompe-payment-cce-select');
+    if (!wrap || !info || !cceSelectWrap || !cceSelect) return;
+
+    var currentPompe = getSelectedPompe();
+    if (!requiresAutoPaymentChoice(currentPompe)) {
+      wrap.innerHTML = '';
+      info.textContent = '';
+      cceSelectWrap.style.display = 'none';
+      cceSelect.innerHTML = '';
+      return;
+    }
+
+    var methods = [
+      { key: 'cb', label: 'Carte bancaire' },
+      { key: 'cce', label: 'CCE' },
+    ];
+
+    wrap.innerHTML = methods.map(function(method) {
+      var selectedClass = method.key === selectedAutoPaymentMethod ? ' selected' : '';
+      return '<button type="button" class="sim-fuel-btn' + selectedClass + '"'
+        + ' onclick="Sim.selectAutoPayment(\'' + method.key + '\')">'
+        + esc(method.label)
+        + '</button>';
+    }).join('');
+
+    if (selectedAutoPaymentMethod === 'cce') {
+      cceSelectWrap.style.display = '';
+
+      if ((!selectedCceCard || Number(selectedCceCard.id_carte_CE || 0) <= 0) && cces.length > 0) {
+        selectedCceCard = cces[0];
+      }
+
+      if (cces.length > 0) {
+        cceSelect.innerHTML = cces.map(function(c) {
+          var id = Number(c.id_carte_CE || 0);
+          var selected = selectedCceCard && Number(selectedCceCard.id_carte_CE || 0) === id ? ' selected' : '';
+          var label = 'Carte #' + id + ' — ' + (c.prenom || '') + ' ' + (c.nom || '') + ' — ' + Number(c.solde_client || 0).toFixed(2) + ' EUR';
+          return '<option value="' + id + '"' + selected + '>' + esc(label) + '</option>';
+        }).join('');
+      } else {
+        cceSelect.innerHTML = '<option value="">Aucune carte disponible</option>';
+      }
+
+      if (selectedCceCard && Number(selectedCceCard.id_carte_CE || 0) > 0) {
+        cceSelect.value = String(Number(selectedCceCard.id_carte_CE || 0));
+        info.textContent = 'Carte CCE utilisée : #' + selectedCceCard.id_carte_CE
+          + ' — ' + (selectedCceCard.prenom || '') + ' ' + (selectedCceCard.nom || '')
+          + ' — Solde ' + Number(selectedCceCard.solde_client || 0).toFixed(2) + ' EUR';
+      } else {
+        info.textContent = 'Aucune carte CCE sélectionnée (choisissez-la dans l’onglet Carte CCE).';
+      }
+    } else {
+      cceSelectWrap.style.display = 'none';
+      info.textContent = 'Paiement automatique en carte bancaire.';
+    }
+  }
+
+  function selectAutoPayment(method) {
+    var normalized = String(method || '').toLowerCase();
+    if (normalized !== 'cce') normalized = 'cb';
+    selectedAutoPaymentMethod = normalized;
+    renderAutoPaymentButtons();
+  }
+
+  function selectAutoPaymentCce(idCarte) {
+    var id = Number(idCarte || 0);
+    if (id <= 0) {
+      selectedCceCard = null;
+      renderAutoPaymentButtons();
+      return;
+    }
+    var found = cces.find(function(c) { return Number(c.id_carte_CE || 0) === id; }) || null;
+    if (found) {
+      selectedCceCard = found;
+    }
+    renderAutoPaymentButtons();
   }
 
   function renderCarburantsButtons() {
@@ -917,7 +1139,7 @@ var Sim = (function() {
   function renderPompeSubgroup(title, items, meta) {
     var cards = items.length
       ? '<div class="sim-pompes-grid">' + items.map(renderPompeChip).join('') + '</div>'
-      : '<div class="sim-pompes-empty">Aucun element dans cette categorie.</div>';
+      : '<div class="sim-pompes-empty">Aucun élément dans cette catégorie.</div>';
 
     return '<div class="sim-pompes-subgroup">'
       + '<div class="sim-pompes-subhead">'
@@ -956,7 +1178,7 @@ var Sim = (function() {
         renderPompeSubgroup('Pompes manuelles', carburantsManuels, countLabel(carburantsManuels.length, 'pompe', 'pompes')),
         renderPompeSubgroup('Pompes automatiques', carburantsAuto, countLabel(carburantsAuto.length, 'pompe', 'pompes'))
       ])
-      + renderPompeFamily('Electricite', countLabel(pompesElec.length, 'borne', 'bornes'), [
+      + renderPompeFamily('Électricité', countLabel(pompesElec.length, 'borne', 'bornes'), [
         renderPompeSubgroup('Super chargeurs', bornesRapides, countLabel(bornesRapides.length, 'rapide', 'rapides')),
         renderPompeSubgroup('Chargeurs', bornesLentes, countLabel(bornesLentes.length, 'lent', 'lents'))
       ])
@@ -967,11 +1189,6 @@ var Sim = (function() {
     var p = pompes.find(function(x) { return x.id_pompe == id; });
     if (!p) return;
 
-    if (p.statut !== 'active') {
-      log('pompe-log', 'err', 'Cette pompe n\'est pas disponible (statut : ' + p.statut + ').');
-      return;
-    }
-
     selectedPompeId = id;
     var typeLabel = p.type_pompe === 'carburant' ? 'Pompe' : 'Borne';
     var sel = document.getElementById('pompe-select');
@@ -979,6 +1196,7 @@ var Sim = (function() {
 
     document.getElementById('pompe-carburant-opts').style.display = p.type_pompe === 'carburant' ? '' : 'none';
     document.getElementById('pompe-elec-opts').style.display = p.type_pompe === 'electricite' ? '' : 'none';
+    document.getElementById('pompe-auto-pay-opts').style.display = requiresAutoPaymentChoice(p) ? '' : 'none';
     if (p.type_pompe === 'carburant') {
       if (!carburants.length) {
         refreshCarburants();
@@ -987,11 +1205,21 @@ var Sim = (function() {
       }
     } else {
       selectedCarburantId = null;
+      updateBornePreview();
     }
+    renderAutoPaymentButtons();
 
     setStep('start');
     renderPompes();
-    log('pompe-log', 'info', typeLabel + ' n' + p.numero + ' selectionnee.');
+    var reason = getStartBlockReason(p);
+    if (reason) {
+      setStartReason(reason + ' Réactivation automatique au démarrage.', 'warn');
+      log('pompe-log', 'info', typeLabel + ' n' + p.numero + ' sélectionnée. ' + reason);
+    } else {
+      setStartReason('');
+      log('pompe-log', 'info', typeLabel + ' n' + p.numero + ' sélectionnée.');
+    }
+    refreshStartButtonState();
   }
 
   function setStep(step) {
@@ -1015,57 +1243,103 @@ var Sim = (function() {
     document.getElementById('pompe-step-start').style.display  = step === 'start'  ? '' : 'none';
     document.getElementById('pompe-step-end').style.display    = step === 'end'    ? '' : 'none';
     document.getElementById('pompe-step-done').style.display   = step === 'done'   ? '' : 'none';
+    if (step !== 'start') {
+      setStartReason('');
+    } else {
+      var selectedPompe = getSelectedPompe();
+      var reason = getStartBlockReason(selectedPompe);
+      document.getElementById('pompe-auto-pay-opts').style.display = requiresAutoPaymentChoice(selectedPompe) ? '' : 'none';
+      renderAutoPaymentButtons();
+      if (reason) {
+        setStartReason(reason + ' Réactivation automatique au démarrage.', 'warn');
+      }
+    }
+    refreshStartButtonState();
   }
 
   function demarrerLivraison() {
     if (startRequestRunning) return;
-    if (!selectedPompeId) return;
-    var p = pompes.find(function(x) { return x.id_pompe == selectedPompeId; });
-    if (!p) return;
+    if (!selectedPompeId) {
+      setStartReason('Sélectionnez une pompe.', 'info');
+      return;
+    }
+    var p = getSelectedPompe();
+    if (!p) {
+      setStartReason('Pompe introuvable.', 'err');
+      return;
+    }
 
     var body = {};
     var unit;
+    var quantityLabel;
     if (p.type_pompe === 'carburant') {
       if (!selectedCarburantId) {
-        log('pompe-log', 'err', 'Veuillez choisir un type de carburant avant de démarrer.');
+        var noFuelMessage = 'Veuillez choisir un type de carburant avant de démarrer.';
+        setStartReason(noFuelMessage, 'warn');
+        log('pompe-log', 'err', noFuelMessage);
         return;
       }
       body.id_energie = Number(selectedCarburantId);
       body.quantite_delivree = Number(document.getElementById('pompe-qty').value);
       unit = 'L';
+      quantityLabel = body.quantite_delivree + ' ' + unit;
     } else {
-      body.quantite_delivree = Number(document.getElementById('borne-kwh').value);
+      var minutes = Number(document.getElementById('borne-minutes').value || 0);
+      body.quantite_delivree = minutesToKwh(minutes, p);
+      body.temps_charge = formatMinutesToTime(minutes);
       unit = 'kWh';
+      quantityLabel = minutes + ' min (~' + body.quantite_delivree.toFixed(1) + ' ' + unit + ')';
     }
 
     var btn = document.getElementById('btn-demarrer');
     if (!btn) return;
     startRequestRunning = true;
-    btn.disabled = true;
+    refreshStartButtonState();
 
-    api('POST', '/json/pompes/' + selectedPompeId + '/demarrer', body).then(function() {
-      var typeLabel = p.type_pompe === 'carburant' ? 'pompe' : 'borne';
-      var carburant = p.type_pompe === 'carburant' ? getSelectedCarburant() : null;
-      var carburantSuffix = carburant ? (' [' + carburant.libelle + ']') : '';
-      log('pompe-log','ok','Livraison demarree sur ' + typeLabel + ' n' + p.numero + ' -- ' + body.quantite_delivree + ' ' + unit);
-
-      var recap = document.getElementById('pompe-recap');
-      if (recap) {
-        recap.innerHTML = 'En cours : <strong>' + (p.type_pompe === 'carburant' ? 'Pompe' : 'Borne')
-          + ' n' + p.numero + '</strong>' + carburantSuffix + ' -- ' + body.quantite_delivree + ' ' + unit;
-      }
-
-      return refreshPompes().then(function() {
-        setStep('end');
+    var startPromise = Promise.resolve(p);
+    if (p.statut !== 'active') {
+      var reason = getStartBlockReason(p);
+      var infoMessage = (reason || 'Pompe indisponible.') + ' Tentative de réactivation...';
+      setStartReason(infoMessage, 'warn');
+      log('pompe-log', 'info', infoMessage);
+      startPromise = tryAutoReactivatePompe(selectedPompeId).then(function(refreshedPompe) {
+        if (!refreshedPompe || refreshedPompe.statut !== 'active') {
+          var hardReason = getStartBlockReason(refreshedPompe || p) || 'La pompe reste indisponible.';
+          throw new Error(hardReason);
+        }
+        return refreshedPompe;
       });
-    }).catch(function(e) {
-      log('pompe-log','err','Echec demarrage : ' + e.message);
-    }).finally(function() {
-      startRequestRunning = false;
-      if (currentStep === 'start') {
-        btn.disabled = false;
-      }
-    });
+    }
+
+    startPromise
+      .then(function(activePompe) {
+        setStartReason('');
+        return api('POST', '/json/pompes/' + selectedPompeId + '/demarrer', body).then(function() {
+          var typeLabel = activePompe.type_pompe === 'carburant' ? 'pompe' : 'borne';
+          var carburant = activePompe.type_pompe === 'carburant' ? getSelectedCarburant() : null;
+          var carburantSuffix = carburant ? (' [' + carburant.libelle + ']') : '';
+          log('pompe-log','ok','Livraison démarrée sur ' + typeLabel + ' n' + activePompe.numero + ' -- ' + quantityLabel);
+
+          var recap = document.getElementById('pompe-recap');
+          if (recap) {
+            recap.innerHTML = 'En cours : <strong>' + (activePompe.type_pompe === 'carburant' ? 'Pompe' : 'Borne')
+              + ' n' + activePompe.numero + '</strong>' + carburantSuffix + ' -- ' + quantityLabel;
+          }
+
+          return refreshPompes().then(function() {
+            setStep('end');
+          });
+        });
+      })
+      .catch(function(e) {
+        var reason = e && e.message ? e.message : 'Erreur inconnue';
+        setStartReason('Impossible de démarrer : ' + reason, 'err');
+        log('pompe-log','err','Échec démarrage : ' + reason);
+      })
+      .finally(function() {
+        startRequestRunning = false;
+        refreshStartButtonState();
+      });
   }
 
   function terminerLivraison() {
@@ -1074,24 +1348,40 @@ var Sim = (function() {
     var p = pompes.find(function(x) { return x.id_pompe == selectedPompeId; });
     if (!p) return;
 
+    var payload = null;
+    if (requiresAutoPaymentChoice(p)) {
+      payload = {
+        mode_paiement: selectedAutoPaymentMethod === 'cce' ? 'cce' : 'cb'
+      };
+      if (payload.mode_paiement === 'cce') {
+        var cceId = Number(selectedCceCard && selectedCceCard.id_carte_CE ? selectedCceCard.id_carte_CE : 0);
+        if (cceId <= 0) {
+          var noCardMessage = 'Sélectionnez une carte CCE avant de terminer la livraison en mode CCE.';
+          setStartReason(noCardMessage, 'warn');
+          log('pompe-log', 'err', noCardMessage);
+          return;
+        }
+        payload.id_carte_CE = cceId;
+      }
+    }
+
     var btn = document.getElementById('btn-terminer');
     if (!btn) return;
     endRequestRunning = true;
     btn.disabled = true;
 
-    api('POST', '/json/pompes/' + selectedPompeId + '/terminer').then(function() {
+    api('POST', '/json/pompes/' + selectedPompeId + '/terminer', payload).then(function() {
       var typeLabel = p.type_pompe === 'carburant' ? 'pompe' : 'borne';
-      log('pompe-log','ok','Livraison terminee sur ' + typeLabel + ' n' + p.numero + ' -- prete a encaisser sur la caisse.');
+      var modeLabel = payload && payload.mode_paiement === 'cce' ? 'CCE' : 'Carte bancaire';
+      log('pompe-log','ok','Livraison terminée sur ' + typeLabel + ' n' + p.numero + ' -- paiement auto: ' + modeLabel + '.');
       return refreshPompes().then(function() {
         setStep('done');
       });
     }).catch(function(e) {
-      log('pompe-log','err','Echec fin livraison : ' + e.message);
+      log('pompe-log','err','Échec fin livraison : ' + e.message);
     }).finally(function() {
       endRequestRunning = false;
-      if (currentStep === 'end') {
-        btn.disabled = false;
-      }
+      refreshStartButtonState();
     });
   }
 
@@ -1103,10 +1393,15 @@ var Sim = (function() {
     document.getElementById('pompe-select').innerHTML = '<option value="">Aucune</option>';
     document.getElementById('pompe-carburant-opts').style.display = 'none';
     document.getElementById('pompe-elec-opts').style.display = 'none';
+    document.getElementById('pompe-auto-pay-opts').style.display = 'none';
+    var borneInput = document.getElementById('borne-minutes');
+    if (borneInput) borneInput.value = 30;
+    updateBornePreview();
     document.getElementById('btn-demarrer').disabled = false;
-    document.getElementById('btn-demarrer').textContent = 'Demarrer la livraison';
+    document.getElementById('btn-demarrer').textContent = 'Démarrer la livraison';
     document.getElementById('btn-terminer').disabled = false;
     document.getElementById('btn-terminer').textContent = 'Terminer la livraison';
+    setStartReason('');
     setStep('select');
     refreshPompes();
   }
@@ -1120,6 +1415,8 @@ var Sim = (function() {
   function init() {
     initNav();
     renderPopupCatalog();
+    updateBornePreview();
+    renderAutoPaymentButtons();
     refreshCCE();
     refreshCarburants();
     startPompesSSE();
@@ -1136,6 +1433,9 @@ var Sim = (function() {
     terminerLivraison: terminerLivraison,
     resetPompe: resetPompe,
     selectCarburant: selectCarburant,
+    selectAutoPayment: selectAutoPayment,
+    selectAutoPaymentCce: selectAutoPaymentCce,
+    updateBornePreview: updateBornePreview,
     refreshCCE: refreshCCE,
     selectCCE: selectCCE
   };

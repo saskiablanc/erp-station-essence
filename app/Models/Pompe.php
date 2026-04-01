@@ -534,7 +534,8 @@ final class Pompe
     public function validerPaiement(
         int $idPompe,
         int $idTransactionEnergie,
-        ?int $forcedTransactionId = null
+        ?int $forcedTransactionId = null,
+        ?int $cceCardId = null
     ): int
     {
         $pompe = $this->findById($idPompe);
@@ -676,6 +677,10 @@ final class Pompe
                 [$idTransaction, $idTransactionEnergie]
             );
 
+            if ($cceCardId !== null && $cceCardId > 0) {
+                $this->debiterCarteCce($cceCardId, $total, $idTransaction);
+            }
+
             if ($prixUnitaire['type_energie'] === 'carburant') {
                 $this->db->execute(
                     "UPDATE Stock s
@@ -698,6 +703,42 @@ final class Pompe
             $this->db->rollBack();
             throw $e;
         }
+    }
+
+    private function debiterCarteCce(int $idCarte, float $montant, int $idTransaction): void
+    {
+        if ($idCarte <= 0) {
+            throw new RuntimeException('Carte CCE invalide.', 400);
+        }
+
+        $row = $this->db->query(
+            'SELECT solde_client
+             FROM `CarteCE`
+             WHERE id_carte_CE = ?
+             LIMIT 1',
+            [$idCarte]
+        )->fetch();
+        if (!$row) {
+            throw new RuntimeException("Carte CCE $idCarte introuvable.", 404);
+        }
+
+        $solde = (float) ($row['solde_client'] ?? 0);
+        if ($solde < $montant) {
+            throw new RuntimeException('Solde CCE insuffisant.', 409);
+        }
+
+        $this->db->execute(
+            'UPDATE `CarteCE`
+             SET solde_client = solde_client - ?
+             WHERE id_carte_CE = ?',
+            [$montant, $idCarte]
+        );
+
+        $this->db->execute(
+            'INSERT IGNORE INTO `TransactionCCE` (`id_transaction`, `id_carte_CE`)
+             VALUES (?, ?)',
+            [$idTransaction, $idCarte]
+        );
     }
 
     private function getTransactionEnergiePkColumn(): string
