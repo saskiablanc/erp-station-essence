@@ -145,6 +145,16 @@
 <script src="<?= $assetsUrl ?>/js/panels/gerant/directives.js"></script>
 <script src="<?= $assetsUrl ?>/js/panels/gerant/fermetures.js"></script>
 <script src="<?= $assetsUrl ?>/js/panels/gerant/horaires.js"></script>
+<script src="<?= $assetsUrl ?>/js/panels/gerant/bdd/shared.js"></script>
+<script src="<?= $assetsUrl ?>/js/panels/gerant/bdd/schemas/catalog.js"></script>
+<script src="<?= $assetsUrl ?>/js/panels/gerant/bdd/schemas/cce.js"></script>
+<script src="<?= $assetsUrl ?>/js/panels/gerant/bdd/schemas/transactions.js"></script>
+<script src="<?= $assetsUrl ?>/js/panels/gerant/bdd/schemas/reappro.js"></script>
+<script src="<?= $assetsUrl ?>/js/panels/gerant/bdd/schemas/operations.js"></script>
+<script src="<?= $assetsUrl ?>/js/panels/gerant/bdd/schemas.js"></script>
+<script src="<?= $assetsUrl ?>/js/panels/gerant/bdd/ui.js"></script>
+<script src="<?= $assetsUrl ?>/js/panels/gerant/bdd/dialogs.js"></script>
+<script src="<?= $assetsUrl ?>/js/panels/gerant/bdd/panel.js"></script>
 <script src="<?= $assetsUrl ?>/js/panels/gerant/bdd.js"></script>
 
 <script src="<?= $assetsUrl ?>/js/app.js"></script>
