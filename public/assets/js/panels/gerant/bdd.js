@@ -436,7 +436,8 @@ const BddPanel = (() => {
       cols: [
         { f: "id_stock", label: "ID", w: "50px" },
         { f: "id_article", label: "id_article", w: "80px" },
-        { f: "quantite_stock", label: "Quantité", w: "" },
+        { f: "nom_article", label: "Nom", w: "" },
+        { f: "quantite_stock", label: "Quantité", w: "90px" },
         { f: "type_quantite", label: "Type", w: "90px" },
       ],
       addFields: [
@@ -471,6 +472,7 @@ const BddPanel = (() => {
       rowHtml: (r) => [
         esc(r.id_stock),
         esc(r.id_article),
+        esc(r.nom_article || "—"),
         esc(r.quantite_stock),
         esc(r.type_quantite),
       ],

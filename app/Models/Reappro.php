@@ -281,6 +281,61 @@ class Reappro
         return $rows > 0;
     }
 
+    /**
+     * Ajuster la quantité d'une ligne d'un réapprovisionnement automatique
+     * tant qu'il reste modifiable (En cours / En retard).
+     */
+    public function updateLigneQuantite(int $idReappro, int $idArticle, float $quantite): ?array
+    {
+        if ($quantite <= 0) {
+            throw new \RuntimeException('La quantité doit être supérieure à 0');
+        }
+
+        $reappro = $this->getById($idReappro);
+        if (!$reappro) {
+            throw new \RuntimeException("Réapprovisionnement #{$idReappro} introuvable");
+        }
+        if (!(bool) ($reappro['est_auto'] ?? false)) {
+            throw new \RuntimeException("Seul un réapprovisionnement automatique peut être ajusté ici");
+        }
+        if (!in_array($reappro['statut_reappro'] ?? '', ['En cours', 'En retard'], true)) {
+            throw new \RuntimeException("Ce réapprovisionnement n'est plus modifiable");
+        }
+
+        $rows = $this->db->execute(
+            "UPDATE LigneReappro lr
+             JOIN Reapprovisionnement r
+               ON r.id_reappro = lr.id_reappro
+             SET lr.quantite = :quantite
+             WHERE lr.id_reappro = :id_reappro
+               AND lr.id_article = :id_article
+               AND r.est_auto = 1
+               AND r.statut_reappro IN ('En cours', 'En retard')",
+            [
+                ':quantite' => $quantite,
+                ':id_reappro' => $idReappro,
+                ':id_article' => $idArticle,
+            ]
+        );
+
+        if ($rows <= 0) {
+            return null;
+        }
+
+        $updated = $this->getById($idReappro);
+        if (!$updated) {
+            return null;
+        }
+
+        foreach (($updated['lignes'] ?? []) as $ligne) {
+            if ((int) ($ligne['id_article'] ?? 0) === $idArticle) {
+                return $ligne;
+            }
+        }
+
+        return null;
+    }
+
     // ═══════════════════════════════════════════════════════
     //  US21 — Lancement réapprovisionnement manuel
     // ═══════════════════════════════════════════════════════

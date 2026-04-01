@@ -82,6 +82,37 @@ final class ReapproController extends Controller
         }
     }
 
+    // POST /json/reappros/{id}/lignes/{idArticle}
+    public function updateLigne(string $id, string $idArticle): void
+    {
+        $this->requireGerant();
+        try {
+            $body = $this->body();
+            if (!isset($body['quantite'])) {
+                $this->jsonError('Le champ quantite est requis', 400);
+            }
+
+            $ligne = $this->model->updateLigneQuantite(
+                (int) $id,
+                (int) $idArticle,
+                (float) $body['quantite']
+            );
+
+            if (!$ligne) {
+                $this->jsonError("Impossible de modifier la quantité", 400);
+            }
+
+            $this->json([
+                'success' => true,
+                'id_reappro' => (int) $id,
+                'id_article' => (int) $idArticle,
+                'ligne' => $ligne,
+            ]);
+        } catch (\Throwable $e) {
+            $this->jsonError($e->getMessage(), 500);
+        }
+    }
+
     // US21 — POST /json/reappros
     public function creerManuel(): void
     {
