@@ -1,6 +1,6 @@
 /** panels/gerant/cce_params.js — US14 Modification Paramètres CCE */
 WM.register("gerant_cce_params", {
-  label: "Modification Paramètres CCE",
+  label: "PCC Modification Paramètres CCE",
   icon: "",
   sprint: 6,
   gerantOnly: true,

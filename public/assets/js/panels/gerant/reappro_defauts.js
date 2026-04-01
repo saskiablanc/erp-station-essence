@@ -1,6 +1,6 @@
 /** panels/gerant/reappro_defauts.js — US20 Valeurs défauts réapprovisionnement */
 WM.register("gerant_reappro_defauts", {
-  label: "Valeurs Défauts Réapprovisionnement",
+  label: "VDR Valeurs Défauts Réapprovisionnement",
   icon: "",
   sprint: 4,
   gerantOnly: true,

@@ -1,6 +1,6 @@
 /** panels/gerant/prix.js — US12 Modification Prix Carburant + US13 Livraison Minimale */
 WM.register("gerant_prix", {
-  label: "Modification Prix Carburant",
+  label: "PMP Modification Prix Carburant",
   icon: "",
   sprint: 6,
   gerantOnly: true,

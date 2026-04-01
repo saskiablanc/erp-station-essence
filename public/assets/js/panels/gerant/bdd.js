@@ -1784,7 +1784,7 @@ const BddPanel = (() => {
 })();
 
 WM.register("gerant_bdd", {
-  label: "Base de Données",
+  label: "BDD Base de Données",
   icon: "",
   sprint: 6,
   gerantOnly: true,

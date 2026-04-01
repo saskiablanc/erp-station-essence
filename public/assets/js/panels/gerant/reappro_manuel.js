@@ -1,6 +1,6 @@
 /** panels/gerant/reappro_manuel.js — US21 Lancer réapprovisionnement manuel */
 WM.register("gerant_reappro_manuel", {
-  label: "Lancer Réapprovisionnement Manuel",
+  label: "RMA Lancer Réapprovisionnement Manuel",
   icon: "",
   sprint: 4,
   gerantOnly: true,
