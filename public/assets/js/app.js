@@ -4,27 +4,207 @@
  * CAISSE_MODE est 'gerant' sur la vue gérant, undefined sur la vue employé
  */
 const App = (() => {
-  const isGerant =
+  const isGerantView =
     typeof CAISSE_MODE !== "undefined" && CAISSE_MODE === "gerant";
+  const isGerantAccount =
+    String(SESSION?.role ?? "").toLowerCase() === "gerant";
   let autoReapproInFlight = false;
+  const autoReapproTabId =
+    "reappro-" + Date.now() + "-" + Math.random().toString(36).slice(2, 8);
+  const AUTO_REAPPRO_STORAGE_KEY = "unica_reappro_auto_ping";
+  const AUTO_REAPPRO_PENDING_KEY = "unica_reappro_auto_pending";
+  const AUTO_REAPPRO_CHANNEL_NAME = "unica-reappro-auto";
+  const seenAutoReapproIds = new Set();
+  let autoReapproChannel = null;
+  let autoReapproPromptInFlight = false;
 
-  function escapeHtml(value) {
-    return String(value ?? "")
-      .replaceAll("&", "&amp;")
-      .replaceAll("<", "&lt;")
-      .replaceAll(">", "&gt;")
-      .replaceAll('"', "&quot;")
-      .replaceAll("'", "&#39;");
+  function normalizeAutoReapproPayload(raw) {
+    const created = Array.isArray(raw?.created) ? raw.created : [];
+    return {
+      id_reappro: Number(raw?.id_reappro ?? 0),
+      created_count: Number(raw?.created_count ?? created.length ?? 0),
+      created: created,
+    };
   }
 
-  function formatReapproQty(article) {
-    const qty = Number(article?.volume ?? 0);
-    const type = String(article?.type_article ?? "").toLowerCase();
-    if (!Number.isFinite(qty)) return "0";
-    if (type === "carburant" || type === "energie" || type === "electricite") {
-      return `${qty.toFixed(3)} L`;
+  function markAutoReapproSeen(idReappro) {
+    const id = Number(idReappro || 0);
+    if (id > 0) {
+      seenAutoReapproIds.add(id);
     }
-    return String(Math.max(0, Math.trunc(qty)));
+  }
+
+  function hasSeenAutoReappro(idReappro) {
+    const id = Number(idReappro || 0);
+    return id > 0 && seenAutoReapproIds.has(id);
+  }
+
+  function dispatchAutoReapproChanged(payload) {
+    const normalized = normalizeAutoReapproPayload(payload);
+    window.dispatchEvent(
+      new CustomEvent("reappro:changed", {
+        detail: {
+          type: "auto-create",
+          id_reappro: normalized.id_reappro,
+          created: normalized.created,
+        },
+      }),
+    );
+  }
+
+  function readPendingAutoReappros() {
+    try {
+      const raw = localStorage.getItem(AUTO_REAPPRO_PENDING_KEY);
+      const parsed = raw ? JSON.parse(raw) : {};
+      return parsed && typeof parsed === "object" ? parsed : {};
+    } catch (_) {
+      return {};
+    }
+  }
+
+  function writePendingAutoReappros(map) {
+    try {
+      localStorage.setItem(
+        AUTO_REAPPRO_PENDING_KEY,
+        JSON.stringify(map || {}),
+      );
+    } catch (_) {}
+  }
+
+  function upsertPendingAutoReappro(payload) {
+    const normalized = normalizeAutoReapproPayload(payload);
+    if (normalized.id_reappro <= 0) return;
+    const map = readPendingAutoReappros();
+    map[String(normalized.id_reappro)] = {
+      ...normalized,
+      queued_at: Date.now(),
+    };
+    writePendingAutoReappros(map);
+  }
+
+  function removePendingAutoReappro(idReappro) {
+    const id = Number(idReappro || 0);
+    if (id <= 0) return;
+    const map = readPendingAutoReappros();
+    delete map[String(id)];
+    writePendingAutoReappros(map);
+  }
+
+  async function drainPendingAutoReappros() {
+    if (
+      !isGerantAccount ||
+      autoReapproPromptInFlight ||
+      !ReapproPanel?.promptAutoReview
+    ) {
+      return;
+    }
+
+    const queue = Object.values(readPendingAutoReappros()).sort(function (a, b) {
+      return Number(a?.queued_at ?? 0) - Number(b?.queued_at ?? 0);
+    });
+
+    if (!queue.length) return;
+
+    autoReapproPromptInFlight = true;
+    try {
+      for (const item of queue) {
+        const idReappro = Number(item?.id_reappro ?? 0);
+        const currentMap = readPendingAutoReappros();
+        if (!currentMap[String(idReappro)]) continue;
+
+        const result = await ReapproPanel.promptAutoReview(item);
+        if (result === "confirmed" || result === "cancelled") {
+          removePendingAutoReappro(idReappro);
+          markAutoReapproSeen(idReappro);
+        }
+      }
+    } finally {
+      autoReapproPromptInFlight = false;
+    }
+  }
+
+  async function showLocalAutoReapproAlert(payload) {
+    if (isGerantAccount && ReapproPanel?.promptAutoReview) {
+      await drainPendingAutoReappros();
+      return;
+    }
+    if (ReapproPanel?.showEmployeThresholdNotice) {
+      await ReapproPanel.showEmployeThresholdNotice(payload);
+    }
+  }
+
+  async function handleRemoteAutoReappro(payload) {
+    const normalized = normalizeAutoReapproPayload(payload);
+    if (normalized.id_reappro <= 0 || hasSeenAutoReappro(normalized.id_reappro)) {
+      return;
+    }
+    upsertPendingAutoReappro(normalized);
+    dispatchAutoReapproChanged(normalized);
+
+    if (isGerantAccount && ReapproPanel?.promptAutoReview) {
+      await drainPendingAutoReappros();
+    }
+  }
+
+  function broadcastAutoReappro(payload) {
+    const normalized = normalizeAutoReapproPayload(payload);
+    const message = {
+      source: autoReapproTabId,
+      type: "auto-reappro-created",
+      ts: Date.now(),
+      ...normalized,
+    };
+
+    try {
+      if (!autoReapproChannel && typeof BroadcastChannel !== "undefined") {
+        autoReapproChannel = new BroadcastChannel(AUTO_REAPPRO_CHANNEL_NAME);
+      }
+      autoReapproChannel?.postMessage(message);
+    } catch (_) {}
+
+    try {
+      localStorage.setItem(AUTO_REAPPRO_STORAGE_KEY, JSON.stringify(message));
+    } catch (_) {}
+  }
+
+  function initAutoReapproBridge() {
+    if (typeof BroadcastChannel !== "undefined") {
+      try {
+        autoReapproChannel = new BroadcastChannel(AUTO_REAPPRO_CHANNEL_NAME);
+        autoReapproChannel.onmessage = function (event) {
+          const payload = event?.data || null;
+          if (!payload || payload.source === autoReapproTabId) return;
+          if (payload.type !== "auto-reappro-created") return;
+          void handleRemoteAutoReappro(payload);
+        };
+      } catch (_) {}
+    }
+
+    window.addEventListener("storage", function (event) {
+      if (event.key !== AUTO_REAPPRO_STORAGE_KEY || !event.newValue) return;
+      try {
+        const payload = JSON.parse(event.newValue);
+        if (!payload || payload.source === autoReapproTabId) return;
+        if (payload.type !== "auto-reappro-created") return;
+        void handleRemoteAutoReappro(payload);
+      } catch (_) {}
+    });
+
+    if (isGerantAccount) {
+      setTimeout(function () {
+        void drainPendingAutoReappros();
+      }, 0);
+
+      window.addEventListener("focus", function () {
+        void drainPendingAutoReappros();
+      });
+
+      document.addEventListener("visibilitychange", function () {
+        if (document.visibilityState === "visible") {
+          void drainPendingAutoReappros();
+        }
+      });
+    }
   }
 
   async function verifierReapproAuto() {
@@ -32,55 +212,24 @@ const App = (() => {
     autoReapproInFlight = true;
 
     try {
-      const result = await Requetes.creerReapproAuto();
-      const created = Array.isArray(result?.created) ? result.created : [];
-      const createdCount = Number(result?.created_count ?? created.length ?? 0);
+      const result = normalizeAutoReapproPayload(await Requetes.creerReapproAuto());
+      const created = result.created;
+      const createdCount = result.created_count;
 
       if (createdCount > 0) {
-        window.dispatchEvent(
-          new CustomEvent("reappro:changed", {
-            detail: {
-              type: "auto-create",
-              id_reappro: Number(result?.id_reappro ?? 0),
-              created,
-            },
-          }),
-        );
-
-        const linesHtml = created
-          .map(
-            (article) => `
-              <tr>
-                <td style="text-align:left;padding:4px 10px 4px 0;">${escapeHtml(article?.nom_article || `#${article?.id_article || ""}`)}</td>
-                <td style="text-align:right;padding:4px 0;">${escapeHtml(formatReapproQty(article))}</td>
-              </tr>
-            `,
-          )
-          .join("");
-
-        await Swal.fire({
-          icon: "warning",
-          title: "Seuil d'alerte atteint",
-          html: `
-            <div style="text-align:left;font-size:13px;">
-              Réapprovisionnement automatique lancé${createdCount > 1 ? "s" : ""}.
-              <br><br>
-              <b>N° Ordre :</b> #${escapeHtml(result?.id_reappro ?? "—")}<br>
-              <b>Articles :</b> ${escapeHtml(createdCount)}<br><br>
-              <table style="width:100%;font-size:12px;">
-                <tr><th style="text-align:left;">Article</th><th style="text-align:right;">Qté</th></tr>
-                ${linesHtml}
-              </table>
-            </div>
-          `,
-          confirmButtonText: "Fermer",
-        });
+        upsertPendingAutoReappro(result);
+        if (isGerantAccount) {
+          markAutoReapproSeen(result.id_reappro);
+        }
+        dispatchAutoReapproChanged(result);
+        broadcastAutoReappro(result);
+        await showLocalAutoReapproAlert(result);
 
         Toast.warn(
           "Réappro automatique lancé" +
             (createdCount > 1 ? "s" : "") +
             " : #" +
-            Number(result?.id_reappro || 0),
+            Number(result.id_reappro || 0),
         );
       }
     } catch (_) {
@@ -92,6 +241,7 @@ const App = (() => {
 
   function init() {
     State.set("employe", SESSION);
+    initAutoReapproBridge();
 
     // Horloge
     updateClock();
@@ -107,7 +257,7 @@ const App = (() => {
     WM.applyLayout(hand);
 
     // Sur la caisse gérant, ouvrir uniquement les panels gérant
-    if (isGerant) {
+    if (isGerantView) {
       WM.ajouterPanelsGerant();
     }
 

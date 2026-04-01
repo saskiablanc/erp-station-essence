@@ -220,6 +220,112 @@ td.ra-msg {
   opacity: 0.55;
 }
 
+/* Popup d'alerte réappro auto */
+.ra-auto-dialog {
+  text-align: left;
+}
+.ra-auto-dialog__intro {
+  margin-bottom: 12px;
+  font-family: var(--mono);
+  font-size: 12px;
+  line-height: 1.55;
+  color: var(--text);
+}
+.ra-auto-dialog__meta-line {
+  margin-bottom: 10px;
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--text);
+}
+.ra-auto-dialog__table-wrap {
+  border: 1px solid rgba(99, 102, 241, 0.2);
+  border-radius: 10px;
+  overflow: hidden;
+}
+.ra-auto-dialog__table,
+.ra-auto-dialog__mini-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: var(--mono);
+}
+.ra-auto-dialog__table {
+  font-size: 11px;
+}
+.ra-auto-dialog__mini-table {
+  font-size: 11px;
+  margin-top: 8px;
+}
+.ra-auto-dialog__table th,
+.ra-auto-dialog__table td,
+.ra-auto-dialog__mini-table td {
+  padding: 8px 10px;
+  border-bottom: 1px solid rgba(99, 102, 241, 0.14);
+}
+.ra-auto-dialog__table th {
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  color: var(--text-dim);
+  background: var(--bg2);
+}
+.ra-auto-dialog__table tbody tr:last-child td,
+.ra-auto-dialog__mini-table tr:last-child td {
+  border-bottom: none;
+}
+.ra-auto-dialog__name {
+  color: var(--text);
+  font-weight: 600;
+}
+.ra-auto-dialog__meta {
+  margin-top: 3px;
+  color: var(--text-dim);
+  font-size: 10px;
+}
+.ra-auto-dialog__num {
+  text-align: right;
+  white-space: nowrap;
+}
+.ra-auto-dialog__unit {
+  margin-left: 4px;
+  color: var(--text-dim);
+  font-size: 10px;
+}
+.ra-auto-dialog__input-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+input.ra-auto-dialog__input {
+  width: 86px;
+  min-width: 86px;
+  height: var(--pill-compact-h);
+  padding: 0 var(--pill-compact-px);
+  border-radius: 999px;
+  border: 2px solid var(--border);
+  background: #fff;
+  color: var(--text);
+  box-sizing: border-box;
+  box-shadow: var(--shadow-soft);
+  font-family: var(--mono);
+  font-size: 11px;
+  text-align: center;
+  appearance: textfield;
+  -moz-appearance: textfield;
+}
+input.ra-auto-dialog__input::-webkit-outer-spin-button,
+input.ra-auto-dialog__input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+input.ra-auto-dialog__input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.12);
+}
+.ra-auto-dialog--employe .ra-auto-dialog__intro {
+  margin-bottom: 10px;
+}
+
 /* ═══════════════════════════════════════════════════════
    US20 — Valeurs défaut
    ═══════════════════════════════════════════════════════ */

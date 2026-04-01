@@ -272,7 +272,24 @@ class Bdd
     // ═══════════════════════════════════════════════════════
     public function getStock(): array
     {
-        return $this->rows("SELECT id_stock,id_article,quantite_stock,type_quantite FROM Stock ORDER BY id_stock ASC");
+        return $this->rows(
+            "SELECT
+                s.id_stock,
+                s.id_article,
+                COALESCE(p.libelle_produit, c.libelle, CONCAT('Article #', s.id_article)) AS nom_article,
+                s.quantite_stock,
+                s.type_quantite
+             FROM Stock s
+             LEFT JOIN Article a
+               ON a.id_article = s.id_article
+             LEFT JOIN Produit p
+               ON p.id_article = a.id_article
+             LEFT JOIN Energie e
+               ON e.id_article = a.id_article
+             LEFT JOIN Carburant c
+               ON c.id_energie = e.id_energie
+             ORDER BY s.id_stock ASC"
+        );
     }
     public function addStock(array $d): array
     {
