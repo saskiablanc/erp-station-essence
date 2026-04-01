@@ -142,6 +142,9 @@
 <!-- Panels (tous "À VENIR" pour l'instant) -->
 <script src="<?= $assetsUrl ?>/js/panels/ticket_cart.js"></script>
 <script src="<?= $assetsUrl ?>/js/panels/ticket_view.js"></script>
+<script src="<?= $assetsUrl ?>/js/panels/payment/shared.js"></script>
+<script src="<?= $assetsUrl ?>/js/panels/payment/dialogs.js"></script>
+<script src="<?= $assetsUrl ?>/js/panels/payment/service.js"></script>
 <script src="<?= $assetsUrl ?>/js/panels/ticket_payment.js"></script>
 <script src="<?= $assetsUrl ?>/js/panels/ticket_barcode.js"></script>
 <script src="<?= $assetsUrl ?>/js/panels/ticket.js"></script>

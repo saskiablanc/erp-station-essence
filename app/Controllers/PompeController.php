@@ -228,6 +228,16 @@ final class PompeController extends Controller
             $this->jsonError('Identifiant de pompe invalide.', 400);
         }
 
+        $body = $this->body();
+        $modePaiementAuto = strtolower(trim((string) ($body['mode_paiement'] ?? 'cb')));
+        if (!in_array($modePaiementAuto, ['cb', 'cce'], true)) {
+            $modePaiementAuto = 'cb';
+        }
+        $idCarteCce = isset($body['id_carte_CE']) ? (int) $body['id_carte_CE'] : 0;
+        if ($modePaiementAuto === 'cce' && $idCarteCce <= 0) {
+            $this->jsonError('Carte CCE requise pour un paiement auto en CCE.', 400);
+        }
+
         try {
             $this->model->terminerLivraison($idPompe);
             $pompe = $this->model->findById($idPompe);
@@ -241,7 +251,12 @@ final class PompeController extends Controller
                     ? (int) $pompe['id_transaction_energie']
                     : 0;
                 if ($idTe > 0) {
-                    $idTransaction = $this->model->validerPaiement($idPompe, $idTe);
+                    $idTransaction = $this->model->validerPaiement(
+                        $idPompe,
+                        $idTe,
+                        null,
+                        $modePaiementAuto === 'cce' ? $idCarteCce : null
+                    );
                 }
                 $statut = 'active';
             }
@@ -251,12 +266,15 @@ final class PompeController extends Controller
                 'id_pompe' => $idPompe,
                 'statut' => $statut,
                 'id_transaction' => $idTransaction,
+                'mode_paiement_auto' => $modePaiementAuto,
             ]);
             $this->json([
                 'success' => true,
                 'id_pompe' => $idPompe,
                 'statut' => $statut,
                 'id_transaction' => $idTransaction,
+                'mode_paiement_auto' => $modePaiementAuto,
+                'id_carte_CE' => $modePaiementAuto === 'cce' ? $idCarteCce : null,
             ]);
         } catch (RuntimeException $e) {
             $code = $e->getCode();
