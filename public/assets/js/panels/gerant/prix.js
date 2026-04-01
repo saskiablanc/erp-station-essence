@@ -34,47 +34,20 @@ WM.register("gerant_prix", {
   onMount() {
     var list = document.getElementById("pc-list");
     var btnModifier = document.getElementById("pc-btn-modifier");
-    var pending = {}; // { id_carburant: { prix_litre, livraison_min } }
+    var originalById = {};
 
-    // ── Popup globale (body) ─────────────────────────────────
-    // US12 E41/E42 / US13 E47/E48 : popup confirmation ou erreur
+    function approxEqual(a, b, epsilon) {
+      return Math.abs(Number(a || 0) - Number(b || 0)) <= (epsilon || 0.0005);
+    }
+
     function showPopup(type, title, msg) {
-      var iconMap = {
-        success: "✓",
-        error: "✕",
-        question: "?",
-        warning: "!",
-        info: "i",
-      };
-      var resolvedType = iconMap[type] ? type : "info";
-
-      var overlay = document.getElementById("pc-global-overlay");
-      if (!overlay) {
-        overlay = document.createElement("div");
-        overlay.id = "pc-global-overlay";
-        overlay.className = "cp-global-overlay"; // réutilise les styles cp- de cce_params.css
-        overlay.innerHTML = `
-          <div class="cp-popup">
-            <div class="cp-popup-icon" id="pc-popup-icon"></div>
-            <div class="cp-popup-title" id="pc-popup-title"></div>
-            <div class="cp-popup-msg" id="pc-popup-msg"></div>
-            <button class="cp-popup-close" id="pc-popup-close">Fermer</button>
-          </div>
-        `;
-        document.body.appendChild(overlay);
-        document
-          .getElementById("pc-popup-close")
-          .addEventListener("click", function () {
-            overlay.style.display = "none";
-          });
-      }
-      document.getElementById("pc-popup-icon").className =
-        "cp-popup-icon cp-popup-icon--" + resolvedType;
-      document.getElementById("pc-popup-icon").textContent =
-        iconMap[resolvedType];
-      document.getElementById("pc-popup-title").textContent = title;
-      document.getElementById("pc-popup-msg").textContent = msg || "";
-      overlay.style.display = "flex";
+      return Swal.fire({
+        icon: type || "info",
+        title: title || "",
+        text: msg || "",
+        confirmButtonText: "Fermer",
+        allowOutsideClick: false,
+      });
     }
 
     // ── Chargement ───────────────────────────────────────────
@@ -82,7 +55,13 @@ WM.register("gerant_prix", {
     async function charger() {
       try {
         var data = await Requetes.getPrix();
-        pending = {};
+        originalById = {};
+        data.forEach(function (c) {
+          originalById[String(c.id_carburant)] = {
+            prix_litre: Number(c.prix_litre),
+            livraison_min: Number(c.livraison_min),
+          };
+        });
         afficher(data);
         btnModifier.disabled = false;
       } catch (e) {
@@ -121,23 +100,14 @@ WM.register("gerant_prix", {
       list.innerHTML = html;
     }
 
-    // ── Tracking modifications ────────────────────────────────
-    list.addEventListener("input", function (e) {
-      var input = e.target.closest("[data-field]");
-      if (!input) return;
-      var row = input.closest("[data-id]");
-      if (!row) return;
-      var id = row.dataset.id;
-      if (!pending[id]) pending[id] = {};
-      pending[id][input.dataset.field] = input.value;
-    });
-
     // ── Modifier valeurs ──────────────────────────────────────
     // US12 critère 3 / US13 critère 3 : sauvegarder toutes les modifications
     btnModifier.addEventListener("click", async function () {
       // Construire le payload complet depuis le DOM
       var rows = list.querySelectorAll("[data-id]");
       var carburants = [];
+      var changedPrix = false;
+      var changedLivraison = false;
       var valid = true;
 
       rows.forEach(function (row) {
@@ -169,30 +139,63 @@ WM.register("gerant_prix", {
           return;
         }
 
-        carburants.push({
-          id: parseInt(id),
-          prix_litre: parseFloat(prix),
-          livraison_min: parseFloat(livr),
-        });
+        var prixValue = parseFloat(prix);
+        var livrValue = parseFloat(livr);
+        var original = originalById[id] || {
+          prix_litre: prixValue,
+          livraison_min: livrValue,
+        };
+        var hasPrixChange = !approxEqual(prixValue, original.prix_litre, 0.0005);
+        var hasLivrChange = !approxEqual(livrValue, original.livraison_min, 0.0005);
+
+        if (hasPrixChange || hasLivrChange) {
+          carburants.push({
+            id: parseInt(id),
+            prix_litre: prixValue,
+            livraison_min: livrValue,
+          });
+          changedPrix = changedPrix || hasPrixChange;
+          changedLivraison = changedLivraison || hasLivrChange;
+        }
       });
 
       if (!valid) return;
-      if (!carburants.length) return;
+      if (!carburants.length) {
+        await showPopup(
+          "info",
+          "Aucune modification détectée",
+          "Aucun prix ni aucune livraison minimale n'ont été modifiés.",
+        );
+        return;
+      }
 
       btnModifier.disabled = true;
       try {
         // US12+US13 critère 3 : envoi en base
         await Requetes.modifierPrix({ carburants: carburants });
-        // US12 E41 / US13 E48 : popup confirmation
-        showPopup(
-          "success",
-          "Valeurs modifiées",
-          "Les prix et livraisons minimales ont bien été mis à jour.",
-        );
-        charger();
+        if (changedPrix && changedLivraison) {
+          await showPopup(
+            "success",
+            "Valeurs modifiées",
+            "Les prix carburant et les livraisons minimales ont bien été mis à jour.",
+          );
+        } else if (changedPrix) {
+          await showPopup(
+            "success",
+            "Prix modifiés",
+            "Seuls les prix carburant ont été mis à jour.",
+          );
+        } else {
+          await showPopup(
+            "success",
+            "Livraisons minimales modifiées",
+            "Seules les livraisons minimales ont été mises à jour.",
+          );
+        }
+        await charger();
       } catch (err) {
         // US12 E42 / US13 E47 : popup erreur
-        showPopup(
+        await showPopup(
           "error",
           "Mauvaise Entrée",
           err.message || "Une erreur est survenue.",

@@ -216,113 +216,18 @@ const HorairesBoutiquePanel = (() => {
     });
   }
 
-  async function chooseApplyDays(baseDay, allDays) {
-    const rows = allDays
-      .map((day) => {
-        const isClosed = !!day.est_ferme;
-        const checked = day.id_jour === baseDay.id_jour ? "checked" : "";
-        const disabled =
-          day.id_jour === baseDay.id_jour || isClosed ? "disabled" : "";
-        return `
-          <label class="hb-apply-item${isClosed ? " hb-apply-item--disabled" : ""}">
-            <span>${escapeHtml(day.libelle)}</span>
-            <input
-              type="checkbox"
-              class="hb-apply-check"
-              value="${escapeHtml(day.id_jour)}"
-              ${checked}
-              ${disabled}
-            />
-          </label>
-        `;
-      })
-      .join("");
-
-    const result = await Swal.fire({
+  async function confirmSave(days) {
+    return Swal.fire({
       ...swalBase,
-      title: "Appliquer pareil pour les jours suivants ?",
-      html: `
-        <div class="hb-apply-grid">
-          ${rows}
-          <label class="hb-apply-item hb-apply-item--all">
-            <span>Tout</span>
-            <input type="checkbox" id="hb-apply-all" class="hb-apply-all-check" />
-          </label>
-        </div>
-      `,
-      showCloseButton: true,
-      confirmButtonText: "Appliquer",
-      focusConfirm: false,
-      preConfirm: () => {
-        const popup = Swal.getPopup();
-        const selected = [baseDay.id_jour];
-
-        popup.querySelectorAll(".hb-apply-check").forEach((input) => {
-          if (!input.disabled && input.checked) {
-            selected.push(Number(input.value));
-          }
-        });
-
-        return [...new Set(selected)];
-      },
-      didOpen: (popup) => {
-        const allToggle = popup.querySelector("#hb-apply-all");
-        const checks = [...popup.querySelectorAll(".hb-apply-check")].filter(
-          (input) => !input.disabled,
-        );
-
-        allToggle?.addEventListener("change", () => {
-          checks.forEach((input) => {
-            input.checked = allToggle.checked;
-          });
-        });
-
-        checks.forEach((input) => {
-          input.addEventListener("change", () => {
-            if (!allToggle) return;
-            allToggle.checked = checks.length > 0 && checks.every((item) => item.checked);
-          });
-        });
-      },
+      icon: "question",
+      title: "Confirmer les nouveaux horaires ?",
+      text:
+        "Les horaires seront enregistrés pour " + formatDaysLabel(days) + ".",
+      showCancelButton: true,
+      confirmButtonText: "Confirmer",
+      cancelButtonText: "Annuler",
+      allowOutsideClick: false,
     });
-
-    if (!result.isConfirmed) return null;
-    return Array.isArray(result.value) ? result.value : [baseDay.id_jour];
-  }
-
-  function applySelection(root, payload, baseDay, selectedIds) {
-    const selected = new Set(selectedIds.map((id) => Number(id)));
-    const baseOpen = baseDay.heure_ouverture;
-    const baseClose = baseDay.heure_fermeture;
-    const baseClosed = !!baseDay.est_ferme;
-
-    const finalPayload = payload.map((day) =>
-      selected.has(Number(day.id_jour)) && !day.est_ferme
-        ? {
-            ...day,
-            heure_ouverture: baseOpen,
-            heure_fermeture: baseClose,
-            est_ferme: baseClosed,
-          }
-        : day,
-    );
-
-    root.querySelectorAll(".hb-day").forEach((card) => {
-      const idJour = Number(card.dataset.jourId || 0);
-      if (!selected.has(idJour)) return;
-
-      const openInput = card.querySelector(".hb-input-ouverture");
-      const closeInput = card.querySelector(".hb-input-fermeture");
-      const checkbox = card.querySelector(".hb-checkbox");
-      if (!openInput || !closeInput || !checkbox) return;
-
-      openInput.value = baseOpen;
-      closeInput.value = baseClose;
-      checkbox.checked = baseClosed;
-      syncClosedState(card);
-    });
-
-    return finalPayload;
   }
 
   async function onValidate(root) {
@@ -342,25 +247,14 @@ const HorairesBoutiquePanel = (() => {
       return;
     }
 
-    const baseDay = resolveBaseDay(root, modifiedDays);
-    const selectedIds = await chooseApplyDays(baseDay, payload);
-    if (!selectedIds) return;
-
-    const finalPayload = applySelection(root, payload, baseDay, selectedIds);
-    const savedDays = getModifiedDays(root, finalPayload);
-    const hasInvalidAfterApply = finalPayload.find(
-      (day) => !day.heure_ouverture || !day.heure_fermeture,
-    );
-    if (hasInvalidAfterApply) {
-      await showInvalidError();
-      return;
-    }
+    const confirmation = await confirmSave(modifiedDays);
+    if (!confirmation.isConfirmed) return;
 
     setLoading(root, true);
     try {
-      const response = await Requetes.updateHorairesBoutique(finalPayload);
+      const response = await Requetes.updateHorairesBoutique(modifiedDays);
       render(root, response.horaires || []);
-      await showSuccess(savedDays);
+      await showSuccess(modifiedDays);
     } catch (error) {
       setLoading(root, false);
       await showInvalidError();

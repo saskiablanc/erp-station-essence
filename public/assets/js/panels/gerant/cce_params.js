@@ -55,48 +55,16 @@ WM.register("gerant_cce_params", {
     var newRows = [];
     var pendingBonus = {};
     var newRowCount = 0;
+    var originalMin = null;
 
-    // ── Popup globale (sur body = centre de la caisse entière) ──
-    // US14 E50 (erreur) / E51 (confirmation)
     function showPopup(type, title, msg) {
-      var iconMap = {
-        success: "✓",
-        error: "✕",
-        question: "?",
-        warning: "!",
-        info: "i",
-      };
-      var resolvedType = iconMap[type] ? type : "info";
-
-      // Réutiliser un overlay existant ou en créer un
-      var overlay = document.getElementById("cp-global-overlay");
-      if (!overlay) {
-        overlay = document.createElement("div");
-        overlay.id = "cp-global-overlay";
-        overlay.className = "cp-global-overlay";
-        overlay.innerHTML = `
-          <div class="cp-popup">
-            <div class="cp-popup-icon" id="cp-popup-icon"></div>
-            <div class="cp-popup-title" id="cp-popup-title"></div>
-            <div class="cp-popup-msg" id="cp-popup-msg"></div>
-            <button class="cp-popup-close" id="cp-popup-close">Fermer</button>
-          </div>
-        `;
-        document.body.appendChild(overlay);
-        document
-          .getElementById("cp-popup-close")
-          .addEventListener("click", function () {
-            overlay.style.display = "none";
-          });
-      }
-
-      document.getElementById("cp-popup-icon").className =
-        "cp-popup-icon cp-popup-icon--" + resolvedType;
-      document.getElementById("cp-popup-icon").textContent =
-        iconMap[resolvedType];
-      document.getElementById("cp-popup-title").textContent = title;
-      document.getElementById("cp-popup-msg").textContent = msg || "";
-      overlay.style.display = "flex";
+      return Swal.fire({
+        icon: type || "info",
+        title: title || "",
+        text: msg || "",
+        confirmButtonText: "Fermer",
+        allowOutsideClick: false,
+      });
     }
 
     // ── Chargement ───────────────────────────────────────────
@@ -104,31 +72,37 @@ WM.register("gerant_cce_params", {
     async function charger() {
       try {
         var data = await Requetes.getCceParams();
-        inputMin.value = parseFloat(data.montant_min);
-        bonusData = data.bonus || [];
+        originalMin = Number(data.montant_min);
+        inputMin.value = originalMin;
+        bonusData = Array.isArray(data.bonus) ? data.bonus.slice() : [];
         newRows = [];
         pendingBonus = {};
         afficher();
         btnModifier.disabled = false;
       } catch (e) {
-        showPopup("error", "Erreur de chargement", e.message);
+        void showPopup("error", "Erreur de chargement", e.message);
       }
     }
 
     // ── Rendu tableau bonus ───────────────────────────────────
     function afficher() {
       var html = "";
-      bonusData.forEach(function (b) {
-        html += ligneBonus(
-          "exist-" + b.id_bonus,
-          parseFloat(b.tranche),
-          parseFloat(b.montant_bonus),
-          false,
-        );
-      });
       newRows.forEach(function (r) {
         html += ligneBonus("new-" + r.tmpId, r.tranche, r.montant_bonus, true);
       });
+      bonusData
+        .slice()
+        .sort(function (a, b) {
+          return Number(b.id_bonus || 0) - Number(a.id_bonus || 0);
+        })
+        .forEach(function (b) {
+          html += ligneBonus(
+            "exist-" + b.id_bonus,
+            parseFloat(b.tranche),
+            parseFloat(b.montant_bonus),
+            false,
+          );
+        });
       bonusList.innerHTML =
         html || '<div class="cp-msg">Aucune tranche définie</div>';
     }
@@ -180,21 +154,21 @@ WM.register("gerant_cce_params", {
       var id = rowId.replace("exist-", "");
       try {
         await Requetes.deleteBonus(id);
-        showPopup(
+        await showPopup(
           "success",
           "Tranche supprimée",
           "La tranche de bonus a bien été supprimée.",
         );
-        charger();
+        await charger();
       } catch (err) {
-        showPopup("error", "Erreur", err.message);
+        await showPopup("error", "Erreur", err.message);
       }
     });
 
     // ── Ajout bonus LOCAL ─────────────────────────────────────
     btnAjout.addEventListener("click", function () {
       newRowCount++;
-      newRows.push({ tmpId: newRowCount, tranche: "", montant_bonus: "" });
+      newRows.unshift({ tmpId: newRowCount, tranche: "", montant_bonus: "" });
       afficher();
       btnModifier.disabled = false;
     });
@@ -202,26 +176,36 @@ WM.register("gerant_cce_params", {
     // ── Sauvegarde montant min (✓) ────────────────────────────
     btnSaveMin.addEventListener("click", async function () {
       var val = inputMin.value.trim();
+      var parsedVal = parseFloat(val);
       // US14 critère 4/5
-      if (val === "" || isNaN(parseFloat(val)) || parseFloat(val) < 0) {
-        showPopup(
+      if (val === "" || isNaN(parsedVal) || parsedVal < 0) {
+        await showPopup(
           "error",
           "Mauvaise Entrée",
           "erreur input de montant Min : veuillez entrer une valeur numérique",
         );
         return;
       }
+      if (originalMin !== null && Math.abs(parsedVal - originalMin) < 0.0005) {
+        await showPopup(
+          "info",
+          "Aucune modification détectée",
+          "Le montant minimum reste inchangé.",
+        );
+        return;
+      }
       try {
-        await Requetes.updateMontantMin(parseFloat(val));
+        await Requetes.updateMontantMin(parsedVal);
+        originalMin = parsedVal;
         // US14 E51
-        showPopup(
+        await showPopup(
           "success",
           "Valeurs modifiées",
           "Le montant minimum a bien été mis à jour.",
         );
       } catch (e) {
         // US14 critère 6
-        showPopup("error", "Erreur : Format Minimum Montant", e.message);
+        await showPopup("error", "Erreur : Format Minimum Montant", e.message);
       }
     });
 
@@ -240,7 +224,7 @@ WM.register("gerant_cce_params", {
         var b = row.querySelector('[data-field="montant_bonus"]').value.trim();
         // US14 critère 4/5
         if (t === "" || isNaN(parseFloat(t)) || parseFloat(t) <= 0) {
-          showPopup(
+          void showPopup(
             "error",
             "Mauvaise Entrée",
             "erreur input de Bonus : veuillez entrer une valeur numérique pour la tranche.",
@@ -249,7 +233,7 @@ WM.register("gerant_cce_params", {
           return;
         }
         if (b === "" || isNaN(parseFloat(b)) || parseFloat(b) < 0) {
-          showPopup(
+          void showPopup(
             "error",
             "Mauvaise Entrée",
             "erreur input de Bonus : veuillez entrer une valeur numérique pour le montant.",
@@ -280,7 +264,7 @@ WM.register("gerant_cce_params", {
             : row.querySelector('[data-field="montant_bonus"]').value;
         if (isNaN(parseFloat(t)) || parseFloat(t) <= 0) {
           // US14 critère 6
-          showPopup(
+          await showPopup(
             "error",
             "Erreur : Format Bonus",
             "erreur input de Bonus : veuillez entrer une valeur numérique.",
@@ -292,8 +276,8 @@ WM.register("gerant_cce_params", {
       }
 
       if (existIds.length === 0 && newRowsData.length === 0) {
-        showPopup(
-          "error",
+        await showPopup(
+          "info",
           "Aucune modification",
           "Modifiez au moins une valeur avant de confirmer.",
         );
@@ -317,15 +301,15 @@ WM.register("gerant_cce_params", {
           );
         }
         // US14 E51
-        showPopup(
+        await showPopup(
           "success",
           "Valeurs modifiées",
           "Les paramètres CCE ont bien été enregistrés.",
         );
-        charger();
+        await charger();
       } catch (err) {
         // US14 E50
-        showPopup(
+        await showPopup(
           "error",
           "Mauvaise Entrée",
           err.message || "Une erreur est survenue.",
