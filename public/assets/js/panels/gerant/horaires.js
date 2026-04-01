@@ -295,8 +295,8 @@ const HorairesBoutiquePanel = (() => {
 })();
 
 WM.register("gerant_horaires", {
-  label: "HBT Modification Horaires Boutique",
-  icon: "",
+  label: "Modification Horaires Boutique",
+  icon: "HBT",
   sprint: 6,
   gerantOnly: true,
   buildHTML() {

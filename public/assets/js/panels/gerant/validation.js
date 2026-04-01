@@ -475,8 +475,8 @@ const GerantValidationPanel = (() => {
 })();
 
 WM.register("gerant_validation", {
-  label: "VAL Validation Tables",
-  icon: "",
+  label: "Validation Tables",
+  icon: "VAL",
   sprint: 6,
   gerantOnly: true,
   buildHTML() {

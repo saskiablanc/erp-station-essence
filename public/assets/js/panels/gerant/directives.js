@@ -1,7 +1,7 @@
 /** panels/gerant/directives.js — Directives de la Direction */
 WM.register("gerant_directives", {
-  label: "DIR Directives de la Direction",
-  icon: "",
+  label: "Directives de la Direction",
+  icon: "DIR",
   sprint: 6,
   gerantOnly: true,
   buildHTML() {

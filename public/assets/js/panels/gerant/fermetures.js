@@ -271,8 +271,8 @@ const GerantFermeturesPanel = (() => {
 })();
 
 WM.register("gerant_fermetures", {
-  label: "JFB Jours de fermetures de la boutique",
-  icon: "",
+  label: "Jours de fermetures de la boutique",
+  icon: "JFB",
   sprint: 6,
   gerantOnly: true,
   buildHTML() {

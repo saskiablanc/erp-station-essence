@@ -322,8 +322,8 @@ const IncidentPanel = (() => {
 })();
 
 WM.register("gerant_incidents", {
-  label: "INC Fiches Incident",
-  icon: "",
+  label: "Fiches Incident",
+  icon: "INC",
   sprint: 6,
   gerantOnly: true,
   buildHTML() {

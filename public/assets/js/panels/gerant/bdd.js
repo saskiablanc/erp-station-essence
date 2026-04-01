@@ -1,7 +1,7 @@
 /** panels/gerant/bdd.js — bootstrap */
 WM.register("gerant_bdd", {
-  label: "BDD Base de Données",
-  icon: "",
+  label: "Base de Données",
+  icon: "BDD",
   sprint: 6,
   gerantOnly: true,
   buildHTML() {
