@@ -5,9 +5,14 @@
 const WM = (() => {
   const PANELS = {};
 
-  const LAYOUT_VERSION = "v6";
+  const EMPLOYE_LAYOUT_VERSION = "v6";
+  const GERANT_LAYOUT_VERSION = "v7";
   const HAND_STORAGE_KEY = "caisse_hand_v2";
   const flipHand = (hand) => (hand === "left" ? "right" : "left");
+  const isGerantMode = () =>
+    typeof CAISSE_MODE !== "undefined" && CAISSE_MODE === "gerant";
+  const getLayoutVersion = () =>
+    isGerantMode() ? GERANT_LAYOUT_VERSION : EMPLOYE_LAYOUT_VERSION;
 
   const LAYOUT_METRICS = {
     margin: 6,
@@ -56,13 +61,13 @@ const WM = (() => {
   }
 
   function computeLayout(hand) {
-    if (typeof CAISSE_MODE !== "undefined" && CAISSE_MODE === "gerant") {
-      return computeLayoutGerant();
+    if (isGerantMode()) {
+      return computeLayoutGerant(hand);
     }
     return computeLayoutEmploye(hand);
   }
 
-  function computeLayoutGerant() {
+  function computeLayoutGerant(hand) {
     const canvas = document.getElementById("canvas");
     if (!canvas) return {};
 
@@ -108,7 +113,7 @@ const WM = (() => {
     const xHor = xFerm + r3FermW + g;
     const xBdd = xHor + r3HorW + g;
 
-    return {
+    const right = {
       gerant_reappro: { x: xReap, y: y0, w: r1ReapW, h: row1H },
       gerant_reappro_defauts: { x: xDef, y: y0, w: r1DefW, h: row1H },
       gerant_incidents: { x: xInc, y: y0, w: r1IncW, h: row1H },
@@ -122,6 +127,8 @@ const WM = (() => {
       gerant_horaires: { x: xHor, y: y2, w: r3HorW, h: row3H },
       gerant_bdd: { x: xBdd, y: y2, w: r3BddW, h: row3H },
     };
+
+    return hand === "left" ? mirrorLayout(right, m, W - m) : right;
   }
 
   function computeLayoutEmploye(hand) {
@@ -186,7 +193,7 @@ const WM = (() => {
   ];
 
   function getDefaultVisible() {
-    if (typeof CAISSE_MODE !== "undefined" && CAISSE_MODE === "gerant") {
+    if (isGerantMode()) {
       return DEFAULT_VISIBLE_GERANT;
     }
     return DEFAULT_VISIBLE_EMPLOYE;
@@ -494,7 +501,7 @@ const WM = (() => {
     const layoutHand = flipHand(hand);
     const saved = JSON.parse(
       localStorage.getItem(
-        "caisse_layout_" + LAYOUT_VERSION + "_" + layoutHand,
+        "caisse_layout_" + getLayoutVersion() + "_" + layoutHand,
       ) || "null",
     );
 
@@ -535,7 +542,7 @@ const WM = (() => {
       });
     });
     localStorage.setItem(
-      "caisse_layout_" + LAYOUT_VERSION + "_" + hand,
+      "caisse_layout_" + getLayoutVersion() + "_" + hand,
       JSON.stringify(items),
     );
     Toast.ok("Disposition sauvegardée");
@@ -544,7 +551,7 @@ const WM = (() => {
   function resetLayout() {
     const hand = State.get("hand");
     localStorage.removeItem(
-      "caisse_layout_" + LAYOUT_VERSION + "_" + flipHand(hand),
+      "caisse_layout_" + getLayoutVersion() + "_" + flipHand(hand),
     );
     applyLayout(hand);
     Toast.ok("Disposition réinitialisée");
@@ -552,7 +559,7 @@ const WM = (() => {
 
   function hasSavedLayout(hand) {
     return !!localStorage.getItem(
-      "caisse_layout_" + LAYOUT_VERSION + "_" + flipHand(hand),
+      "caisse_layout_" + getLayoutVersion() + "_" + flipHand(hand),
     );
   }
 
