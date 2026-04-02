@@ -114,7 +114,7 @@
       "pay-ko": { kind: "simple", options: { ...ticketPayBase(), icon: "error", title: "Paiement refusé", html: "Impossible d’enregistrer la transaction.", confirmButtonText: "Fermer" } },
 
       // CCE
-      "cce-scanner": { kind: "simple", options: { title: "Scanner CCE", html: '<div style="text-align:center;padding:20px 0;"><div style="margin-bottom:16px;color:var(--text-mid,#4b5563);font-size:13px;">En attente de la selection d\'une carte sur le simulateur...</div><div style="display:inline-block;width:10px;height:10px;border-radius:50%;background:var(--accent,#6366f1);animation:cce-wait-pulse 1.2s ease-in-out infinite;"></div><style>@keyframes cce-wait-pulse{0%,100%{opacity:.3}50%{opacity:1}}</style></div>', ...cceBase(), showConfirmButton: false, showCancelButton: true, cancelButtonText: "Annuler", allowOutsideClick: false } },
+      "cce-scanner": { kind: "simple", options: { title: "Scanner CCE", html: '<div style="text-align:center;padding:20px 0;"><div style="margin-bottom:16px;color:var(--text-mid,#4b5563);font-size:13px;">En attente de la sélection d\'une carte sur le simulateur...</div><div style="display:inline-block;width:10px;height:10px;border-radius:50%;background:var(--accent,#6366f1);animation:cce-wait-pulse 1.2s ease-in-out infinite;"></div><style>@keyframes cce-wait-pulse{0%,100%{opacity:.3}50%{opacity:1}}</style></div>', ...cceBase(), showConfirmButton: false, showCancelButton: true, cancelButtonText: "Annuler", allowOutsideClick: false } },
       "cce-actions": { kind: "simple", options: { title: "Actions", html: '<div class="cce-actions-card">Carte #12</div><div class="cce-actions-grid"><button type="button" class="cce-actions-btn">Recharger CCE</button><button type="button" class="cce-actions-btn">Consulter transactions</button><button type="button" class="cce-actions-btn">Informations bonus</button><button type="button" class="cce-actions-btn">Fin consultation</button></div>', ...cceBase(), customClass: { ...cceBase().customClass, popup: "cce-swal-popup cce-swal-popup-actions" }, showConfirmButton: false, showCancelButton: false, showCloseButton: true } },
       "cce-min": { kind: "simple", options: { ...cceBase(), icon: "warning", title: "Montant insuffisant", text: "Le montant minimum de rechargement est de 50.00 EUR.", confirmButtonText: "Fermer" } },
       "cce-bonus": { kind: "simple", options: { ...cceBase(), title: "Informations bonus", html: 'Bonus à partir de 100 EUR : <strong>10.00 EUR</strong><br>Bonus à partir de 200 EUR : <strong>25.00 EUR</strong>', confirmButtonText: "Fermer" } },
@@ -236,4 +236,3 @@
     init();
   }
 })();
-

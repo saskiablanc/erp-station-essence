@@ -45,14 +45,6 @@ WM.register("pompes", {
           </div>
 
         </div>
-
-        <!-- ── STATUT POLLING ──────────────────────── -->
-        <div class="pompes-statusbar">
-          <span class="pompes-statusbar-dot" id="pompes-dot"></span>
-          <span id="pompes-statusbar-txt">Initialisation...</span>
-          <button class="pompes-statusbar-refresh" onclick="PompesPanelRefresh()">Rafraîchir</button>
-        </div>
-
       </div>
     `;
   },
@@ -70,16 +62,6 @@ var _sseSource = null;
 var _sseRetryTimer = null;
 var SSE_RETRY_DELAY = 3000;
 
-function _setStatus(state, txt) {
-  var dot = document.getElementById("pompes-dot");
-  var span = document.getElementById("pompes-statusbar-txt");
-  if (!dot || !span) return;
-  dot.className =
-    "pompes-statusbar-dot" +
-    (state === "loading" ? " loading" : state === "error" ? " error" : "");
-  span.textContent = txt;
-}
-
 function _majBadges(nbCarb, nbElec) {
   var bc = document.getElementById("badge-carb");
   var be = document.getElementById("badge-elec");
@@ -96,7 +78,6 @@ function _majBadges(nbCarb, nbElec) {
 async function _fetchEtMajAffichage() {
   if (_pollingRunning) return;
   _pollingRunning = true;
-  _setStatus("loading", "Mise à jour...");
   try {
     var data = await Requetes.getPompes();
     var carburant = data.filter(function (p) {
@@ -118,16 +99,8 @@ async function _fetchEtMajAffichage() {
         return p.statut === "desactivee";
       }).length,
     );
-
-    var now = new Date();
-    var hms = [now.getHours(), now.getMinutes(), now.getSeconds()]
-      .map(function (v) {
-        return String(v).padStart(2, "0");
-      })
-      .join(":");
-    _setStatus("ok", "Mis à jour à " + hms);
   } catch (e) {
-    _setStatus("error", "Erreur réseau - " + e.message);
+    console.error("Pompes: échec du rafraîchissement", e);
   } finally {
     _pollingRunning = false;
   }

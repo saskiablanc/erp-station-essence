@@ -177,6 +177,15 @@ WM.register('ticket', {
               <tr>
                 <td>${escapeHtml(article.code_barres)}</td>
                 <td>${escapeHtml(article.libelle)}</td>
+                <td class="ticket-list-cell-action">
+                  <button
+                    type="button"
+                    class="ticket-list-add-btn"
+                    data-ticket-list-add="${escapeHtml(article.code_barres)}"
+                  >
+                    Ajouter aux achats
+                  </button>
+                </td>
               </tr>
             `,
           )
@@ -189,7 +198,7 @@ WM.register('ticket', {
               <div class="ticket-list-wrap">
                 <table class="ticket-list-table">
                   <thead>
-                    <tr><th>Code-barres</th><th>Article</th></tr>
+                    <tr><th>Code-barres</th><th>Article</th><th>Action</th></tr>
                   </thead>
                   <tbody>${rows}</tbody>
                 </table>
@@ -204,6 +213,33 @@ WM.register('ticket', {
           },
           buttonsStyling: false,
           confirmButtonText: 'Fermer',
+          didOpen: (popup) => {
+            popup.addEventListener('click', async (event) => {
+              const btn = event.target.closest('[data-ticket-list-add]');
+              if (!btn) return;
+              const code = String(btn.dataset.ticketListAdd || '').trim();
+              if (!code) return;
+
+              btn.disabled = true;
+              try {
+                const article = await Requetes.getArticle(code);
+                const ok = await addToCart(article);
+                if (ok) {
+                  Toast.ok('Article ajouté aux achats');
+                }
+              } catch (error) {
+                const message = error?.message || "Impossible d'ajouter cet article";
+                const stockWarning = /stock/i.test(message);
+                if (stockWarning) {
+                  Toast.warn('Stock insuffisant pour cet article');
+                } else {
+                  Toast.err(message);
+                }
+              } finally {
+                btn.disabled = false;
+              }
+            });
+          },
         });
       } catch (err) {
         await Swal.fire({

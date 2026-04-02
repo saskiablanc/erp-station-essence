@@ -106,7 +106,7 @@ const ReapproPanel = (() => {
     return `
       <div class="ra-auto-dialog">
         <div class="ra-auto-dialog__intro">
-          Le seuil d'alerte a déclenché un réapprovisionnement automatique. Ajustez la quantité avant validation ou annulation.
+          Le seuil d'alerte a déclenché un réapprovisionnement automatique. Vous pouvez le valider, modifier les quantités, ou l'annuler.
         </div>
         <div class="ra-auto-dialog__table-wrap">
           <table class="ra-auto-dialog__table">
@@ -165,6 +165,68 @@ const ReapproPanel = (() => {
     `;
   }
 
+  async function applyAutoReapproUpdates(idReappro) {
+    const popup = Swal.getPopup();
+    const inputs = popup
+      ? Array.from(popup.querySelectorAll(".ra-auto-dialog__input"))
+      : [];
+    const updates = [];
+
+    for (const input of inputs) {
+      const idArticle = Number(input.dataset.idArticle || 0);
+      const rawValue = String(input.value || "").trim().replace(",", ".");
+      const isLiquid = isLiquidType(input.dataset.typeArticle || "");
+      const parsed = Number(rawValue);
+
+      if (!Number.isFinite(parsed) || parsed <= 0) {
+        Swal.showValidationMessage(
+          "Chaque quantité doit être supérieure à 0.",
+        );
+        return false;
+      }
+
+      const normalized = isLiquid
+        ? Number(parsed.toFixed(3))
+        : Math.max(1, Math.round(parsed));
+      const original = Number(
+        String(input.dataset.original || "0").replace(",", "."),
+      );
+
+      input.value = isLiquid
+        ? normalized.toFixed(3)
+        : String(normalized);
+
+      if (Math.abs(normalized - original) > 0.0005) {
+        updates.push({
+          id_article: idArticle,
+          quantite: normalized,
+          isLiquid: isLiquid,
+        });
+      }
+    }
+
+    if (updates.length === 0) {
+      Swal.showValidationMessage(
+        "Aucune modification détectée. Modifiez au moins une quantité.",
+      );
+      return false;
+    }
+
+    try {
+      for (const update of updates) {
+        await Requetes.updateReapproLigne(
+          idReappro,
+          update.id_article,
+          update.quantite,
+        );
+      }
+      return updates;
+    } catch (err) {
+      Swal.showValidationMessage(err.message || "Modification impossible");
+      return false;
+    }
+  }
+
   async function promptAutoReview(payload) {
     const detail = await loadAutoReapproDetail(payload);
     const idReappro = Number(detail?.id_reappro ?? 0);
@@ -184,76 +246,28 @@ const ReapproPanel = (() => {
       icon: "warning",
       title: "Réappro auto #" + idReappro,
       html: buildAutoReviewTable(lignes),
-      width: 760,
+      width: 1200,
       allowOutsideClick: false,
       allowEscapeKey: false,
       showDenyButton: true,
+      showCancelButton: true,
+      customClass: {
+        popup: "ra-swal-auto-review",
+        htmlContainer: "ra-swal-auto-review-html",
+      },
       confirmButtonText: "Valider le réappro",
-      denyButtonText: "Annuler le réappro",
-      denyButtonColor: "#ef4444",
-      preConfirm: async function () {
-        const popup = Swal.getPopup();
-        const inputs = popup
-          ? Array.from(popup.querySelectorAll(".ra-auto-dialog__input"))
-          : [];
-        const updates = [];
-
-        for (const input of inputs) {
-          const idArticle = Number(input.dataset.idArticle || 0);
-          const rawValue = String(input.value || "").trim().replace(",", ".");
-          const isLiquid = isLiquidType(input.dataset.typeArticle || "");
-          const parsed = Number(rawValue);
-
-          if (!Number.isFinite(parsed) || parsed <= 0) {
-            Swal.showValidationMessage(
-              "Chaque quantité doit être supérieure à 0.",
-            );
-            return false;
-          }
-
-          const normalized = isLiquid
-            ? Number(parsed.toFixed(3))
-            : Math.max(1, Math.round(parsed));
-          const original = Number(
-            String(input.dataset.original || "0").replace(",", "."),
-          );
-
-          input.value = isLiquid
-            ? normalized.toFixed(3)
-            : String(normalized);
-
-          if (Math.abs(normalized - original) > 0.0005) {
-            updates.push({
-              id_article: idArticle,
-              quantite: normalized,
-            });
-          }
-        }
-
-        try {
-          for (const update of updates) {
-            await Requetes.updateReapproLigne(
-              idReappro,
-              update.id_article,
-              update.quantite,
-            );
-          }
-          return { updates: updates };
-        } catch (err) {
-          Swal.showValidationMessage(err.message || "Modification impossible");
-          return false;
-        }
+      denyButtonText: "Modifier le réappro",
+      cancelButtonText: "Annuler le réappro",
+      preDeny: async function () {
+        const updates = await applyAutoReapproUpdates(idReappro);
+        if (!updates) return false;
+        return { updates: updates };
       },
     });
 
     if (result.isConfirmed) {
-      const count = Array.isArray(result.value?.updates)
-        ? result.value.updates.length
-        : 0;
       Toast.ok(
-        count > 0
-          ? "Réappro auto #" + idReappro + " ajusté puis validé"
-          : "Réappro auto #" + idReappro + " validé",
+        "Réappro auto #" + idReappro + " validé",
       );
       dispatchChanged({
         type: "auto-confirm",
@@ -263,6 +277,23 @@ const ReapproPanel = (() => {
     }
 
     if (result.isDenied) {
+      const count = Array.isArray(result.value?.updates)
+        ? result.value.updates.length
+        : 0;
+      Toast.ok(
+        "Réappro automatique #" +
+          idReappro +
+          " modifié" +
+          (count > 1 ? "s" : ""),
+      );
+      dispatchChanged({
+        type: "auto-update",
+        id_reappro: idReappro,
+      });
+      return "modified";
+    }
+
+    if (result.dismiss === Swal.DismissReason.cancel) {
       try {
         await Requetes.annulerReappro(idReappro);
         Toast.warn("Réappro automatique #" + idReappro + " annulé");

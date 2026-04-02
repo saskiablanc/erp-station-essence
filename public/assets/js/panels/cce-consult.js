@@ -253,7 +253,7 @@ const CceConsultPanel = (() => {
       html: `
         <div style="text-align:center;padding:20px 0;">
           <div style="margin-bottom:16px;color:var(--text-mid,#4b5563);font-size:13px;">
-            En attente de la selection d'une carte sur le simulateur...
+            En attente de la sélection d'une carte sur le simulateur...
           </div>
           <div style="display:inline-block;width:10px;height:10px;border-radius:50%;background:var(--accent,#6366f1);animation:cce-wait-pulse 1.2s ease-in-out infinite;"></div>
           <style>@keyframes cce-wait-pulse{0%,100%{opacity:.3}50%{opacity:1}}</style>

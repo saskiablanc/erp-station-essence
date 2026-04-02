@@ -796,10 +796,32 @@
   padding: 8px 10px;
   border-bottom: 1px solid var(--border);
 }
+.ticket-list-table thead th:last-child {
+  width: 170px;
+  text-align: center;
+}
 .ticket-list-table tbody td {
   padding: 7px 10px;
   border-bottom: 1px solid var(--border);
   color: var(--text-mid);
+}
+.ticket-list-cell-action {
+  text-align: center;
+  white-space: nowrap;
+}
+.ticket-list-add-btn {
+  height: 30px;
+  padding: 0 12px;
+  border-radius: 999px;
+  border: 2px solid var(--border);
+  background: var(--btn-grad);
+  color: var(--accent);
+  font-family: var(--mono);
+  font-size: 0.82rem;
+  box-shadow: var(--shadow-soft);
+}
+.ticket-list-add-btn:disabled {
+  opacity: 0.55;
 }
 .ticket-list-table tbody tr:last-child td {
   border-bottom: 0;

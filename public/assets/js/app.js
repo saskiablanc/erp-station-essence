@@ -113,7 +113,11 @@ const App = (() => {
         if (!currentMap[String(idReappro)]) continue;
 
         const result = await ReapproPanel.promptAutoReview(item);
-        if (result === "confirmed" || result === "cancelled") {
+        if (
+          result === "confirmed" ||
+          result === "modified" ||
+          result === "cancelled"
+        ) {
           removePendingAutoReappro(idReappro);
           markAutoReapproSeen(idReappro);
         }

@@ -224,11 +224,25 @@ td.ra-msg {
 .ra-auto-dialog {
   text-align: left;
 }
+.swal2-popup.swal2-modal.ra-swal-auto-review {
+  --dialog-popup-w: min(90vw, 1200px);
+  text-align: left;
+}
+.swal2-popup.swal2-modal.ra-swal-auto-review .swal2-html-container,
+.swal2-popup.swal2-modal.ra-swal-auto-review .ra-swal-auto-review-html {
+  margin: 0 !important;
+  text-align: left !important;
+}
+.swal2-popup.swal2-modal.ra-swal-auto-review .swal2-actions {
+  justify-content: center !important;
+  gap: 18px !important;
+  margin-top: 1.15rem !important;
+}
 .ra-auto-dialog__intro {
-  margin-bottom: 12px;
+  margin-bottom: 10px;
   font-family: var(--mono);
-  font-size: 12px;
-  line-height: 1.55;
+  font-size: 13px;
+  line-height: 1.5;
   color: var(--text);
 }
 .ra-auto-dialog__meta-line {
@@ -240,7 +254,9 @@ td.ra-msg {
 .ra-auto-dialog__table-wrap {
   border: 1px solid rgba(99, 102, 241, 0.2);
   border-radius: 10px;
-  overflow: hidden;
+  overflow-y: auto;
+  overflow-x: hidden;
+  max-height: min(52vh, 420px);
 }
 .ra-auto-dialog__table,
 .ra-auto-dialog__mini-table {
@@ -250,6 +266,7 @@ td.ra-msg {
 }
 .ra-auto-dialog__table {
   font-size: 11px;
+  table-layout: auto;
 }
 .ra-auto-dialog__mini-table {
   font-size: 11px;
@@ -260,6 +277,34 @@ td.ra-msg {
 .ra-auto-dialog__mini-table td {
   padding: 8px 10px;
   border-bottom: 1px solid rgba(99, 102, 241, 0.14);
+  vertical-align: middle;
+}
+.ra-auto-dialog__table th:nth-child(2),
+.ra-auto-dialog__table td:nth-child(2),
+.ra-auto-dialog__table th:nth-child(3),
+.ra-auto-dialog__table td:nth-child(3),
+.ra-auto-dialog__table th:nth-child(4),
+.ra-auto-dialog__table td:nth-child(4) {
+  white-space: nowrap;
+}
+.ra-auto-dialog__table th:nth-child(1),
+.ra-auto-dialog__table td:nth-child(1) {
+  width: 60%;
+}
+.ra-auto-dialog__table th:nth-child(2),
+.ra-auto-dialog__table td:nth-child(2) {
+  width: 11%;
+}
+.ra-auto-dialog__table th:nth-child(4),
+.ra-auto-dialog__table td:nth-child(4) {
+  width: 18%;
+}
+.ra-auto-dialog__table th:nth-child(3),
+.ra-auto-dialog__table td:nth-child(3) {
+  width: 11%;
+}
+.ra-auto-dialog__table td {
+  overflow-wrap: anywhere;
 }
 .ra-auto-dialog__table th {
   font-size: 9px;
@@ -275,11 +320,15 @@ td.ra-msg {
 .ra-auto-dialog__name {
   color: var(--text);
   font-weight: 600;
+  white-space: normal;
+  word-break: normal;
+  overflow-wrap: break-word;
 }
 .ra-auto-dialog__meta {
   margin-top: 3px;
   color: var(--text-dim);
   font-size: 10px;
+  word-break: break-all;
 }
 .ra-auto-dialog__num {
   text-align: right;
@@ -293,11 +342,13 @@ td.ra-msg {
 .ra-auto-dialog__input-wrap {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  justify-content: flex-end;
+  gap: 6px;
+  width: 100%;
 }
 input.ra-auto-dialog__input {
-  width: 86px;
-  min-width: 86px;
+  width: 92px;
+  min-width: 92px;
   height: var(--pill-compact-h);
   padding: 0 var(--pill-compact-px);
   border-radius: 999px;
@@ -324,6 +375,13 @@ input.ra-auto-dialog__input:focus {
 }
 .ra-auto-dialog--employe .ra-auto-dialog__intro {
   margin-bottom: 10px;
+}
+
+@media (max-width: 940px) {
+  .swal2-popup.swal2-modal.ra-swal-auto-review .swal2-actions {
+    gap: 10px !important;
+    flex-wrap: wrap;
+  }
 }
 
 /* ═══════════════════════════════════════════════════════
