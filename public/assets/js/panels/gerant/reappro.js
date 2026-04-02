@@ -374,7 +374,7 @@ const ReapproPanel = (() => {
 
 WM.register("gerant_reappro", {
   label: "Réapprovisionnement",
-  icon: "",
+  icon: "RAP",
   sprint: 4,
   gerantOnly: true,
 
