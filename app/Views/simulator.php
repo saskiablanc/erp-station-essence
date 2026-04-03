@@ -638,6 +638,7 @@ var Sim = (function() {
         { id: 'gerant-incident-cancel', label: 'Incident annulé', kind: 'simple', opts: { icon: 'info', title: 'Opération Annulée', text: 'Aucune fiche incident créée.' } },
         { id: 'gerant-incident-ok', label: 'Incident créé', kind: 'simple', opts: { icon: 'success', title: 'Fiche incident #INC-2026-001 a été créée', text: 'L’incident a bien été enregistré.' } },
         { id: 'gerant-incident-ko', label: 'Incident erreur', kind: 'simple', opts: { icon: 'error', title: 'Création impossible', text: 'Erreur pendant la création de la fiche incident.' } },
+        { id: 'gerant-cce-bonus-delete', label: 'Supprimer tranche bonus CCE', kind: 'confirm', opts: { title: 'Supprimer la tranche bonus ?', text: 'Cette tranche bonus sera supprimée définitivement.' } },
         { id: 'gerant-reappro-arrivee', label: 'Réappro arrivée', kind: 'confirm', opts: { title: 'Réapprovisionnement #42', text: 'Confirmer la réception de la livraison ?' } },
         { id: 'gerant-reappro-annuler', label: 'Annuler réappro', kind: 'confirm', opts: { title: 'Annuler le réapprovisionnement #42', text: 'Cette action est irréversible.' } },
         { id: 'gerant-reappro-ok', label: 'Commande envoyée', kind: 'simple', opts: { icon: 'success', title: 'Commande envoyée', text: 'Le réapprovisionnement manuel a été créé.' } },

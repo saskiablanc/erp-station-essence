@@ -136,6 +136,7 @@
       "gerant-incident-cancel": { kind: "simple", options: { ...fiBase(), icon: "info", title: "Opération Annulée", confirmButtonText: "Fermer" } },
       "gerant-incident-ok": { kind: "simple", options: { ...fiBase(), icon: "success", title: "Fiche incident #INC-2026-001 a été créée", confirmButtonText: "Fermer" } },
       "gerant-incident-ko": { kind: "simple", options: { ...fiBase(), icon: "error", title: "Création impossible", confirmButtonText: "Fermer" } },
+      "gerant-cce-bonus-delete": { kind: "confirm", options: { ...cceBase(), icon: "warning", title: "Supprimer la tranche bonus ?", text: "Cette tranche bonus sera supprimée définitivement.", showCancelButton: true, confirmButtonText: "Supprimer", cancelButtonText: "Annuler", allowOutsideClick: false } },
       "gerant-reappro-arrivee": { kind: "confirm", options: { icon: "question", title: "Réapprovisionnement #42", text: "Passer le statut de « En cours » à « Arrivé » ?", showCancelButton: true, confirmButtonText: "Confirmer", cancelButtonText: "Annuler" } },
       "gerant-reappro-annuler": { kind: "confirm", options: { icon: "warning", title: "Annuler le réapprovisionnement #42 ?", text: "Le statut passera à Annulé. Cette action est irréversible.", showCancelButton: true, confirmButtonText: "Confirmer l'annulation", cancelButtonText: "Retour" } },
       "gerant-reappro-ok": { kind: "simple", options: { icon: "success", title: "Commande envoyée", text: "Le réapprovisionnement manuel a été créé.", confirmButtonText: "Fermer" } },

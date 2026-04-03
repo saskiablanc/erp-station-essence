@@ -67,6 +67,20 @@ WM.register("gerant_cce_params", {
       });
     }
 
+    function confirmDeleteBonus(isNewRow) {
+      return Swal.fire({
+        icon: "warning",
+        title: "Supprimer la tranche bonus ?",
+        text: isNewRow
+          ? "Cette tranche bonus non enregistrée sera retirée."
+          : "Cette tranche bonus sera supprimée définitivement.",
+        showCancelButton: true,
+        confirmButtonText: "Supprimer",
+        cancelButtonText: "Annuler",
+        allowOutsideClick: false,
+      });
+    }
+
     // ── Chargement ───────────────────────────────────────────
     // US14 critère 2 : afficher les valeurs actuelles au mount
     async function charger() {
@@ -141,8 +155,12 @@ WM.register("gerant_cce_params", {
       var btn = e.target.closest(".cp-btn-suppr");
       if (!btn) return;
       var rowId = btn.dataset.rowId;
+      var isNewRow = rowId.startsWith("new-");
 
-      if (rowId.startsWith("new-")) {
+      var confirmDelete = await confirmDeleteBonus(isNewRow);
+      if (!confirmDelete.isConfirmed) return;
+
+      if (isNewRow) {
         var tmpId = parseInt(rowId.replace("new-", ""));
         newRows = newRows.filter(function (r) {
           return r.tmpId !== tmpId;
