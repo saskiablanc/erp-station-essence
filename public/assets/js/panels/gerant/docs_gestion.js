@@ -1,6 +1,6 @@
 /** panels/gerant/docs_gestion.js — Envoyer docs de gestion */
 WM.register("gerant_docs_gestion", {
-  label: "Envoyer docs de gestion",
+  label: "Envois docs de gestion",
   icon: "EDG",
   sprint: 6,
   gerantOnly: true,

@@ -213,7 +213,7 @@ const CceCreatePanel = (() => {
 })();
 
 WM.register("cce_create", {
-  label: "Créer CCE",
+  label: "Création CCE",
   icon: "CCE",
   sprint: 5,
   buildHTML() {
