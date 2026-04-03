@@ -225,7 +225,7 @@ td.ra-msg {
   text-align: left;
 }
 .swal2-popup.swal2-modal.ra-swal-auto-review {
-  --dialog-popup-w: min(90vw, 1200px);
+  --dialog-popup-w: min(84vw, 1050px);
   text-align: left;
 }
 .swal2-popup.swal2-modal.ra-swal-auto-review .swal2-html-container,
@@ -372,6 +372,16 @@ input.ra-auto-dialog__input:focus {
   outline: none;
   border-color: var(--accent);
   box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.12);
+}
+input.ra-auto-dialog__input:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+  background: rgba(255, 255, 255, 0.82);
+  box-shadow: none;
+}
+input.ra-auto-dialog__input.is-editable {
+  opacity: 1;
+  cursor: text;
 }
 .ra-auto-dialog--employe .ra-auto-dialog__intro {
   margin-bottom: 10px;

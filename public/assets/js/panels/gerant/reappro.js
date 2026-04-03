@@ -106,7 +106,7 @@ const ReapproPanel = (() => {
     return `
       <div class="ra-auto-dialog">
         <div class="ra-auto-dialog__intro">
-          Le seuil d'alerte a déclenché un réapprovisionnement automatique. Vous pouvez le valider, modifier les quantités, ou l'annuler.
+          Le seuil d'alerte a déclenché un réapprovisionnement automatique. Cliquez sur « Modifier le réappro » pour ouvrir la saisie, puis sur « Valider le réappro » pour enregistrer.
         </div>
         <div class="ra-auto-dialog__table-wrap">
           <table class="ra-auto-dialog__table">
@@ -150,6 +150,7 @@ const ReapproPanel = (() => {
                             data-id-article="${line.id_article}"
                             data-type-article="${escapeHtml(line.type_article)}"
                             data-original="${escapeHtml(normalizeQtyForInput(line))}"
+                            disabled
                           >
                           <span class="ra-auto-dialog__unit">${escapeHtml(line.unit)}</span>
                         </div>
@@ -165,7 +166,33 @@ const ReapproPanel = (() => {
     `;
   }
 
-  async function applyAutoReapproUpdates(idReappro) {
+  function setAutoReviewEditMode(enabled) {
+    const popup = Swal.getPopup();
+    if (!popup) return;
+    popup.dataset.raEditMode = enabled ? "1" : "0";
+
+    popup.querySelectorAll(".ra-auto-dialog__input").forEach(function (input) {
+      input.disabled = !enabled;
+      input.classList.toggle("is-editable", enabled);
+    });
+
+    const denyBtn = Swal.getDenyButton();
+    if (denyBtn) {
+      denyBtn.textContent = enabled
+        ? "Modification active"
+        : "Modifier le réappro";
+      denyBtn.disabled = enabled;
+    }
+  }
+
+  function isAutoReviewEditMode() {
+    const popup = Swal.getPopup();
+    if (!popup) return false;
+    return popup.dataset.raEditMode === "1";
+  }
+
+  async function applyAutoReapproUpdates(idReappro, options = {}) {
+    const requireChange = options.requireChange === true;
     const popup = Swal.getPopup();
     const inputs = popup
       ? Array.from(popup.querySelectorAll(".ra-auto-dialog__input"))
@@ -205,7 +232,7 @@ const ReapproPanel = (() => {
       }
     }
 
-    if (updates.length === 0) {
+    if (updates.length === 0 && requireChange) {
       Swal.showValidationMessage(
         "Aucune modification détectée. Modifiez au moins une quantité.",
       );
@@ -220,7 +247,7 @@ const ReapproPanel = (() => {
           update.quantite,
         );
       }
-      return updates;
+      return { updates: updates };
     } catch (err) {
       Swal.showValidationMessage(err.message || "Modification impossible");
       return false;
@@ -246,7 +273,7 @@ const ReapproPanel = (() => {
       icon: "warning",
       title: "Réappro auto #" + idReappro,
       html: buildAutoReviewTable(lignes),
-      width: 1200,
+      width: 900,
       allowOutsideClick: false,
       allowEscapeKey: false,
       showDenyButton: true,
@@ -258,39 +285,37 @@ const ReapproPanel = (() => {
       confirmButtonText: "Valider le réappro",
       denyButtonText: "Modifier le réappro",
       cancelButtonText: "Annuler le réappro",
+      didOpen: function () {
+        setAutoReviewEditMode(false);
+      },
+      preConfirm: async function () {
+        if (!isAutoReviewEditMode()) {
+          return { updates: [] };
+        }
+        const result = await applyAutoReapproUpdates(idReappro);
+        if (!result) return false;
+        return result;
+      },
       preDeny: async function () {
-        const updates = await applyAutoReapproUpdates(idReappro);
-        if (!updates) return false;
-        return { updates: updates };
+        setAutoReviewEditMode(true);
+        return false;
       },
     });
 
     if (result.isConfirmed) {
+      const count = Array.isArray(result.value?.updates)
+        ? result.value.updates.length
+        : 0;
       Toast.ok(
-        "Réappro auto #" + idReappro + " validé",
+        count > 0
+          ? "Réappro auto #" + idReappro + " ajusté puis validé"
+          : "Réappro auto #" + idReappro + " validé",
       );
       dispatchChanged({
         type: "auto-confirm",
         id_reappro: idReappro,
       });
       return "confirmed";
-    }
-
-    if (result.isDenied) {
-      const count = Array.isArray(result.value?.updates)
-        ? result.value.updates.length
-        : 0;
-      Toast.ok(
-        "Réappro automatique #" +
-          idReappro +
-          " modifié" +
-          (count > 1 ? "s" : ""),
-      );
-      dispatchChanged({
-        type: "auto-update",
-        id_reappro: idReappro,
-      });
-      return "modified";
     }
 
     if (result.dismiss === Swal.DismissReason.cancel) {
