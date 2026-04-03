@@ -418,7 +418,6 @@ const WM = (() => {
 
     el.innerHTML = `
       <div class="win-title" id="wt-${id}">
-        <span class="win-icon">${def.icon}</span>
         <span class="win-label">${def.label}</span>
         <div class="win-controls">
           <button class="wc min" type="button" title="Réduire">-</button>
@@ -657,7 +656,7 @@ const WM = (() => {
       chip.className =
         "task-chip" +
         (exists && !w?.minimized ? " open" : exists ? " minimized" : "");
-      chip.innerHTML = `${def.icon} ${def.label}`;
+      chip.textContent = def.label;
       chip.title = def.sprint > 2 ? `Sprint ${def.sprint}` : def.label;
       chip.onclick = () => open(id);
       area.appendChild(chip);

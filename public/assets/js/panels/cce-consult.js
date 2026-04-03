@@ -860,7 +860,7 @@ const CceConsultPanel = (() => {
 })();
 
 WM.register("cce_consult", {
-  label: "Consulter CCE",
+  label: "Consultation CCE",
   icon: "CCE",
   sprint: 5,
   buildHTML() {
