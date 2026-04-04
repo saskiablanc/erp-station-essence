@@ -28,6 +28,12 @@ const ICON_LOCK = `<svg class="bdd-icon bdd-icon--lock" viewBox="0 0 16 16" fill
   <rect x="3" y="7" width="10" height="7" rx="1.5" stroke="currentColor" stroke-width="1.4"/>
   <path d="M5 7V5a3 3 0 0 1 6 0v2" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
 </svg>`;
+const ICON_PIN = `<svg class="bdd-icon" viewBox="0 0 16 16" fill="none">
+  <path d="M5 2.5H11" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+  <path d="M6 2.5V6L4 8V9H12V8L10 6V2.5" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/>
+  <path d="M8 9V13.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+</svg>`;
+const BDD_PIN_STORAGE_KEY = "bdd_pinned_tables_v1";
 
 // Tables dont les lignes peuvent être verrouillées par journée validée
 const LOCKED_TABLES = new Set([
@@ -64,6 +70,61 @@ function invalidateLockedDates() {
   _lockedTx = null;
   _lockedInc = null;
   _lockedDatesPromise = null;
+}
+
+function readPinnedTables() {
+  try {
+    const raw = localStorage.getItem(BDD_PIN_STORAGE_KEY);
+    const parsed = raw ? JSON.parse(raw) : [];
+    if (!Array.isArray(parsed)) return [];
+    return parsed
+      .map((value) => String(value || "").trim())
+      .filter((value, index, array) => value && array.indexOf(value) === index);
+  } catch (_) {
+    return [];
+  }
+}
+
+function writePinnedTables(ids) {
+  try {
+    localStorage.setItem(BDD_PIN_STORAGE_KEY, JSON.stringify(ids || []));
+  } catch (_) {}
+}
+
+function isPinnedTable(tableId) {
+  return readPinnedTables().includes(String(tableId || ""));
+}
+
+function togglePinnedTable(tableId) {
+  const id = String(tableId || "").trim();
+  if (!id) return false;
+
+  const pinned = readPinnedTables();
+  const index = pinned.indexOf(id);
+  if (index >= 0) {
+    pinned.splice(index, 1);
+    writePinnedTables(pinned);
+    return false;
+  }
+
+  pinned.push(id);
+  writePinnedTables(pinned);
+  return true;
+}
+
+function sortGroups(groups) {
+  const pinned = new Set(readPinnedTables());
+  const collator = new Intl.Collator("fr", {
+    sensitivity: "base",
+    numeric: true,
+  });
+
+  return [...(groups || [])].sort((a, b) => {
+    const aPinned = pinned.has(String(a?.id || ""));
+    const bPinned = pinned.has(String(b?.id || ""));
+    if (aPinned !== bPinned) return aPinned ? -1 : 1;
+    return collator.compare(String(a?.label || ""), String(b?.label || ""));
+  });
 }
 
 function rowDate(tableId, row) {
@@ -180,9 +241,16 @@ async function confirm(msg, id) {
     ICON_EDIT,
     ICON_DELETE,
     ICON_LOCK,
+    ICON_PIN,
     LOCKED_TABLES,
+    BDD_PIN_STORAGE_KEY,
     getLockedDates,
     invalidateLockedDates,
+    readPinnedTables,
+    writePinnedTables,
+    isPinnedTable,
+    togglePinnedTable,
+    sortGroups,
     rowDate,
     esc,
     fmt,

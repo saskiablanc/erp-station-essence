@@ -8,19 +8,57 @@
     ICON_EDIT,
     ICON_DELETE,
     ICON_LOCK,
+    ICON_PIN,
     esc,
     rowDate,
     getLockedDates,
+    isPinnedTable,
+    sortGroups,
   } = ns;
 
+function buildNavHTML(activeTable) {
+  return sortGroups(GROUPS)
+    .map(function (group) {
+      const active = group.id === activeTable;
+      const pinned = isPinnedTable(group.id);
+      return `
+        <div class="bdd-tab-item${active ? " is-active" : ""}${pinned ? " is-pinned" : ""}">
+          <button class="bdd-tab${active ? " active" : ""}" data-table="${group.id}" type="button">${group.label}</button>
+          <button
+            class="bdd-pin-btn${pinned ? " active" : ""}"
+            data-pin-table="${group.id}"
+            type="button"
+            title="${pinned ? "Désépingler" : "Épingler"}"
+            aria-label="${pinned ? "Désépingler" : "Épingler"} ${group.label}"
+          >${ICON_PIN}</button>
+        </div>
+      `;
+    })
+    .join("");
+}
+
+function getDefaultTableId() {
+  const first = sortGroups(GROUPS)[0];
+  return first?.id || "produit";
+}
+
+function renderNav(root) {
+  const nav = root.querySelector(".bdd-nav");
+  if (!nav) return;
+
+  const activeTable =
+    root._bddTable && SCHEMAS[root._bddTable]
+      ? root._bddTable
+      : getDefaultTableId();
+
+  root._bddTable = activeTable;
+  nav.innerHTML = buildNavHTML(activeTable);
+}
+
 function buildHTML() {
-  const tabs = GROUPS.map(
-    (g) =>
-      `<button class="bdd-tab${g.id === "produit" ? " active" : ""}" data-table="${g.id}">${g.label}</button>`,
-  ).join("");
   return `
     <div class="bdd-panel">
-      <div class="bdd-nav">${tabs}</div>
+      <div class="bdd-nav">${buildNavHTML("produit")}</div>
       <div class="bdd-content">
         <div class="bdd-toolbar"><button class="bdd-add-btn">+ Ajouter Ligne</button></div>
         <div class="bdd-table-wrap">
@@ -131,5 +169,13 @@ async function loadTable(root) {
 // ════════════════════════════════════════════════════════
 
 
-  Object.assign(ns, { buildHTML, renderTable, setLoading, loadTable });
+  Object.assign(ns, {
+    buildHTML,
+    buildNavHTML,
+    getDefaultTableId,
+    renderNav,
+    renderTable,
+    setLoading,
+    loadTable,
+  });
 })();
