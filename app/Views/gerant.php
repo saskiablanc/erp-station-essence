@@ -15,10 +15,17 @@
     $baseUrl = '';
   }
   $assetsUrl = $baseUrl . '/assets';
+  $asset = static function (string $path) use ($assetsUrl): string {
+    $rel = ltrim($path, '/');
+    $full = __DIR__ . '/../../public/assets/' . str_replace('/', DIRECTORY_SEPARATOR, $rel);
+    $ver = is_file($full) ? (string) filemtime($full) : (string) time();
+    return $assetsUrl . '/' . $rel . '?v=' . rawurlencode($ver);
+  };
   ?>
-  <link rel="icon" type="image/png" href="<?= $assetsUrl ?>/img/logo_unica.png">
-  <link rel="stylesheet" href="<?= $assetsUrl ?>/css/caisse.css">
-  <link rel="stylesheet" href="<?= $assetsUrl ?>/css/core/caisse_dialogs.css">
+  <link rel="icon" type="image/png" href="<?= $asset('img/logo_unica.png') ?>">
+  <link rel="stylesheet" href="<?= $asset('css/caisse.css') ?>">
+  <link rel="stylesheet" href="<?= $asset('css/panels/horaires.css') ?>">
+  <link rel="stylesheet" href="<?= $asset('css/core/caisse_dialogs.css') ?>">
 
   <?php
   $role        = htmlspecialchars($employe['role']        ?? 'gerant',  ENT_QUOTES);
@@ -131,7 +138,7 @@
 <script src="<?= $assetsUrl ?>/js/core/requetes.js"></script>
 <script src="<?= $assetsUrl ?>/js/core/toast.js"></script>
 <script src="<?= $assetsUrl ?>/js/core/windows.js"></script>
-<script src="<?= $assetsUrl ?>/js/core/sim_popup_bridge.js"></script>
+<script src="<?= $asset('js/core/sim_popup_bridge.js') ?>"></script>
 
 <!-- Panels gérant — 12 fenêtres maquette -->
 <script src="<?= $assetsUrl ?>/js/panels/gerant/reappro.js"></script>
@@ -144,7 +151,7 @@
 <script src="<?= $assetsUrl ?>/js/panels/gerant/docs_gestion.js"></script>
 <script src="<?= $assetsUrl ?>/js/panels/gerant/directives.js"></script>
 <script src="<?= $assetsUrl ?>/js/panels/gerant/fermetures.js"></script>
-<script src="<?= $assetsUrl ?>/js/panels/gerant/horaires.js"></script>
+<script src="<?= $asset('js/panels/gerant/horaires.js') ?>"></script>
 <script src="<?= $assetsUrl ?>/js/panels/gerant/bdd/shared.js"></script>
 <script src="<?= $assetsUrl ?>/js/panels/gerant/bdd/schemas/catalog.js"></script>
 <script src="<?= $assetsUrl ?>/js/panels/gerant/bdd/schemas/cce.js"></script>
@@ -157,7 +164,7 @@
 <script src="<?= $assetsUrl ?>/js/panels/gerant/bdd/panel.js"></script>
 <script src="<?= $assetsUrl ?>/js/panels/gerant/bdd.js"></script>
 
-<script src="<?= $assetsUrl ?>/js/app.js"></script>
+<script src="<?= $asset('js/app.js') ?>"></script>
 
 </body>
 </html>

@@ -634,7 +634,7 @@ var Sim = (function() {
         { id: 'gerant-bdd-edit', label: 'Modifier la ligne', kind: 'simple', opts: { title: 'Modifier la ligne', html: '<div>Formulaire de modification (prévisualisation)</div>' } },
         { id: 'gerant-horaires-ko', label: 'Horaires erreur', kind: 'simple', opts: { icon: 'error', title: 'Erreur : Valeurs Incorrectes.', text: 'Format des horaires invalide.' } },
         { id: 'gerant-horaires-ok', label: 'Horaires succès', kind: 'simple', opts: { icon: 'success', title: 'Nouveaux horaires bien enregistrés !', text: 'Les horaires ont été mis à jour.' } },
-        { id: 'gerant-horaires-copy', label: 'Appliquer aux jours', kind: 'yesno', opts: { title: 'Appliquer pareil pour les jours suivants ?', html: 'Voulez-vous dupliquer cet horaire sur les jours suivants ?' } },
+        { id: 'gerant-horaires-copy', label: 'Appliquer aux jours', kind: 'simple', opts: { title: 'Appliquer pareil pour les jours suivants ?', html: 'Choix des jours à appliquer.' } },
         { id: 'gerant-incident-cancel', label: 'Incident annulé', kind: 'simple', opts: { icon: 'info', title: 'Opération Annulée', text: 'Aucune fiche incident créée.' } },
         { id: 'gerant-incident-ok', label: 'Incident créé', kind: 'simple', opts: { icon: 'success', title: 'Fiche incident #INC-2026-001 a été créée', text: 'L’incident a bien été enregistré.' } },
         { id: 'gerant-incident-ko', label: 'Incident erreur', kind: 'simple', opts: { icon: 'error', title: 'Création impossible', text: 'Erreur pendant la création de la fiche incident.' } },

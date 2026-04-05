@@ -132,7 +132,29 @@
       "gerant-bdd-edit": { kind: "confirm", options: { ...bddBase(), title: "Modifier la ligne", html: "Formulaire de modification (prévisualisation)", showCancelButton: true, cancelButtonText: "Annuler", confirmButtonText: "Confirmer" } },
       "gerant-horaires-ko": { kind: "simple", options: { ...hbBase(), icon: "error", title: "Erreur : Valeurs Incorrectes.", confirmButtonText: "Fermer" } },
       "gerant-horaires-ok": { kind: "simple", options: { ...hbBase(), icon: "success", title: "Nouveaux horaires bien enregistrés !", confirmButtonText: "Fermer" } },
-      "gerant-horaires-copy": { kind: "confirm", options: { ...hbBase(), title: "Appliquer pareil pour les jours suivants ?", showCancelButton: true, confirmButtonText: "Appliquer", cancelButtonText: "Ignorer" } },
+      "gerant-horaires-copy": {
+        kind: "simple",
+        options: {
+          ...hbBase(),
+          width: "74rem",
+          title: "Appliquer pareil pour les jours suivants ?",
+          html: `
+            <div class="hb-apply-grid">
+              <label class="hb-apply-item"><span>Lundi</span><input type="checkbox" class="hb-apply-check" checked disabled /></label>
+              <label class="hb-apply-item"><span>Mardi</span><input type="checkbox" class="hb-apply-check" /></label>
+              <label class="hb-apply-item"><span>Mercredi</span><input type="checkbox" class="hb-apply-check" /></label>
+              <label class="hb-apply-item"><span>Jeudi</span><input type="checkbox" class="hb-apply-check" /></label>
+              <label class="hb-apply-item"><span>Vendredi</span><input type="checkbox" class="hb-apply-check" /></label>
+              <label class="hb-apply-item"><span>Samedi</span><input type="checkbox" class="hb-apply-check" /></label>
+              <label class="hb-apply-item"><span>Dimanche</span><input type="checkbox" class="hb-apply-check" /></label>
+              <label class="hb-apply-item hb-apply-item--all"><span>Tout</span><input type="checkbox" /></label>
+            </div>
+          `,
+          showCloseButton: true,
+          confirmButtonText: "Appliquer",
+          allowOutsideClick: false,
+        },
+      },
       "gerant-incident-cancel": { kind: "simple", options: { ...fiBase(), icon: "info", title: "Opération Annulée", confirmButtonText: "Fermer" } },
       "gerant-incident-ok": { kind: "simple", options: { ...fiBase(), icon: "success", title: "Fiche incident #INC-2026-001 a été créée", confirmButtonText: "Fermer" } },
       "gerant-incident-ko": { kind: "simple", options: { ...fiBase(), icon: "error", title: "Création impossible", confirmButtonText: "Fermer" } },
