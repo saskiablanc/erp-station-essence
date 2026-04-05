@@ -44,9 +44,9 @@
     canDel: true,
     cols: [
       { f: "code_barres", label: "Code-barres", w: "140px" },
+      { f: "id_article", label: "id_article", w: "90px" },
       { f: "libelle_produit", label: "Libellé", w: "" },
       { f: "prix", label: "Prix (€)", w: "90px", isPrice: true },
-      { f: "quantite_stock", label: "Stock", short: "Stock", w: "70px" },
     ],
     addFields: [
       {
@@ -82,9 +82,9 @@
     rowKey: (r) => r.code_barres,
     rowHtml: (r) => [
       esc(r.code_barres),
+      esc(r.id_article),
       esc(r.libelle_produit),
       fmt(r.prix) + "&nbsp;€",
-      String(r.quantite_stock ?? 0),
     ],
   },
   energie: {
@@ -141,7 +141,6 @@
       { f: "id_energie", label: "id_energie", w: "80px" },
       { f: "libelle", label: "Libellé", w: "" },
       { f: "prix_litre", label: "Prix/L (€)", w: "90px", isPrice: true },
-      { f: "quantite_stock", label: "Stock (L)", w: "90px" },
       { f: "livraison_min", label: "Liv. min", w: "80px" },
     ],
     addFields: [
@@ -167,13 +166,6 @@
         ph: "1.80",
       },
       {
-        id: "bdd-quantite_stock",
-        f: "quantite_stock",
-        label: "Stock (L)",
-        type: "number",
-        ph: "0",
-      },
-      {
         id: "bdd-livraison_min",
         f: "livraison_min",
         label: "Liv. min",
@@ -184,7 +176,6 @@
     editFields: [
       { f: "libelle", label: "Libellé", type: "text" },
       { f: "prix_litre", label: "Prix/L (€)", type: "number", isPrice: true },
-      { f: "quantite_stock", label: "Stock (L)", type: "number" },
       { f: "livraison_min", label: "Liv. min", type: "number" },
     ],
     load: () => Requetes.bddGet("carburant"),
@@ -197,7 +188,6 @@
       esc(r.id_energie),
       esc(r.libelle),
       fmt(r.prix_litre) + "&nbsp;€",
-      fmt(r.quantite_stock, 3) + "&nbsp;L",
       esc(r.livraison_min),
     ],
   },

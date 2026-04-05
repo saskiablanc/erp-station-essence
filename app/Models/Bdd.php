@@ -62,10 +62,8 @@ class Bdd
     public function getProduit(): array
     {
         return ['produits' => $this->fetch(
-            "SELECT p.code_barres, p.libelle_produit, p.prix,
-                    COALESCE(s.quantite_stock,0) AS quantite_stock
+            "SELECT p.code_barres, p.id_article, p.libelle_produit, p.prix
              FROM Produit p
-             LEFT JOIN Stock s ON s.id_article=p.id_article AND s.type_quantite='unite'
              ORDER BY p.libelle_produit ASC"
         )];
     }
@@ -145,13 +143,8 @@ class Bdd
                     c.id_energie,
                     c.libelle,
                     c.prix_litre,
-                    c.livraison_min,
-                    COALESCE(s.quantite_stock, 0) AS quantite_stock
+                    c.livraison_min
              FROM Carburant c
-             JOIN Energie e ON e.id_energie = c.id_energie
-             LEFT JOIN Stock s
-               ON s.id_article = e.id_article
-              AND s.type_quantite = 'litre'
              ORDER BY c.libelle ASC"
         );
     }
@@ -159,7 +152,6 @@ class Bdd
     {
         $idE=(int)($d['id_energie']??0); $lib=trim((string)($d['libelle']??''));
         $prix=(float)($d['prix_litre']??0);
-        $stk=(float)($d['quantite_stock'] ?? 0);
         $lmin=(float)($d['livraison_min']??0);
         if ($idE<=0||$lib===''||$prix<=0) throw new RuntimeException('Données invalides');
         $energie = $this->db->query(
@@ -180,9 +172,12 @@ class Bdd
             );
             $this->db->execute(
                 "INSERT INTO Stock(id_article,quantite_stock,type_quantite)
-                 VALUES(:a,:q,'litre')
-                 ON DUPLICATE KEY UPDATE quantite_stock = VALUES(quantite_stock), type_quantite = 'litre'",
-                [':a' => $idA, ':q' => $stk]
+                 SELECT :a, 0, 'litre'
+                 FROM DUAL
+                 WHERE NOT EXISTS (
+                   SELECT 1 FROM Stock WHERE id_article = :a2 AND type_quantite = 'litre'
+                 )",
+                [':a' => $idA, ':a2' => $idA]
             );
             $this->db->commit();
         } catch(\Throwable $e) {
@@ -195,45 +190,14 @@ class Bdd
     {
         $lib=trim((string)($d['libelle']??'')); $prix=(float)($d['prix_litre']??0);
         $lmin=(float)($d['livraison_min']??0);
-        $hasStock = array_key_exists('quantite_stock', $d);
-        $stk=(float)($d['quantite_stock'] ?? 0);
         if ($lib===''||$prix<=0) throw new RuntimeException('Données invalides');
 
-        $this->db->beginTransaction();
-        try {
-            $this->db->execute(
-                "UPDATE Carburant
-                 SET libelle=:l,prix_litre=:p,livraison_min=:m
-                 WHERE id_carburant=:id",
-                [':l'=>$lib,':p'=>$prix,':m'=>$lmin,':id'=>$id]
-            );
-
-            if ($hasStock) {
-                $row = $this->db->query(
-                    "SELECT e.id_article
-                     FROM Carburant c
-                     JOIN Energie e ON e.id_energie = c.id_energie
-                     WHERE c.id_carburant = :id
-                     LIMIT 1",
-                    [':id' => $id]
-                )->fetch(PDO::FETCH_ASSOC);
-                if (!$row) throw new RuntimeException('Carburant introuvable');
-                $idA = (int)($row['id_article'] ?? 0);
-                if ($idA <= 0) throw new RuntimeException('Article carburant introuvable');
-
-                $this->db->execute(
-                    "INSERT INTO Stock(id_article,quantite_stock,type_quantite)
-                     VALUES(:a,:q,'litre')
-                     ON DUPLICATE KEY UPDATE quantite_stock = VALUES(quantite_stock), type_quantite = 'litre'",
-                    [':a' => $idA, ':q' => $stk]
-                );
-            }
-
-            $this->db->commit();
-        } catch(\Throwable $e) {
-            $this->db->rollBack();
-            throw new RuntimeException($e->getMessage());
-        }
+        $this->db->execute(
+            "UPDATE Carburant
+             SET libelle=:l,prix_litre=:p,livraison_min=:m
+             WHERE id_carburant=:id",
+            [':l'=>$lib,':p'=>$prix,':m'=>$lmin,':id'=>$id]
+        );
         return $this->getCarburant();
     }
     public function deleteCarburant(int $id): void
@@ -560,7 +524,12 @@ class Bdd
     // ═══════════════════════════════════════════════════════
     public function getTransactionCCE(): array
     {
-        return $this->rows("SELECT id_transaction,id_carte_CE FROM TransactionCCE ORDER BY id_transaction DESC LIMIT 500");
+        return $this->rows(
+            "SELECT id_transaction,id_carte_CE
+             FROM TransactionCCE
+             ORDER BY id_transaction DESC, id_carte_CE DESC
+             LIMIT 500"
+        );
     }
     public function addTransactionCCE(array $d): array
     {
@@ -570,20 +539,41 @@ class Bdd
         $this->db->execute("INSERT INTO TransactionCCE(id_transaction,id_carte_CE) VALUES(:t,:c)",[':t'=>$idT,':c'=>$idC]);
         return $this->getTransactionCCE();
     }
-    public function updateTransactionCCE(int $id, array $d): array
+    private function parseTransactionCCECompositeId(string $compositeId): array
     {
-        // id = id_transaction (partie de la PK composite)
+        $parts = explode('_', trim($compositeId), 2);
+        $idT = (int)($parts[0] ?? 0);
+        $idC = (int)($parts[1] ?? 0);
+        if ($idT <= 0 || $idC <= 0) {
+            throw new RuntimeException('Identifiant transaction CCE invalide');
+        }
+        return [$idT, $idC];
+    }
+    public function updateTransactionCCE(string $compositeId, array $d): array
+    {
+        [$idT, $oldIdC] = $this->parseTransactionCCECompositeId($compositeId);
         $idC=(int)($d['id_carte_CE']??0);
         if ($idC<=0) throw new RuntimeException('id_carte_CE invalide');
-        $this->guardTransaction($id);
-        $this->db->execute("UPDATE TransactionCCE SET id_carte_CE=:c WHERE id_transaction=:id",[':c'=>$idC,':id'=>$id]);
+        $this->guardTransaction($idT);
+        $this->db->execute(
+            "UPDATE TransactionCCE
+             SET id_carte_CE=:new_card
+             WHERE id_transaction=:id_tx
+               AND id_carte_CE=:old_card",
+            [':new_card'=>$idC, ':id_tx'=>$idT, ':old_card'=>$oldIdC]
+        );
         return $this->getTransactionCCE();
     }
-    public function deleteTransactionCCE(int $id): void
+    public function deleteTransactionCCE(string $compositeId): void
     {
-        // id = id_transaction
-        $this->guardTransaction($id);
-        $this->db->execute("DELETE FROM TransactionCCE WHERE id_transaction=:id",[':id'=>$id]);
+        [$idT, $idC] = $this->parseTransactionCCECompositeId($compositeId);
+        $this->guardTransaction($idT);
+        $this->db->execute(
+            "DELETE FROM TransactionCCE
+             WHERE id_transaction=:id_tx
+               AND id_carte_CE=:id_card",
+            [':id_tx'=>$idT, ':id_card'=>$idC]
+        );
     }
 
     // ═══════════════════════════════════════════════════════
@@ -888,20 +878,35 @@ class Bdd
     // ═══════════════════════════════════════════════════════
     public function getJourFermeture(): array
     {
-        return $this->rows("SELECT id_fermeture,date_fermeture,motif FROM JourFermeture ORDER BY date_fermeture ASC");
+        return $this->rows(
+            "SELECT id_fermeture,date_fermeture,motif,recurrent
+             FROM JourFermeture
+             ORDER BY date_fermeture ASC"
+        );
     }
     public function addJourFermeture(array $d): array
     {
         $date=trim((string)($d['date_fermeture']??'')); $motif=trim((string)($d['motif']??''));
+        $recurrent=(int)(bool)($d['recurrent'] ?? 0);
         if ($date==='') throw new RuntimeException('date_fermeture requise');
-        $this->db->execute("INSERT INTO JourFermeture(date_fermeture,motif) VALUES(:d,:m)",[':d'=>$date,':m'=>$motif]);
+        $this->db->execute(
+            "INSERT INTO JourFermeture(date_fermeture,motif,recurrent)
+             VALUES(:d,:m,:r)",
+            [':d'=>$date,':m'=>$motif,':r'=>$recurrent]
+        );
         return $this->getJourFermeture();
     }
     public function updateJourFermeture(int $id, array $d): array
     {
         $date=trim((string)($d['date_fermeture']??'')); $motif=trim((string)($d['motif']??''));
+        $recurrent=(int)(bool)($d['recurrent'] ?? 0);
         if ($date==='') throw new RuntimeException('date_fermeture requise');
-        $this->db->execute("UPDATE JourFermeture SET date_fermeture=:d,motif=:m WHERE id_fermeture=:id",[':d'=>$date,':m'=>$motif,':id'=>$id]);
+        $this->db->execute(
+            "UPDATE JourFermeture
+             SET date_fermeture=:d,motif=:m,recurrent=:r
+             WHERE id_fermeture=:id",
+            [':d'=>$date,':m'=>$motif,':r'=>$recurrent,':id'=>$id]
+        );
         return $this->getJourFermeture();
     }
     public function deleteJourFermeture(int $id): void
@@ -1005,33 +1010,98 @@ class Bdd
     }
 
     // ═══════════════════════════════════════════════════════
-    //  ValidationJournee
+    //  ValidationTransactions
     // ═══════════════════════════════════════════════════════
-    public function getValidationJournee(): array
+    public function getValidationTransactions(): array
     {
-        return $this->rows("SELECT id_journee_validee,date_jour,est_valide,date_validation FROM ValidationJournee ORDER BY date_jour DESC LIMIT 500");
+        return $this->rows(
+            "SELECT id_validation_tx,date_jour,est_valide,date_validation
+             FROM ValidationTransactions
+             ORDER BY date_jour DESC, id_validation_tx DESC
+             LIMIT 500"
+        );
     }
-    public function addValidationJournee(array $d): array
+    public function addValidationTransactions(array $d): array
     {
         $dj=trim((string)($d['date_jour']??''));
         if ($dj==='') throw new RuntimeException('date_jour requis');
         $v=(int)(bool)($d['est_valide']??0);
         $dv=trim((string)($d['date_validation']??date('Y-m-d H:i:s')));
-        $this->db->execute("INSERT INTO ValidationJournee(date_jour,est_valide,date_validation) VALUES(:dj,:v,:dv)",[':dj'=>$dj,':v'=>$v,':dv'=>$dv]);
-        return $this->getValidationJournee();
+        $this->db->execute(
+            "INSERT INTO ValidationTransactions(date_jour,est_valide,date_validation)
+             VALUES(:dj,:v,:dv)",
+            [':dj'=>$dj,':v'=>$v,':dv'=>$dv]
+        );
+        return $this->getValidationTransactions();
     }
-    public function updateValidationJournee(int $id, array $d): array
+    public function updateValidationTransactions(int $id, array $d): array
     {
         $dj=trim((string)($d['date_jour']??''));
         if ($dj==='') throw new RuntimeException('date_jour requis');
         $v=(int)(bool)($d['est_valide']??0);
         $dv=trim((string)($d['date_validation']??''));
         if ($dv==='') throw new RuntimeException('date_validation requise');
-        $this->db->execute("UPDATE ValidationJournee SET date_jour=:dj,est_valide=:v,date_validation=:dv WHERE id_journee_validee=:id",[':dj'=>$dj,':v'=>$v,':dv'=>$dv,':id'=>$id]);
-        return $this->getValidationJournee();
+        $this->db->execute(
+            "UPDATE ValidationTransactions
+             SET date_jour=:dj,est_valide=:v,date_validation=:dv
+             WHERE id_validation_tx=:id",
+            [':dj'=>$dj,':v'=>$v,':dv'=>$dv,':id'=>$id]
+        );
+        return $this->getValidationTransactions();
     }
-    public function deleteValidationJournee(int $id): void
+    public function deleteValidationTransactions(int $id): void
     {
-        $this->db->execute("DELETE FROM ValidationJournee WHERE id_journee_validee=:id",[':id'=>$id]);
+        $this->db->execute(
+            "DELETE FROM ValidationTransactions WHERE id_validation_tx=:id",
+            [':id'=>$id]
+        );
+    }
+
+    // ═══════════════════════════════════════════════════════
+    //  ValidationIncidents
+    // ═══════════════════════════════════════════════════════
+    public function getValidationIncidents(): array
+    {
+        return $this->rows(
+            "SELECT id_validation_inc,date_jour,est_valide,date_validation
+             FROM ValidationIncidents
+             ORDER BY date_jour DESC, id_validation_inc DESC
+             LIMIT 500"
+        );
+    }
+    public function addValidationIncidents(array $d): array
+    {
+        $dj=trim((string)($d['date_jour']??''));
+        if ($dj==='') throw new RuntimeException('date_jour requis');
+        $v=(int)(bool)($d['est_valide']??0);
+        $dv=trim((string)($d['date_validation']??date('Y-m-d H:i:s')));
+        $this->db->execute(
+            "INSERT INTO ValidationIncidents(date_jour,est_valide,date_validation)
+             VALUES(:dj,:v,:dv)",
+            [':dj'=>$dj,':v'=>$v,':dv'=>$dv]
+        );
+        return $this->getValidationIncidents();
+    }
+    public function updateValidationIncidents(int $id, array $d): array
+    {
+        $dj=trim((string)($d['date_jour']??''));
+        if ($dj==='') throw new RuntimeException('date_jour requis');
+        $v=(int)(bool)($d['est_valide']??0);
+        $dv=trim((string)($d['date_validation']??''));
+        if ($dv==='') throw new RuntimeException('date_validation requise');
+        $this->db->execute(
+            "UPDATE ValidationIncidents
+             SET date_jour=:dj,est_valide=:v,date_validation=:dv
+             WHERE id_validation_inc=:id",
+            [':dj'=>$dj,':v'=>$v,':dv'=>$dv,':id'=>$id]
+        );
+        return $this->getValidationIncidents();
+    }
+    public function deleteValidationIncidents(int $id): void
+    {
+        $this->db->execute(
+            "DELETE FROM ValidationIncidents WHERE id_validation_inc=:id",
+            [':id'=>$id]
+        );
     }
 }
