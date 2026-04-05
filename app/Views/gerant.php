@@ -86,6 +86,10 @@
       <img src="<?= $assetsUrl ?>/img/reset.png" alt="Réinitialiser">
     </button>
 
+    <button class="tb-layout-mode-btn layout-mode-btn" onclick="App.toggleLayoutMode()" title="Mode Sandbox (libre)">
+      Sandbox
+    </button>
+
     <!-- Bouton switch vers caisse employé -->
     <span class="tb-vsep"></span>
     <button class="tb-switch-btn" onclick="App.switchCaisse()" title="Basculer vers la caisse employé">
@@ -137,7 +141,7 @@
 <script src="<?= $assetsUrl ?>/js/core/state.js"></script>
 <script src="<?= $assetsUrl ?>/js/core/requetes.js"></script>
 <script src="<?= $assetsUrl ?>/js/core/toast.js"></script>
-<script src="<?= $assetsUrl ?>/js/core/windows.js"></script>
+<script src="<?= $asset('js/core/windows.js') ?>"></script>
 <script src="<?= $asset('js/core/sim_popup_bridge.js') ?>"></script>
 
 <!-- Panels gérant — 12 fenêtres maquette -->

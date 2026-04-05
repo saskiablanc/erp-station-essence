@@ -209,6 +209,38 @@
   opacity: 1;
 }
 
+.tb-layout-mode-btn {
+  height: 34px;
+  min-width: 88px;
+  padding: 0 12px;
+  border-radius: 7px;
+  border: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.62);
+  color: var(--text-mid);
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 500;
+  cursor: pointer;
+  transition:
+    background 0.12s,
+    border-color 0.12s,
+    box-shadow 0.12s,
+    color 0.12s;
+}
+
+.tb-layout-mode-btn:hover {
+  background: rgba(255, 255, 255, 0.95);
+  border-color: var(--border-active);
+  box-shadow: 0 2px 6px rgba(99, 102, 241, 0.12);
+}
+
+.tb-layout-mode-btn.active {
+  background: var(--accent-dim);
+  border-color: rgba(99, 102, 241, 0.4);
+  color: var(--accent);
+  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.15);
+}
+
 /* ── Badge GÉRANT dans la session ──────────────────────── */
 .tb-session--gerant {
   gap: 8px;

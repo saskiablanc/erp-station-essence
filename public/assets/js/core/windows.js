@@ -8,11 +8,66 @@ const WM = (() => {
   const EMPLOYE_LAYOUT_VERSION = "v6";
   const GERANT_LAYOUT_VERSION = "v7";
   const HAND_STORAGE_KEY = "caisse_hand_v2";
+  const LAYOUT_MODE_STORAGE_PREFIX = "caisse_layout_mode_v1";
+  const LAYOUT_MODE_SANDBOX = "sandbox";
+  const LAYOUT_MODE_DRAGDROP = "dragdrop";
+  const LAYOUT_SLOT_OVERRIDES_PREFIX = "caisse_layout_slots_v1";
   const flipHand = (hand) => (hand === "left" ? "right" : "left");
   const isGerantMode = () =>
     typeof CAISSE_MODE !== "undefined" && CAISSE_MODE === "gerant";
   const getLayoutVersion = () =>
     isGerantMode() ? GERANT_LAYOUT_VERSION : EMPLOYE_LAYOUT_VERSION;
+  const getLayoutModeStorageKey = () =>
+    `${LAYOUT_MODE_STORAGE_PREFIX}_${isGerantMode() ? "gerant" : "employe"}`;
+  const getLayoutSlotOverridesStorageKey = (hand) =>
+    `${LAYOUT_SLOT_OVERRIDES_PREFIX}_${getLayoutVersion()}_${flipHand(hand)}`;
+  const normalizeLayoutMode = (mode) =>
+    mode === LAYOUT_MODE_DRAGDROP ? LAYOUT_MODE_DRAGDROP : LAYOUT_MODE_SANDBOX;
+
+  function getLayoutMode() {
+    return normalizeLayoutMode(
+      localStorage.getItem(getLayoutModeStorageKey()) || LAYOUT_MODE_SANDBOX,
+    );
+  }
+
+  function isDragDropMode() {
+    return getLayoutMode() === LAYOUT_MODE_DRAGDROP;
+  }
+
+  function syncLayoutModeClass() {
+    document.body.classList.toggle("layout-mode-dragdrop", isDragDropMode());
+  }
+
+  function setLayoutMode(mode) {
+    const next = normalizeLayoutMode(mode);
+    localStorage.setItem(getLayoutModeStorageKey(), next);
+    syncLayoutModeClass();
+    if (next !== LAYOUT_MODE_DRAGDROP) {
+      clearDragDropHints();
+    }
+    updateResizeHandlesForAllWindows();
+    return next;
+  }
+
+  function readDragDropSlotOverrides(hand = State.get("hand")) {
+    try {
+      const raw = localStorage.getItem(getLayoutSlotOverridesStorageKey(hand));
+      const parsed = raw ? JSON.parse(raw) : null;
+      if (!parsed || typeof parsed !== "object") return {};
+      return parsed;
+    } catch (_) {
+      return {};
+    }
+  }
+
+  function writeDragDropSlotOverrides(overrides, hand = State.get("hand")) {
+    try {
+      localStorage.setItem(
+        getLayoutSlotOverridesStorageKey(hand),
+        JSON.stringify(overrides || {}),
+      );
+    } catch (_) {}
+  }
 
   const LAYOUT_METRICS = {
     margin: 6,
@@ -388,6 +443,648 @@ const WM = (() => {
     delete el._maxPrevDy;
   }
 
+  function getLayoutStorageKey(hand, mode = getLayoutMode()) {
+    const suffix = mode === LAYOUT_MODE_DRAGDROP ? "_dragdrop" : "";
+    return "caisse_layout_" + getLayoutVersion() + "_" + flipHand(hand) + suffix;
+  }
+
+  function getSlotTemplateForCurrentHand() {
+    const hand = State.get("hand");
+    const base = computeLayout(flipHand(hand)) || {};
+    const overrides = readDragDropSlotOverrides(hand);
+    const slots = {};
+
+    Object.keys(base).forEach((slotId) => {
+      const b = base[slotId];
+      const ov = overrides?.[slotId];
+      slots[slotId] = {
+        x: Number.isFinite(Number(ov?.x)) ? Number(ov.x) : b.x,
+        y: Number.isFinite(Number(ov?.y)) ? Number(ov.y) : b.y,
+        w: Math.max(220, Number.isFinite(Number(ov?.w)) ? Number(ov.w) : b.w),
+        h: Math.max(140, Number.isFinite(Number(ov?.h)) ? Number(ov.h) : b.h),
+      };
+    });
+
+    return slots;
+  }
+
+  function getWindowAbsoluteRect(el) {
+    const x = (parseFloat(el.style.left) || 0) + (parseFloat(el.dataset.x) || 0);
+    const y = (parseFloat(el.style.top) || 0) + (parseFloat(el.dataset.y) || 0);
+    const w = parseFloat(el.style.width) || el.offsetWidth || 0;
+    const h = parseFloat(el.style.height) || el.offsetHeight || 0;
+    return { x, y, w, h };
+  }
+
+  function getWindowRectMetrics(el) {
+    const { x, y, w, h } = getWindowAbsoluteRect(el);
+    return { cx: x + w / 2, cy: y + h / 2 };
+  }
+
+  function getClosestSlotId(el, slots, used = new Set()) {
+    const rect = getWindowRectMetrics(el);
+    let closestId = null;
+    let bestDistance = Number.POSITIVE_INFINITY;
+
+    Object.keys(slots).forEach((slotId) => {
+      if (used.has(slotId)) return;
+      const slot = slots[slotId];
+      const dx = rect.cx - (slot.x + slot.w / 2);
+      const dy = rect.cy - (slot.y + slot.h / 2);
+      const dist = dx * dx + dy * dy;
+      if (dist < bestDistance) {
+        bestDistance = dist;
+        closestId = slotId;
+      }
+    });
+
+    return closestId;
+  }
+
+  function getClientPointFromEvent(evt) {
+    if (!evt) return null;
+    const clientFromInteract = evt.interaction?.coords?.cur?.client;
+    const clientX = Number(
+      evt.clientX ??
+        evt.client?.x ??
+        clientFromInteract?.x ??
+        evt.x ??
+        (Number.isFinite(Number(evt.pageX)) ? Number(evt.pageX) - window.scrollX : NaN),
+    );
+    const clientY = Number(
+      evt.clientY ??
+        evt.client?.y ??
+        clientFromInteract?.y ??
+        evt.y ??
+        (Number.isFinite(Number(evt.pageY)) ? Number(evt.pageY) - window.scrollY : NaN),
+    );
+    if (!Number.isFinite(clientX) || !Number.isFinite(clientY)) return null;
+    return { x: clientX, y: clientY };
+  }
+
+  function getCanvasPointFromEvent(evt) {
+    const clientPoint = getClientPointFromEvent(evt);
+    if (!clientPoint) return null;
+    const canvas = document.getElementById("canvas");
+    if (!canvas) return null;
+    const canvasRect = canvas.getBoundingClientRect();
+    return {
+      x: clientPoint.x - canvasRect.left,
+      y: clientPoint.y - canvasRect.top,
+    };
+  }
+
+  function getSlotIdAtCanvasPoint(point, slots) {
+    if (!point) return null;
+    const ids = Object.keys(slots || {});
+    for (const slotId of ids) {
+      const slot = slots[slotId];
+      if (!slot) continue;
+      const inX = point.x >= slot.x && point.x <= slot.x + slot.w;
+      const inY = point.y >= slot.y && point.y <= slot.y + slot.h;
+      if (inX && inY) return slotId;
+    }
+    return null;
+  }
+
+  function getWindowUnderClientPoint(clientPoint, sourceEl = null) {
+    if (!clientPoint) return null;
+    let best = null;
+    document.querySelectorAll(".win").forEach((win) => {
+      if (!win || win === sourceEl) return;
+      const rect = win.getBoundingClientRect();
+      const inX = clientPoint.x >= rect.left && clientPoint.x <= rect.right;
+      const inY = clientPoint.y >= rect.top && clientPoint.y <= rect.bottom;
+      if (!inX || !inY) return;
+      const z = Number.parseInt(win.style.zIndex || "0", 10) || 0;
+      if (!best || z >= best.z) {
+        best = { win, z };
+      }
+    });
+    return best?.win || null;
+  }
+
+  function placeWindowInSlot(el, slotId, slots) {
+    const slot = slots?.[slotId];
+    if (!slot || !el) return;
+    el.style.left = slot.x + "px";
+    el.style.top = slot.y + "px";
+    el.style.width = slot.w + "px";
+    el.style.height = slot.h + "px";
+    el.style.transform = "translate(0px,0px)";
+    el.dataset.x = 0;
+    el.dataset.y = 0;
+    el.dataset.slotId = slotId;
+  }
+
+  function getSlotPreviewEl() {
+    const canvas = document.getElementById("canvas");
+    if (!canvas) return null;
+    let preview = canvas.querySelector(".wm-slot-preview");
+    if (!preview) {
+      preview = document.createElement("div");
+      preview.className = "wm-slot-preview";
+      canvas.appendChild(preview);
+    }
+    return preview;
+  }
+
+  function showSlotPreview(slotId, slots, isSwap) {
+    const slot = slots?.[slotId];
+    if (!slot) return;
+    const preview = getSlotPreviewEl();
+    if (!preview) return;
+    preview.style.left = slot.x + "px";
+    preview.style.top = slot.y + "px";
+    preview.style.width = slot.w + "px";
+    preview.style.height = slot.h + "px";
+    preview.classList.toggle("is-swap", !!isSwap);
+    preview.classList.add("is-visible");
+  }
+
+  function clearSlotPreview() {
+    document.querySelector(".wm-slot-preview")?.remove();
+  }
+
+  function clearDragDropHints() {
+    document.querySelectorAll(".win").forEach((w) => {
+      w.classList.remove("win-dd-source", "win-dd-swap-candidate");
+    });
+    clearSlotPreview();
+  }
+
+  function updateDragDropHints(sourceEl, evt = null) {
+    if (!isDragDropMode() || !sourceEl) return;
+    const slots = getSlotTemplateForCurrentHand();
+    const pointerPoint = getCanvasPointFromEvent(evt) || sourceEl._ddPointer || null;
+    const clientPoint =
+      getClientPointFromEvent(evt) || sourceEl._ddClientPointer || null;
+    const hoveredWindow = getWindowUnderClientPoint(clientPoint, sourceEl);
+    const hoveredSlotId =
+      hoveredWindow &&
+      hoveredWindow.dataset.slotId &&
+      slots[hoveredWindow.dataset.slotId]
+        ? hoveredWindow.dataset.slotId
+        : null;
+    const pointerSlotId = getSlotIdAtCanvasPoint(
+      pointerPoint,
+      slots,
+    );
+    const targetSlotId =
+      hoveredSlotId || pointerSlotId || getClosestSlotId(sourceEl, slots);
+    const sourceSlotId =
+      sourceEl.dataset.slotId && slots[sourceEl.dataset.slotId]
+        ? sourceEl.dataset.slotId
+        : null;
+
+    clearDragDropHints();
+    sourceEl.classList.add("win-dd-source");
+
+    if (!targetSlotId) return;
+    sourceEl._ddTargetSlotId = targetSlotId;
+
+    const occupant = [...document.querySelectorAll(".win")].find(
+      (other) => other !== sourceEl && other.dataset.slotId === targetSlotId,
+    );
+
+    const willSwap = !!occupant && targetSlotId !== sourceSlotId;
+    if (occupant) {
+      occupant.classList.add("win-dd-swap-candidate");
+    }
+    showSlotPreview(targetSlotId, slots, willSwap);
+  }
+
+  function persistDragDropLayout() {
+    const hand = State.get("hand");
+    const slots = getSlotTemplateForCurrentHand();
+    const items = [];
+    document.querySelectorAll(".win").forEach((el) => {
+      const slotId =
+        el.dataset.slotId && slots[el.dataset.slotId]
+          ? el.dataset.slotId
+          : slots[el.dataset.id]
+            ? el.dataset.id
+            : getClosestSlotId(el, slots) || null;
+      items.push({ id: el.dataset.id, slotId });
+    });
+    localStorage.setItem(
+      getLayoutStorageKey(hand, LAYOUT_MODE_DRAGDROP),
+      JSON.stringify(items),
+    );
+  }
+
+  function getSlotsBounds(slots) {
+    const ids = Object.keys(slots || {});
+    if (!ids.length) return null;
+    let left = Number.POSITIVE_INFINITY;
+    let top = Number.POSITIVE_INFINITY;
+    let right = Number.NEGATIVE_INFINITY;
+    let bottom = Number.NEGATIVE_INFINITY;
+    ids.forEach((id) => {
+      const s = slots[id];
+      left = Math.min(left, s.x);
+      top = Math.min(top, s.y);
+      right = Math.max(right, s.x + s.w);
+      bottom = Math.max(bottom, s.y + s.h);
+    });
+    return { left, top, right, bottom };
+  }
+
+  function getLockedOuterEdges(slot, bounds) {
+    const epsilon = 2;
+    if (!slot || !bounds) {
+      return { top: false, right: false, bottom: false, left: false };
+    }
+    return {
+      left: Math.abs(slot.x - bounds.left) <= epsilon,
+      right: Math.abs(slot.x + slot.w - bounds.right) <= epsilon,
+      top: Math.abs(slot.y - bounds.top) <= epsilon,
+      bottom: Math.abs(slot.y + slot.h - bounds.bottom) <= epsilon,
+    };
+  }
+
+  function setHandleLocked(el, selector, locked) {
+    el.querySelectorAll(selector).forEach((node) => {
+      node.classList.toggle("is-locked-edge", !!locked);
+    });
+  }
+
+  function updateResizeHandlesForWindow(el, slots = null, bounds = null) {
+    if (!el) return;
+
+    if (!isDragDropMode()) {
+      setHandleLocked(el, ".win-resize-top", false);
+      setHandleLocked(el, ".win-resize-right", false);
+      setHandleLocked(el, ".win-resize-bottom", false);
+      setHandleLocked(el, ".win-resize-left", false);
+      setHandleLocked(el, ".win-resize-tl", false);
+      setHandleLocked(el, ".win-resize-tr", false);
+      setHandleLocked(el, ".win-resize-bl", false);
+      setHandleLocked(el, ".win-resize-br", false);
+      return;
+    }
+
+    const resolvedSlots = slots || getSlotTemplateForCurrentHand();
+    const resolvedBounds = bounds || getSlotsBounds(resolvedSlots);
+    const slotId = getWindowSlotId(el, resolvedSlots);
+    const slot = slotId ? resolvedSlots[slotId] : null;
+    const locked = getLockedOuterEdges(slot, resolvedBounds);
+
+    setHandleLocked(el, ".win-resize-top", locked.top);
+    setHandleLocked(el, ".win-resize-right", locked.right);
+    setHandleLocked(el, ".win-resize-bottom", locked.bottom);
+    setHandleLocked(el, ".win-resize-left", locked.left);
+    setHandleLocked(el, ".win-resize-tl", locked.top || locked.left);
+    setHandleLocked(el, ".win-resize-tr", locked.top || locked.right);
+    setHandleLocked(el, ".win-resize-bl", locked.bottom || locked.left);
+    setHandleLocked(el, ".win-resize-br", locked.bottom || locked.right);
+  }
+
+  function updateResizeHandlesForAllWindows(slots = null) {
+    const resolvedSlots = slots || getSlotTemplateForCurrentHand();
+    const bounds = getSlotsBounds(resolvedSlots);
+    document.querySelectorAll(".win").forEach((el) => {
+      updateResizeHandlesForWindow(el, resolvedSlots, bounds);
+    });
+  }
+
+  function clampRectToBounds(rect, bounds) {
+    const minW = 120;
+    const minH = 90;
+    const maxW = Math.max(minW, bounds.right - bounds.left);
+    const maxH = Math.max(minH, bounds.bottom - bounds.top);
+    const w = Math.min(Math.max(minW, rect.w), maxW);
+    const h = Math.min(Math.max(minH, rect.h), maxH);
+    const x = Math.min(Math.max(rect.x, bounds.left), bounds.right - w);
+    const y = Math.min(Math.max(rect.y, bounds.top), bounds.bottom - h);
+    return { x, y, w, h };
+  }
+
+  function lockOuterBoundEdges(current, rect, bounds) {
+    const minW = 120;
+    const minH = 90;
+    const epsilon = 2;
+
+    const lockLeft = Math.abs(current.x - bounds.left) <= epsilon;
+    const lockRight =
+      Math.abs(current.x + current.w - bounds.right) <= epsilon;
+    const lockTop = Math.abs(current.y - bounds.top) <= epsilon;
+    const lockBottom =
+      Math.abs(current.y + current.h - bounds.bottom) <= epsilon;
+
+    let left = rect.x;
+    let right = rect.x + rect.w;
+    let top = rect.y;
+    let bottom = rect.y + rect.h;
+
+    if (lockLeft) left = bounds.left;
+    if (lockRight) right = bounds.right;
+    if (lockTop) top = bounds.top;
+    if (lockBottom) bottom = bounds.bottom;
+
+    if (right - left < minW) {
+      if (lockLeft && !lockRight) right = left + minW;
+      else if (!lockLeft && lockRight) left = right - minW;
+      else right = left + minW;
+    }
+    if (bottom - top < minH) {
+      if (lockTop && !lockBottom) bottom = top + minH;
+      else if (!lockTop && lockBottom) top = bottom - minH;
+      else bottom = top + minH;
+    }
+
+    if (!lockLeft && !lockRight) {
+      left = Math.min(Math.max(left, bounds.left), bounds.right - minW);
+      right = Math.min(Math.max(right, left + minW), bounds.right);
+    }
+    if (!lockTop && !lockBottom) {
+      top = Math.min(Math.max(top, bounds.top), bounds.bottom - minH);
+      bottom = Math.min(Math.max(bottom, top + minH), bounds.bottom);
+    }
+
+    if (lockLeft) left = bounds.left;
+    if (lockRight) right = bounds.right;
+    if (lockTop) top = bounds.top;
+    if (lockBottom) bottom = bounds.bottom;
+
+    return {
+      x: left,
+      y: top,
+      w: Math.max(minW, right - left),
+      h: Math.max(minH, bottom - top),
+    };
+  }
+
+  function buildAxisMapper(totalStart, totalEnd, oldStart, oldEnd, nextStart, nextEnd) {
+    const mapSegment = (value, srcA, srcB, dstA, dstB) => {
+      if (Math.abs(srcB - srcA) < 0.0001) return dstA;
+      return dstA + ((value - srcA) * (dstB - dstA)) / (srcB - srcA);
+    };
+
+    return (coord) => {
+      if (coord <= oldStart) {
+        return mapSegment(coord, totalStart, oldStart, totalStart, nextStart);
+      }
+      if (coord >= oldEnd) {
+        return mapSegment(coord, oldEnd, totalEnd, nextEnd, totalEnd);
+      }
+      return mapSegment(coord, oldStart, oldEnd, nextStart, nextEnd);
+    };
+  }
+
+  function adaptSlotsAfterResize(slots, resizedSlotId, rawRect) {
+    const current = slots?.[resizedSlotId];
+    const bounds = getSlotsBounds(slots);
+    if (!current || !bounds) return slots;
+    const minSlotW = 160;
+    const minSlotH = 110;
+
+    const buildAdaptedSlots = (nextRect) => {
+      const oldLeft = current.x;
+      const oldRight = current.x + current.w;
+      const oldTop = current.y;
+      const oldBottom = current.y + current.h;
+      const newLeft = nextRect.x;
+      const newRight = nextRect.x + nextRect.w;
+      const newTop = nextRect.y;
+      const newBottom = nextRect.y + nextRect.h;
+
+      const mapX = buildAxisMapper(
+        bounds.left,
+        bounds.right,
+        oldLeft,
+        oldRight,
+        newLeft,
+        newRight,
+      );
+      const mapY = buildAxisMapper(
+        bounds.top,
+        bounds.bottom,
+        oldTop,
+        oldBottom,
+        newTop,
+        newBottom,
+      );
+
+      const adapted = {};
+      Object.keys(slots).forEach((slotId) => {
+        const s = slots[slotId];
+        const left = mapX(s.x);
+        const right = mapX(s.x + s.w);
+        const top = mapY(s.y);
+        const bottom = mapY(s.y + s.h);
+        adapted[slotId] = {
+          x: Math.round(left),
+          y: Math.round(top),
+          w: Math.max(60, Math.round(right - left)),
+          h: Math.max(56, Math.round(bottom - top)),
+        };
+      });
+
+      adapted[resizedSlotId] = {
+        x: Math.round(nextRect.x),
+        y: Math.round(nextRect.y),
+        w: Math.max(120, Math.round(nextRect.w)),
+        h: Math.max(90, Math.round(nextRect.h)),
+      };
+
+      return adapted;
+    };
+
+    const respectsMinSlotSize = (adaptedSlots) =>
+      Object.values(adaptedSlots || {}).every(
+        (slot) => slot.w >= minSlotW && slot.h >= minSlotH,
+      );
+
+    const boundedRect = clampRectToBounds(rawRect, bounds);
+    const desiredRect = lockOuterBoundEdges(current, boundedRect, bounds);
+
+    const desiredAdapted = buildAdaptedSlots(desiredRect);
+    if (respectsMinSlotSize(desiredAdapted)) return desiredAdapted;
+
+    // Empêche de pousser les autres panels au-delà de leurs frontières mini.
+    let low = 0;
+    let high = 1;
+    let bestRect = { ...current };
+    for (let i = 0; i < 16; i += 1) {
+      const t = (low + high) / 2;
+      const candidateRect = {
+        x: current.x + (desiredRect.x - current.x) * t,
+        y: current.y + (desiredRect.y - current.y) * t,
+        w: current.w + (desiredRect.w - current.w) * t,
+        h: current.h + (desiredRect.h - current.h) * t,
+      };
+      const candidateAdapted = buildAdaptedSlots(candidateRect);
+      if (respectsMinSlotSize(candidateAdapted)) {
+        bestRect = candidateRect;
+        low = t;
+      } else {
+        high = t;
+      }
+    }
+
+    return buildAdaptedSlots(bestRect);
+  }
+
+  function getWindowSlotId(el, slots) {
+    return (
+      (el.dataset.slotId && slots[el.dataset.slotId] && el.dataset.slotId) ||
+      (slots[el.dataset.id] ? el.dataset.id : null) ||
+      getClosestSlotId(el, slots)
+    );
+  }
+
+  function applySlotsToWindows(slots, options = {}) {
+    const exceptEl = options.exceptEl || null;
+    const fixedSlotId = options.fixedSlotId || null;
+    document.querySelectorAll(".win").forEach((win) => {
+      if (exceptEl && win === exceptEl) {
+        if (fixedSlotId) {
+          win.dataset.slotId = fixedSlotId;
+        }
+        return;
+      }
+      const targetSlotId = getWindowSlotId(win, slots);
+      if (!targetSlotId) return;
+      placeWindowInSlot(win, targetSlotId, slots);
+    });
+    applyStableZOrderForDragDrop(slots);
+    updateResizeHandlesForAllWindows(slots);
+  }
+
+  function applyStableZOrderForDragDrop(slots = null) {
+    if (!isDragDropMode()) return;
+    const resolvedSlots = slots || getSlotTemplateForCurrentHand();
+    const wins = [...document.querySelectorAll(".win")];
+    wins
+      .map((el) => {
+        const slotId = getWindowSlotId(el, resolvedSlots);
+        const slot = slotId ? resolvedSlots[slotId] : null;
+        return { el, slot };
+      })
+      .sort((a, b) => {
+        const ay = a.slot?.y ?? 0;
+        const by = b.slot?.y ?? 0;
+        if (ay !== by) return ay - by;
+        const ax = a.slot?.x ?? 0;
+        const bx = b.slot?.x ?? 0;
+        return ax - bx;
+      })
+      .forEach((item, index) => {
+        item.el.style.zIndex = String(20 + index);
+      });
+  }
+
+  function relayoutAroundResizedWindowLive(el, rawRect = null) {
+    if (!isDragDropMode() || !el) return;
+    const slots = getSlotTemplateForCurrentHand();
+    const slotId = getWindowSlotId(el, slots);
+    if (!slotId) return;
+    const rect = rawRect || getWindowAbsoluteRect(el);
+    const adaptedSlots = adaptSlotsAfterResize(slots, slotId, rect);
+    const constrained = adaptedSlots?.[slotId];
+    if (constrained) {
+      el.style.left = constrained.x + "px";
+      el.style.top = constrained.y + "px";
+      el.style.width = constrained.w + "px";
+      el.style.height = constrained.h + "px";
+      el.style.transform = "translate(0px,0px)";
+      el.dataset.x = 0;
+      el.dataset.y = 0;
+      el.dataset.slotId = slotId;
+    }
+    applySlotsToWindows(adaptedSlots, { exceptEl: el, fixedSlotId: slotId });
+  }
+
+  function persistSlotOverrideFromWindow(el) {
+    if (!isDragDropMode() || !el) return;
+    const slots = getSlotTemplateForCurrentHand();
+    const slotId = getWindowSlotId(el, slots);
+    if (!slotId) return;
+
+    const rect = getWindowAbsoluteRect(el);
+    const adaptedSlots = adaptSlotsAfterResize(slots, slotId, rect);
+    writeDragDropSlotOverrides(adaptedSlots);
+
+    applySlotsToWindows(adaptedSlots);
+
+    persistDragDropLayout();
+  }
+
+  function normalizeWindowsToSlots() {
+    if (!isDragDropMode()) return;
+    const slots = getSlotTemplateForCurrentHand();
+    const used = new Set();
+
+    document.querySelectorAll(".win").forEach((el) => {
+      const preferred =
+        (el.dataset.slotId && slots[el.dataset.slotId] && el.dataset.slotId) ||
+        (slots[el.dataset.id] ? el.dataset.id : null);
+      if (!preferred || used.has(preferred)) return;
+      placeWindowInSlot(el, preferred, slots);
+      used.add(preferred);
+    });
+
+    document.querySelectorAll(".win").forEach((el) => {
+      if (used.has(el.dataset.slotId)) return;
+      const slotId = getClosestSlotId(el, slots, used);
+      if (!slotId) return;
+      placeWindowInSlot(el, slotId, slots);
+      used.add(slotId);
+    });
+
+    persistDragDropLayout();
+    applyStableZOrderForDragDrop(slots);
+    updateResizeHandlesForAllWindows(slots);
+  }
+
+  function snapWindowToNearestSlot(el, evt = null, forcedTargetSlotId = null) {
+    if (!isDragDropMode() || !el) return;
+    const slots = getSlotTemplateForCurrentHand();
+    const pointerPoint = getCanvasPointFromEvent(evt) || el._ddPointer || null;
+    const clientPoint = getClientPointFromEvent(evt) || el._ddClientPointer || null;
+    const hoveredWindow = getWindowUnderClientPoint(clientPoint, el);
+    const hoveredSlotId =
+      hoveredWindow &&
+      hoveredWindow.dataset.slotId &&
+      slots[hoveredWindow.dataset.slotId]
+        ? hoveredWindow.dataset.slotId
+        : null;
+    const pointerSlotId = getSlotIdAtCanvasPoint(
+      pointerPoint,
+      slots,
+    );
+    const targetSlotId =
+      (forcedTargetSlotId && slots[forcedTargetSlotId] && forcedTargetSlotId) ||
+      hoveredSlotId ||
+      pointerSlotId ||
+      getClosestSlotId(el, slots);
+    if (!targetSlotId) return;
+
+    const previousSlotId =
+      (el._ddOriginSlotId && slots[el._ddOriginSlotId] && el._ddOriginSlotId) ||
+      (el.dataset.slotId && slots[el.dataset.slotId] ? el.dataset.slotId : null);
+    const occupant = [...document.querySelectorAll(".win")].find(
+      (other) => other !== el && other.dataset.slotId === targetSlotId,
+    );
+
+    placeWindowInSlot(el, targetSlotId, slots);
+
+    if (occupant) {
+      if (previousSlotId && slots[previousSlotId]) {
+        placeWindowInSlot(occupant, previousSlotId, slots);
+      } else {
+        const fallbackSlot = getClosestSlotId(occupant, slots);
+        if (fallbackSlot) placeWindowInSlot(occupant, fallbackSlot, slots);
+      }
+    }
+
+    persistDragDropLayout();
+    applyStableZOrderForDragDrop(slots);
+    updateResizeHandlesForAllWindows(slots);
+    clearDragDropHints();
+  }
+
   function create(id) {
     const def = PANELS[id];
     if (!def) return;
@@ -460,9 +1157,24 @@ const WM = (() => {
         }),
       ],
       listeners: {
-        start() {
+        start(e) {
           if (el.classList.contains("maximized")) return false;
           el.classList.add("dragging");
+          if (isDragDropMode()) {
+            el._ddOriginSlotId = el.dataset.slotId || null;
+            el._ddTargetSlotId = null;
+            el._ddPointer = getCanvasPointFromEvent(e) || null;
+            el._ddClientPointer = getClientPointFromEvent(e) || null;
+            const onPointerMove = (ev) => {
+              el._ddPointer = getCanvasPointFromEvent(ev) || el._ddPointer || null;
+              el._ddClientPointer =
+                getClientPointFromEvent(ev) || el._ddClientPointer || null;
+              updateDragDropHints(el, ev);
+            };
+            el._ddPointerMoveHandler = onPointerMove;
+            window.addEventListener("pointermove", onPointerMove, true);
+            updateDragDropHints(el);
+          }
         },
         move(e) {
           if (el.classList.contains("maximized")) return;
@@ -471,9 +1183,32 @@ const WM = (() => {
           el.style.transform = `translate(${x}px,${y}px)`;
           el.dataset.x = x;
           el.dataset.y = y;
+          if (isDragDropMode()) {
+            el._ddPointer = getCanvasPointFromEvent(e) || el._ddPointer || null;
+            el._ddClientPointer =
+              getClientPointFromEvent(e) || el._ddClientPointer || null;
+            updateDragDropHints(el, e);
+          }
         },
-        end() {
+        end(e) {
           el.classList.remove("dragging");
+          if (isDragDropMode()) {
+            if (el._ddPointerMoveHandler) {
+              window.removeEventListener(
+                "pointermove",
+                el._ddPointerMoveHandler,
+                true,
+              );
+              el._ddPointerMoveHandler = null;
+            }
+            snapWindowToNearestSlot(el, e, el._ddTargetSlotId);
+            el._ddPointer = null;
+            el._ddClientPointer = null;
+            el._ddTargetSlotId = null;
+            el._ddOriginSlotId = null;
+          } else {
+            clearDragDropHints();
+          }
         },
       },
     });
@@ -501,6 +1236,17 @@ const WM = (() => {
         },
         move(e) {
           if (el.classList.contains("maximized")) return;
+          if (isDragDropMode()) {
+            const current = getWindowAbsoluteRect(el);
+            const rawRect = {
+              x: current.x + (e.deltaRect?.left || 0),
+              y: current.y + (e.deltaRect?.top || 0),
+              w: e.rect.width,
+              h: e.rect.height,
+            };
+            relayoutAroundResizedWindowLive(el, rawRect);
+            return;
+          }
           const x = (parseFloat(el.dataset.x) || 0) + e.deltaRect.left;
           const y = (parseFloat(el.dataset.y) || 0) + e.deltaRect.top;
           el.style.width = e.rect.width + "px";
@@ -514,11 +1260,19 @@ const WM = (() => {
         end() {
           el.classList.remove("resizing");
           document.body.classList.remove("is-resizing");
+          if (isDragDropMode()) {
+            persistSlotOverrideFromWindow(el);
+          }
         },
       },
     });
 
     State.all().windows[id] = { minimized: false, visible: true };
+    if (isDragDropMode()) {
+      const slots = getSlotTemplateForCurrentHand();
+      if (slots[id]) el.dataset.slotId = id;
+    }
+    updateResizeHandlesForWindow(el);
     if (def.onMount) def.onMount(id);
     updateTaskbar();
   }
@@ -530,7 +1284,10 @@ const WM = (() => {
     const el = document.getElementById("win-" + id);
     if (el) {
       el.classList.add("focused");
-      el.style.zIndex = ++State.all().zTop;
+      // En mode sandbox, le panel cliqué remonte au premier plan.
+      if (!isDragDropMode()) {
+        el.style.zIndex = ++State.all().zTop;
+      }
     }
   }
 
@@ -565,10 +1322,15 @@ const WM = (() => {
       return;
     }
     create(id);
+    if (isDragDropMode()) {
+      normalizeWindowsToSlots();
+    }
     focus(id);
   }
 
   function applyLayout(hand) {
+    clearDragDropHints();
+    syncLayoutModeClass();
     State.set("hand", hand);
     localStorage.setItem(HAND_STORAGE_KEY, hand);
 
@@ -579,34 +1341,61 @@ const WM = (() => {
     document.querySelectorAll(".win").forEach((w) => w.remove());
     State.all().windows = {};
 
-    const layoutHand = flipHand(hand);
-    const saved = JSON.parse(
-      localStorage.getItem(
-        "caisse_layout_" + getLayoutVersion() + "_" + layoutHand,
-      ) || "null",
-    );
+    const mode = getLayoutMode();
+    const saved = JSON.parse(localStorage.getItem(getLayoutStorageKey(hand, mode)) || "null");
 
     if (saved) {
-      saved.forEach((item) => {
-        if (!PANELS[item.id]) return;
-        create(item.id);
-        const el = document.getElementById("win-" + item.id);
-        if (el && item.style) Object.assign(el.style, item.style);
-        if (el && item.dx) {
-          el.dataset.x = item.dx;
-          el.dataset.y = item.dy;
-        }
-      });
+      if (mode === LAYOUT_MODE_DRAGDROP) {
+        const slots = getSlotTemplateForCurrentHand();
+        saved.forEach((item) => {
+          if (!PANELS[item.id]) return;
+          create(item.id);
+          const el = document.getElementById("win-" + item.id);
+          if (!el) return;
+          const slotId =
+            item.slotId && slots[item.slotId]
+              ? item.slotId
+              : slots[item.id]
+                ? item.id
+                : null;
+          if (slotId) placeWindowInSlot(el, slotId, slots);
+        });
+        normalizeWindowsToSlots();
+      } else {
+        saved.forEach((item) => {
+          if (!PANELS[item.id]) return;
+          create(item.id);
+          const el = document.getElementById("win-" + item.id);
+          if (el && item.style) Object.assign(el.style, item.style);
+          if (el && item.dx) {
+            el.dataset.x = item.dx;
+            el.dataset.y = item.dy;
+          }
+        });
+      }
     } else {
       getDefaultVisible().forEach((id) => {
         if (PANELS[id]) create(id);
       });
+      if (mode === LAYOUT_MODE_DRAGDROP) {
+        normalizeWindowsToSlots();
+      }
     }
+    if (isDragDropMode()) {
+      applyStableZOrderForDragDrop();
+    }
+    updateResizeHandlesForAllWindows();
     updateTaskbar();
   }
 
   function saveLayout() {
-    const hand = flipHand(State.get("hand"));
+    const hand = State.get("hand");
+    if (isDragDropMode()) {
+      persistDragDropLayout();
+      Toast.ok("Disposition sauvegardée");
+      return;
+    }
+
     const items = [];
     document.querySelectorAll(".win").forEach((w) => {
       items.push({
@@ -623,7 +1412,7 @@ const WM = (() => {
       });
     });
     localStorage.setItem(
-      "caisse_layout_" + getLayoutVersion() + "_" + hand,
+      getLayoutStorageKey(hand, LAYOUT_MODE_SANDBOX),
       JSON.stringify(items),
     );
     Toast.ok("Disposition sauvegardée");
@@ -631,17 +1420,26 @@ const WM = (() => {
 
   function resetLayout() {
     const hand = State.get("hand");
-    localStorage.removeItem(
-      "caisse_layout_" + getLayoutVersion() + "_" + flipHand(hand),
-    );
+    localStorage.removeItem(getLayoutStorageKey(hand, getLayoutMode()));
+    if (isDragDropMode()) {
+      localStorage.removeItem(getLayoutSlotOverridesStorageKey(hand));
+    }
     applyLayout(hand);
     Toast.ok("Disposition réinitialisée");
   }
 
   function hasSavedLayout(hand) {
-    return !!localStorage.getItem(
-      "caisse_layout_" + getLayoutVersion() + "_" + flipHand(hand),
-    );
+    return !!localStorage.getItem(getLayoutStorageKey(hand, getLayoutMode()));
+  }
+
+  function toggleLayoutMode() {
+    const next =
+      getLayoutMode() === LAYOUT_MODE_DRAGDROP
+        ? LAYOUT_MODE_SANDBOX
+        : LAYOUT_MODE_DRAGDROP;
+    setLayoutMode(next);
+    applyLayout(State.get("hand"));
+    return next;
   }
 
   function updateTaskbar() {
@@ -676,6 +1474,9 @@ const WM = (() => {
     minimize,
     maximize,
     focus,
+    getLayoutMode,
+    setLayoutMode,
+    toggleLayoutMode,
     applyLayout,
     saveLayout,
     resetLayout,

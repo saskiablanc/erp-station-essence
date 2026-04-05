@@ -15,13 +15,19 @@
     $baseUrl = '';
   }
   $assetsUrl = $baseUrl . '/assets';
+  $asset = static function (string $path) use ($assetsUrl): string {
+    $rel = ltrim($path, '/');
+    $full = __DIR__ . '/../../public/assets/' . str_replace('/', DIRECTORY_SEPARATOR, $rel);
+    $ver = is_file($full) ? (string) filemtime($full) : (string) time();
+    return $assetsUrl . '/' . $rel . '?v=' . rawurlencode($ver);
+  };
   ?>
   <link rel="icon" type="image/png" href="<?= $assetsUrl ?>/img/logo_unica.png">
-  <link rel="stylesheet" href="<?= $assetsUrl ?>/css/caisse.css">
-  <link rel="stylesheet" href="<?= $assetsUrl ?>/css/panels/pompes.css">
-  <link rel="stylesheet" href="<?= $assetsUrl ?>/css/panels/ticket.css">
-  <link rel="stylesheet" href="<?= $assetsUrl ?>/css/panels/ticket_barcode.css">
-  <link rel="stylesheet" href="<?= $assetsUrl ?>/css/core/caisse_dialogs.css">
+  <link rel="stylesheet" href="<?= $asset('css/caisse.css') ?>">
+  <link rel="stylesheet" href="<?= $asset('css/panels/pompes.css') ?>">
+  <link rel="stylesheet" href="<?= $asset('css/panels/ticket.css') ?>">
+  <link rel="stylesheet" href="<?= $asset('css/panels/ticket_barcode.css') ?>">
+  <link rel="stylesheet" href="<?= $asset('css/core/caisse_dialogs.css') ?>">
 
   <?php
   // SESSION injectée par PHP
@@ -84,6 +90,10 @@
       <img src="<?= $assetsUrl ?>/img/reset.png" alt="Réinitialiser">
     </button>
 
+    <button class="tb-layout-mode-btn layout-mode-btn" onclick="App.toggleLayoutMode()" title="Mode Sandbox (libre)">
+      Sandbox
+    </button>
+
     <?php if (($_SESSION['employe']['role'] ?? '') === 'gerant'): ?>
     <span class="tb-vsep"></span>
     <button class="tb-switch-btn" onclick="App.openGerant()" title="Basculer vers la caisse gérant">
@@ -136,7 +146,7 @@
 <script src="<?= $assetsUrl ?>/js/core/state.js"></script>
 <script src="<?= $assetsUrl ?>/js/core/requetes.js"></script>
 <script src="<?= $assetsUrl ?>/js/core/toast.js"></script>
-<script src="<?= $assetsUrl ?>/js/core/windows.js"></script>
+<script src="<?= $asset('js/core/windows.js') ?>"></script>
 <script src="<?= $assetsUrl ?>/js/core/sim_popup_bridge.js"></script>
 
 <!-- Panels (tous "À VENIR" pour l'instant) -->
@@ -166,7 +176,7 @@
 <script src="<?= $assetsUrl ?>/js/panels/gerant/cce_params.js"></script>
 <script src="<?= $assetsUrl ?>/js/panels/gerant/horaires.js"></script>
 
-<script src="<?= $assetsUrl ?>/js/app.js"></script>
+<script src="<?= $asset('js/app.js') ?>"></script>
 
 </body>
 </html>

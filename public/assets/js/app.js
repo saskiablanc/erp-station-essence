@@ -259,6 +259,7 @@ const App = (() => {
 
     // Charger les panels
     WM.applyLayout(hand);
+    updateLayoutModeButtons();
 
     // Sur la caisse gérant, ouvrir uniquement les panels gérant
     if (isGerantView) {
@@ -289,12 +290,37 @@ const App = (() => {
 
   function setHand(hand) {
     WM.applyLayout(hand);
+    updateLayoutModeButtons();
   }
   function saveLayout() {
     WM.saveLayout();
   }
   function resetLayout() {
     WM.resetLayout();
+    updateLayoutModeButtons();
+  }
+
+  function updateLayoutModeButtons() {
+    const mode = WM.getLayoutMode?.() || "sandbox";
+    document.querySelectorAll(".layout-mode-btn").forEach((btn) => {
+      const isDragDrop = mode === "dragdrop";
+      btn.textContent = isDragDrop ? "D&D" : "Sandbox";
+      btn.title = isDragDrop
+        ? "Mode Drag & Drop (emplacements prédéfinis)"
+        : "Mode Sandbox (libre)";
+      btn.classList.toggle("active", isDragDrop);
+    });
+  }
+
+  function toggleLayoutMode() {
+    WM.toggleLayoutMode?.();
+    updateLayoutModeButtons();
+    const isDragDrop = (WM.getLayoutMode?.() || "sandbox") === "dragdrop";
+    Toast.ok(
+      isDragDrop
+        ? "Mode Drag & Drop activé"
+        : "Mode Sandbox activé",
+    );
   }
 
   // Ouvre la caisse gérant (depuis la caisse employé)
@@ -332,6 +358,7 @@ const App = (() => {
     setHand,
     saveLayout,
     resetLayout,
+    toggleLayoutMode,
     openGerant,
     switchCaisse,
     deconnexion,
