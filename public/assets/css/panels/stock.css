@@ -115,6 +115,15 @@
   font-size: 12px;
 }
 
+.stock-table tbody tr.stock-row-alert td {
+  background: rgba(245, 158, 11, 0.16);
+  border-bottom-color: rgba(245, 158, 11, 0.35);
+}
+
+.stock-table tbody tr.stock-row-alert td:not(:last-child) {
+  border-right-color: rgba(245, 158, 11, 0.35);
+}
+
 .stock-col-name {
   width: auto;
 }

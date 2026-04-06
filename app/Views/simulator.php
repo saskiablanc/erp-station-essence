@@ -276,6 +276,88 @@
     .sim-start-reason--err { color:var(--danger); }
     .sim-start-reason--info { color:var(--accent); }
 
+    .sim-start-layout {
+      display:grid;
+      grid-template-columns:minmax(320px, 1fr) minmax(300px, 0.9fr);
+      gap:14px;
+      align-items:start;
+    }
+    .sim-start-controls {
+      min-width:0;
+    }
+    .sim-runtime-screen {
+      border:1.5px solid var(--border);
+      border-radius:12px;
+      background:linear-gradient(180deg, rgba(255,255,255,.94) 0%, rgba(245,247,255,.9) 100%);
+      padding:12px;
+      min-height:100%;
+    }
+    .sim-runtime-title {
+      font-family:var(--display);
+      font-size:13px;
+      font-weight:700;
+      color:var(--text);
+      margin-bottom:8px;
+    }
+    .sim-runtime-grid {
+      display:grid;
+      gap:6px;
+    }
+    .sim-runtime-row {
+      display:grid;
+      grid-template-columns:minmax(0,1fr) auto;
+      align-items:center;
+      gap:10px;
+      padding:7px 8px;
+      border:1px solid var(--border);
+      border-radius:8px;
+      background:rgba(255,255,255,.72);
+    }
+    .sim-runtime-label {
+      font-size:11px;
+      color:var(--text-dim);
+    }
+    .sim-runtime-value {
+      font-size:11px;
+      color:var(--text);
+      font-weight:600;
+      text-align:right;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      max-width:220px;
+    }
+    .sim-runtime-payment {
+      margin-top:10px;
+      border:1px dashed var(--border);
+      border-radius:10px;
+      background:rgba(129,140,248,.08);
+      padding:10px;
+    }
+    .sim-runtime-payment-title {
+      font-size:11px;
+      font-weight:700;
+      color:var(--accent);
+      margin-bottom:4px;
+      text-transform:uppercase;
+      letter-spacing:.04em;
+    }
+    .sim-runtime-payment-instr {
+      font-size:11px;
+      color:var(--text-mid);
+      margin-bottom:8px;
+      line-height:1.35;
+    }
+
+    @media (max-width: 980px) {
+      .sim-start-layout {
+        grid-template-columns:1fr;
+      }
+      .sim-runtime-value {
+        max-width:none;
+      }
+    }
+
     /* ── Waiting banner ── */
     .sim-waiting {
       display:none;
@@ -597,77 +679,110 @@
             <span class="sim-step" id="step-end">3. Terminer</span>
           </div>
 
-          <!-- Étape 1: Sélection -->
-          <div id="pompe-step-select">
-            <div style="color:var(--text-dim);font-size:12px;margin-bottom:8px;">
-              Cliquez sur une pompe disponible (statut : active) ci-dessus.
-            </div>
-            <div class="sim-row">
-              <div class="sim-field">
-                <label>Pompe sélectionnée</label>
-                <select id="pompe-select" disabled><option value="">Aucune</option></select>
-              </div>
-            </div>
-          </div>
-
-          <!-- Étape 2: Configuration + Démarrer -->
-          <div id="pompe-step-start" style="display:none;">
-            <div id="pompe-carburant-opts" style="display:none;">
-              <div class="sim-row">
-                <div class="sim-field sim-field--full">
-                  <label>Type de carburant</label>
-                  <div id="pompe-fuel-buttons" class="sim-fuel-list"></div>
+          <div class="sim-start-layout">
+            <div class="sim-start-controls">
+              <!-- Étape 1: Sélection -->
+              <div id="pompe-step-select">
+                <div style="color:var(--text-dim);font-size:12px;margin-bottom:8px;">
+                  Cliquez sur une pompe disponible (statut : active) ci-dessus.
                 </div>
-              </div>
-              <div class="sim-row">
-                <div class="sim-field">
-                  <label>Quantite (litres)</label>
-                  <input type="range" id="pompe-qty" min="5" max="60" value="25" oninput="document.getElementById('pompe-qty-val').textContent=this.value+' L'">
-                </div>
-                <span class="sim-range-val" id="pompe-qty-val">25 L</span>
-              </div>
-            </div>
-            <div id="pompe-elec-opts" style="display:none;">
-              <div class="sim-row">
-                <div class="sim-field">
-                  <label>Temps de charge (minutes)</label>
-                  <input type="range" id="borne-minutes" min="5" max="120" value="30" oninput="Sim.updateBornePreview()">
-                </div>
-                <span class="sim-range-val" id="borne-minutes-val">30 min (~11.0 kWh)</span>
-              </div>
-              <div style="font-size:11px;color:var(--text-dim);margin-top:4px;">
-                Estimation calculée selon la puissance du chargeur sélectionné.
-              </div>
-            </div>
-            <div id="pompe-auto-pay-opts" style="display:none;">
-              <div class="sim-row">
-                <div class="sim-field sim-field--full">
-                  <label>Méthode de paiement automatique</label>
-                  <div id="pompe-payment-buttons" class="sim-fuel-list"></div>
-                  <div id="pompe-payment-cce-select-wrap" class="sim-field" style="display:none;margin-top:8px;">
-                    <label>Carte CCE utilisée</label>
-                    <select id="pompe-payment-cce-select" onchange="Sim.selectAutoPaymentCce(this.value)"></select>
+                <div class="sim-row">
+                  <div class="sim-field">
+                    <label>Pompe sélectionnée</label>
+                    <select id="pompe-select" disabled><option value="">Aucune</option></select>
                   </div>
-                  <div id="pompe-payment-cce-info" class="sim-fuel-empty" style="margin-top:6px;"></div>
                 </div>
               </div>
-            </div>
-            <button class="sim-btn sim-btn--green" id="btn-demarrer" onclick="Sim.demarrerLivraison()">Démarrer la livraison</button>
-            <div id="pompe-start-reason" class="sim-start-reason"></div>
-          </div>
 
-          <!-- Étape 3: Terminer -->
-          <div id="pompe-step-end" style="display:none;">
-            <div id="pompe-recap" style="font-size:12px;margin-bottom:12px;color:var(--text-mid);"></div>
-            <button class="sim-btn sim-btn--orange" id="btn-terminer" onclick="Sim.terminerLivraison()">Terminer la livraison</button>
-          </div>
+              <!-- Étape 2: Configuration + Démarrer -->
+              <div id="pompe-step-start" style="display:none;">
+                <div id="pompe-carburant-opts" style="display:none;">
+                  <div class="sim-row">
+                    <div class="sim-field sim-field--full">
+                      <label>Type de carburant</label>
+                      <div id="pompe-fuel-buttons" class="sim-fuel-list"></div>
+                    </div>
+                  </div>
+                  <div class="sim-row">
+                    <div class="sim-field">
+                      <label>Quantite (litres)</label>
+                      <input type="range" id="pompe-qty" min="5" max="60" value="25" oninput="document.getElementById('pompe-qty-val').textContent=this.value+' L'; Sim.renderSimulationScreen();">
+                    </div>
+                    <span class="sim-range-val" id="pompe-qty-val">25 L</span>
+                  </div>
+                </div>
+                <div id="pompe-elec-opts" style="display:none;">
+                  <div class="sim-row">
+                    <div class="sim-field">
+                      <label>Temps de charge (minutes)</label>
+                      <input type="range" id="borne-minutes" min="5" max="120" value="30" oninput="Sim.updateBornePreview()">
+                    </div>
+                    <span class="sim-range-val" id="borne-minutes-val">30 min (~11.0 kWh)</span>
+                  </div>
+                  <div style="font-size:11px;color:var(--text-dim);margin-top:4px;">
+                    Estimation calculée selon la puissance du chargeur sélectionné.
+                  </div>
+                </div>
+                <div id="pompe-auto-pay-opts" style="display:none;">
+                  <div class="sim-row">
+                    <div class="sim-field sim-field--full">
+                      <label>Méthode de paiement automatique</label>
+                      <div id="pompe-payment-buttons" class="sim-fuel-list"></div>
+                      <div id="pompe-payment-cce-select-wrap" class="sim-field" style="display:none;margin-top:8px;">
+                        <label>Carte CCE utilisée</label>
+                        <select id="pompe-payment-cce-select" onchange="Sim.selectAutoPaymentCce(this.value)"></select>
+                      </div>
+                      <div id="pompe-payment-cce-info" class="sim-fuel-empty" style="margin-top:6px;"></div>
+                    </div>
+                  </div>
+                </div>
+                <div id="pompe-recu-opts">
+                  <div class="sim-row">
+                    <div class="sim-field sim-field--full">
+                      <label>Reçu</label>
+                      <div id="pompe-recu-buttons" class="sim-fuel-list"></div>
+                      <div id="pompe-recu-info" class="sim-fuel-empty" style="margin-top:6px;"></div>
+                    </div>
+                  </div>
+                </div>
 
-          <!-- Done -->
-          <div id="pompe-step-done" style="display:none;">
-            <div style="padding:12px;border-radius:8px;background:var(--green-dim);color:var(--green);font-size:12px;font-weight:500;margin-bottom:12px;">
-              Livraison terminée. L'employé peut maintenant encaisser sur la caisse.
+                <button class="sim-btn sim-btn--green" id="btn-demarrer" onclick="Sim.demarrerLivraison()">Démarrer la livraison</button>
+                <div id="pompe-start-reason" class="sim-start-reason"></div>
+              </div>
+
+              <!-- Étape 3: Terminer -->
+              <div id="pompe-step-end" style="display:none;">
+                <div id="pompe-recap" style="font-size:12px;margin-bottom:12px;color:var(--text-mid);"></div>
+                <button class="sim-btn sim-btn--orange" id="btn-terminer" onclick="Sim.terminerLivraison()">Terminer la livraison</button>
+              </div>
+
+              <!-- Done -->
+              <div id="pompe-step-done" style="display:none;">
+                <div style="padding:12px;border-radius:8px;background:var(--green-dim);color:var(--green);font-size:12px;font-weight:500;margin-bottom:12px;">
+                  Livraison terminée. L'employé peut maintenant encaisser sur la caisse.
+                </div>
+                <button class="sim-btn sim-btn--primary" onclick="Sim.resetPompe()">Nouvelle opération</button>
+              </div>
             </div>
-            <button class="sim-btn sim-btn--primary" onclick="Sim.resetPompe()">Nouvelle opération</button>
+
+            <aside class="sim-runtime-screen" id="pompe-runtime-screen">
+              <div class="sim-runtime-title">Écran de distribution</div>
+              <div class="sim-runtime-grid">
+                <div class="sim-runtime-row"><span class="sim-runtime-label">Point de distribution</span><span class="sim-runtime-value" id="runtime-point">—</span></div>
+                <div class="sim-runtime-row"><span class="sim-runtime-label">Type carburant / énergie</span><span class="sim-runtime-value" id="runtime-type">—</span></div>
+                <div class="sim-runtime-row"><span class="sim-runtime-label" id="runtime-tarif-label">Prix au litre actuel</span><span class="sim-runtime-value" id="runtime-tarif">—</span></div>
+                <div class="sim-runtime-row"><span class="sim-runtime-label" id="runtime-wanted-label">Quantité souhaitée</span><span class="sim-runtime-value" id="runtime-wanted">—</span></div>
+                <div class="sim-runtime-row"><span class="sim-runtime-label" id="runtime-done-label">Quantité délivrée</span><span class="sim-runtime-value" id="runtime-done">—</span></div>
+                <div class="sim-runtime-row"><span class="sim-runtime-label">Total estimé (souhaité)</span><span class="sim-runtime-value" id="runtime-total-est">—</span></div>
+                <div class="sim-runtime-row"><span class="sim-runtime-label">Total à payer (délivré)</span><span class="sim-runtime-value" id="runtime-total-due">—</span></div>
+              </div>
+              <div class="sim-runtime-payment" id="runtime-payment-box">
+                <div class="sim-runtime-payment-title">Automate 24 — Paiement</div>
+                <div class="sim-runtime-payment-instr" id="runtime-payment-instr">Insérez ou présentez la carte puis suivez les instructions de l’automate.</div>
+                <div class="sim-runtime-row"><span class="sim-runtime-label">Mode de paiement</span><span class="sim-runtime-value" id="runtime-payment-mode">—</span></div>
+                <div class="sim-runtime-row"><span class="sim-runtime-label">Informations paiement</span><span class="sim-runtime-value" id="runtime-payment-info">—</span></div>
+              </div>
+            </aside>
           </div>
 
           <div id="pompe-log" class="sim-log"></div>
@@ -761,6 +876,7 @@ var Sim = (function() {
   var selectedPompeId = null;
   var selectedCarburantId = null;
   var selectedAutoPaymentMethod = 'cb';
+  var selectedReceiptMode = 'sans';
   var selectedCceCard = null;
   var currentStep = 'select';
   var cces = [];
@@ -866,6 +982,20 @@ var Sim = (function() {
       document.getElementById('cce-waiting').classList.add('visible');
       refreshCCE();
       log('cce-log', 'info', 'La caisse demande le scan d\'une carte CCE.');
+      return;
+    }
+
+    if (ev.data && ev.data.type === 'sim-recu-created') {
+      var receiptIdsRaw = Array.isArray(ev.data.recu_ids) ? ev.data.recu_ids : [];
+      var receiptIds = receiptIdsRaw
+        .map(function(id) { return Number(id || 0); })
+        .filter(function(id) { return id > 0; });
+      if (receiptIds.length > 0) {
+        refreshRecus();
+        showRecuById(receiptIds[0], true).catch(function(error) {
+          log('recus-log', 'err', 'Impossible d’afficher le reçu simulé : ' + (error && error.message ? error.message : 'Erreur inconnue'));
+        });
+      }
       return;
     }
 
@@ -1006,38 +1136,132 @@ var Sim = (function() {
       + '</tbody></table>';
   }
 
+  function normalizeRecuDetails(data, recuFallback) {
+    var lines = Array.isArray(data && data.lines) ? data.lines : [];
+    var normalizedLines = lines.map(function(line) {
+      return {
+        label: String(line.label || ''),
+        detail: String(line.detail || ''),
+        total: Number(line.montant || line.total || 0),
+        qty: Number(line.quantite || line.qty || 1),
+        vatRate: Number(line.vat_rate || line.vatRate || 0),
+      };
+    });
+
+    var vatByRateRaw = (data && data.vatByRate && typeof data.vatByRate === 'object') ? data.vatByRate : {};
+    var vatByRate = {};
+    Object.keys(vatByRateRaw).forEach(function(rateKey) {
+      vatByRate[Number(rateKey)] = Number(vatByRateRaw[rateKey] || 0);
+    });
+
+    return {
+      recu: data && data.recu ? data.recu : (recuFallback || null),
+      transaction: data && data.transaction ? data.transaction : null,
+      lines: normalizedLines,
+      total: Number(data && data.total || 0),
+      paymentLabel: String(data && data.paymentLabel || 'Espèces'),
+      totalArticles: Number(data && data.totalArticles || 0),
+      vatByRate: vatByRate,
+    };
+  }
+
   function loadRecuDetails(recu) {
     var idTx = Number(recu && recu.id_transaction || 0);
     if (idTx <= 0) return Promise.reject(new Error('Reçu sans transaction associée.'));
+    return api('GET', '/json/bdd/recu/' + Number(recu.id_recu || 0) + '/detail')
+      .then(function(data) { return normalizeRecuDetails(data, recu); });
+  }
 
-    return api('GET', '/json/bdd/recu/' + Number(recu.id_recu || 0) + '/detail').then(function(data) {
-      var lines = Array.isArray(data && data.lines) ? data.lines : [];
-      var normalizedLines = lines.map(function(line) {
-        return {
-          label: String(line.label || ''),
-          detail: String(line.detail || ''),
-          total: Number(line.montant || 0),
-          qty: Number(line.quantite || 1),
-          vatRate: Number(line.vat_rate || 0),
-        };
-      });
+  function loadRecuDetailsById(idRecu) {
+    var rid = Number(idRecu || 0);
+    if (rid <= 0) return Promise.reject(new Error('Identifiant reçu invalide.'));
+    return api('GET', '/json/bdd/recu/' + rid + '/detail')
+      .then(function(data) { return normalizeRecuDetails(data, null); });
+  }
 
-      var vatByRateRaw = (data && data.vatByRate && typeof data.vatByRate === 'object') ? data.vatByRate : {};
-      var vatByRate = {};
-      Object.keys(vatByRateRaw).forEach(function(rateKey) {
-        vatByRate[Number(rateKey)] = Number(vatByRateRaw[rateKey] || 0);
-      });
+  function buildRecuHtml(details) {
+    var recu = details && details.recu ? details.recu : {};
+    var itemsHtml = details.lines.length
+      ? details.lines.map(function(line) {
+          return '<div class="sim-recu-item">'
+            + '<div class="sim-recu-item-qty">x' + Number(line.qty || 1) + '</div>'
+            + '<div>'
+            + '<div class="sim-recu-item-name">' + esc(line.label) + '</div>'
+            + '<div class="sim-recu-item-detail">' + esc(line.detail) + '</div>'
+            + '</div>'
+            + '<div class="sim-recu-item-amount">' + esc(formatMoney(line.total)) + '</div>'
+            + '</div>';
+        }).join('')
+      : '<div class="sim-recu-item-detail">Aucun détail de ligne disponible pour ce reçu.</div>';
 
-      return {
-        recu: data && data.recu ? data.recu : recu,
-        transaction: data && data.transaction ? data.transaction : null,
-        lines: normalizedLines,
-        total: Number(data && data.total || 0),
-        paymentLabel: String(data && data.paymentLabel || 'Espèces'),
-        totalArticles: Number(data && data.totalArticles || 0),
-        vatByRate: vatByRate,
-      };
+    var recuId = Number(recu.id_recu || 0);
+    var txId = Number(recu.id_transaction || 0);
+    var cardText = Number(recu.num_carte || 0) > 0 ? ('**** ' + String(recu.num_carte).slice(-4)) : '—';
+    var txDateRaw = (details.transaction && details.transaction.date_heure) ? details.transaction.date_heure : recu.horodatage;
+    var txDate = formatDateTime(txDateRaw);
+    var barcodeValue = String(txId).padStart(12, '0');
+    var vatRows = Object.keys(details.vatByRate || {})
+      .map(function(rate) { return Number(rate); })
+      .sort(function(a, b) { return a - b; })
+      .map(function(rate) {
+        var amount = Number(details.vatByRate[rate] || 0);
+        return '<div><span>TVA ' + rate.toLocaleString('fr-FR', { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + '% :</span><span>' + esc(formatMoney(amount)) + '</span></div>';
+      }).join('');
+    var totalVat = Object.keys(details.vatByRate || {}).reduce(function(sum, rate) {
+      return sum + Number(details.vatByRate[rate] || 0);
+    }, 0);
+    var subtotalHt = Number(details.total || 0) - totalVat;
+    if (subtotalHt < 0) subtotalHt = 0;
+
+    return '<div class="sim-recu-ticket">'
+      + '<div class="sim-recu-scroll">'
+      + '<div class="sim-recu-head">UNICA</div>'
+      + '<div class="sim-recu-sub">UNICA Station</div>'
+      + '<div class="sim-recu-center">Adresse : 41 boulevard Napoléon III</div>'
+      + '<div class="sim-recu-center">06206 Nice cedex 3</div>'
+      + '<div class="sim-recu-center">Téléphone : 04 89 15 30 30</div>'
+      + '<div class="sim-recu-center">Mail : iut.scolarite@univ-cotedazur.fr</div>'
+      + '<div class="sim-recu-sep">----------------------------------------------</div>'
+      + '<div class="sim-recu-meta">'
+      + '<div><span>Reçu</span><span>#' + recuId + '</span></div>'
+      + '<div><span>Transaction</span><span>#' + txId + '</span></div>'
+      + '<div><span>Date</span><span>' + esc(txDate) + '</span></div>'
+      + '<div><span>Qt articles</span><span>' + Number(details.totalArticles || 0) + '</span></div>'
+      + '<div><span>Paiement</span><span>' + esc(details.paymentLabel) + '</span></div>'
+      + '<div><span>Carte</span><span>' + esc(cardText) + '</span></div>'
+      + '</div>'
+      + '<div class="sim-recu-sep">----------------------------------------------</div>'
+      + '<div class="sim-recu-items">'
+      + '<div class="sim-recu-items-head"><span>Qté</span><span>Articles</span><span style="text-align:right">Montant</span></div>'
+      + itemsHtml
+      + '</div>'
+      + '<div class="sim-recu-total">'
+      + '<div><span>Sous-total (HT)</span><span>' + esc(formatMoney(subtotalHt)) + '</span></div>'
+      + vatRows
+      + '<div><strong>Total TTC</strong><strong>' + esc(formatMoney(details.total)) + '</strong></div>'
+      + '</div>'
+      + '<div class="sim-recu-sep">==============================================</div>'
+      + '<div class="sim-recu-foot">Merci de votre visite.</div>'
+      + '<div class="sim-recu-small">À bientôt chez UNICA Station</div>'
+      + '<div class="sim-recu-barcode"></div>'
+      + '<div class="sim-recu-small">' + esc(barcodeValue) + '</div>'
+      + '<div class="sim-recu-small">' + esc(txDate) + '</div>'
+      + '</div>'
+      + '</div>';
+  }
+
+  function showRecuPopupFromDetails(details, withConfirmButton) {
+    var recuId = Number(details && details.recu && details.recu.id_recu || 0);
+    Swal.fire({
+      width: 560,
+      showConfirmButton: !!withConfirmButton,
+      confirmButtonText: 'OK',
+      showCloseButton: !withConfirmButton,
+      allowOutsideClick: true,
+      customClass: { popup: 'sim-recu-popup' },
+      html: buildRecuHtml(details)
     });
+    log('recus-log', 'info', 'Affichage du reçu #' + recuId + '.');
   }
 
   function showRecu(idRecu) {
@@ -1050,85 +1274,17 @@ var Sim = (function() {
     }
 
     loadRecuDetails(recu).then(function(details) {
-      var itemsHtml = details.lines.length
-        ? details.lines.map(function(line) {
-            return '<div class="sim-recu-item">'
-              + '<div class="sim-recu-item-qty">x' + Number(line.qty || 1) + '</div>'
-              + '<div>'
-              + '<div class="sim-recu-item-name">' + esc(line.label) + '</div>'
-              + '<div class="sim-recu-item-detail">' + esc(line.detail) + '</div>'
-              + '</div>'
-              + '<div class="sim-recu-item-amount">' + esc(formatMoney(line.total)) + '</div>'
-              + '</div>';
-          }).join('')
-        : '<div class="sim-recu-item-detail">Aucun détail de ligne disponible pour ce reçu.</div>';
-
-      var recuId = Number(recu.id_recu || 0);
-      var txId = Number(recu.id_transaction || 0);
-      var cardText = Number(recu.num_carte || 0) > 0 ? ('**** ' + String(recu.num_carte).slice(-4)) : '—';
-      var txDateRaw = (details.transaction && details.transaction.date_heure) ? details.transaction.date_heure : recu.horodatage;
-      var txDate = formatDateTime(txDateRaw);
-      var barcodeValue = String(txId).padStart(12, '0');
-      var vatRows = Object.keys(details.vatByRate || {})
-        .map(function(rate) { return Number(rate); })
-        .sort(function(a, b) { return a - b; })
-        .map(function(rate) {
-          var amount = Number(details.vatByRate[rate] || 0);
-          return '<div><span>TVA ' + rate.toLocaleString('fr-FR', { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + '% :</span><span>' + esc(formatMoney(amount)) + '</span></div>';
-        }).join('');
-      var totalVat = Object.keys(details.vatByRate || {}).reduce(function(sum, rate) {
-        return sum + Number(details.vatByRate[rate] || 0);
-      }, 0);
-      var subtotalHt = Number(details.total || 0) - totalVat;
-      if (subtotalHt < 0) subtotalHt = 0;
-
-      var html = '<div class="sim-recu-ticket">'
-        + '<div class="sim-recu-scroll">'
-        + '<div class="sim-recu-head">UNICA</div>'
-        + '<div class="sim-recu-sub">UNICA Station</div>'
-        + '<div class="sim-recu-center">Adresse : 41 boulevard Napoléon III</div>'
-        + '<div class="sim-recu-center">06206 Nice cedex 3</div>'
-        + '<div class="sim-recu-center">Téléphone : 04 89 15 30 30</div>'
-        + '<div class="sim-recu-center">Mail : iut.scolarite@univ-cotedazur.fr</div>'
-        + '<div class="sim-recu-sep">----------------------------------------------</div>'
-        + '<div class="sim-recu-meta">'
-        + '<div><span>Reçu</span><span>#' + recuId + '</span></div>'
-        + '<div><span>Transaction</span><span>#' + txId + '</span></div>'
-        + '<div><span>Date</span><span>' + esc(txDate) + '</span></div>'
-        + '<div><span>Qt articles</span><span>' + Number(details.totalArticles || 0) + '</span></div>'
-        + '<div><span>Paiement</span><span>' + esc(details.paymentLabel) + '</span></div>'
-        + '<div><span>Carte</span><span>' + esc(cardText) + '</span></div>'
-        + '</div>'
-        + '<div class="sim-recu-sep">----------------------------------------------</div>'
-        + '<div class="sim-recu-items">'
-        + '<div class="sim-recu-items-head"><span>Qté</span><span>Articles</span><span style="text-align:right">Montant</span></div>'
-        + itemsHtml
-        + '</div>'
-        + '<div class="sim-recu-total">'
-        + '<div><span>Sous-total (HT)</span><span>' + esc(formatMoney(subtotalHt)) + '</span></div>'
-        + vatRows
-        + '<div><strong>Total TTC</strong><strong>' + esc(formatMoney(details.total)) + '</strong></div>'
-        + '</div>'
-        + '<div class="sim-recu-sep">==============================================</div>'
-        + '<div class="sim-recu-foot">Merci de votre visite.</div>'
-        + '<div class="sim-recu-small">À bientôt chez UNICA Station</div>'
-        + '<div class="sim-recu-barcode"></div>'
-        + '<div class="sim-recu-small">' + esc(barcodeValue) + '</div>'
-        + '<div class="sim-recu-small">' + esc(txDate) + '</div>'
-        + '</div>'
-        + '</div>';
-
-      Swal.fire({
-        width: 560,
-        showConfirmButton: false,
-        showCloseButton: true,
-        customClass: { popup: 'sim-recu-popup' },
-        html: html
-      });
-      log('recus-log', 'info', 'Affichage du reçu #' + recuId + '.');
+      showRecuPopupFromDetails(details, false);
     }).catch(function(e) {
       log('recus-log', 'err', 'Erreur ouverture reçu #' + Number(idRecu || 0) + ' : ' + e.message);
       Swal.fire({ icon: 'error', title: 'Impossible d’ouvrir le reçu', text: e.message });
+    });
+  }
+
+  function showRecuById(idRecu, withConfirmButton) {
+    return loadRecuDetailsById(idRecu).then(function(details) {
+      showRecuPopupFromDetails(details, !!withConfirmButton);
+      return details;
     });
   }
 
@@ -1141,12 +1297,14 @@ var Sim = (function() {
       renderPompes();
       syncParcoursAfterPompeUpdate();
       refreshStartButtonState();
+      renderSimulationScreen();
       // Garde les soldes CCE frais même si le message BroadcastChannel
       // n'est pas reçu (fallback robuste inter-onglets).
       refreshCCE();
     }).catch(function(e) {
       log('pompe-log','err','Erreur chargement pompes : ' + e.message);
       refreshStartButtonState();
+      renderSimulationScreen();
     });
   }
 
@@ -1224,12 +1382,15 @@ var Sim = (function() {
       document.getElementById('pompe-carburant-opts').style.display = p.type_pompe === 'carburant' ? '' : 'none';
       document.getElementById('pompe-elec-opts').style.display = p.type_pompe === 'electricite' ? '' : 'none';
       document.getElementById('pompe-auto-pay-opts').style.display = requiresAutoPaymentChoice(p) ? '' : 'none';
+      document.getElementById('pompe-recu-opts').style.display = requiresAutoPaymentChoice(p) ? '' : 'none';
       if (p.type_pompe === 'carburant') {
         if (!carburants.length) refreshCarburants();
         else renderCarburantsButtons();
       }
       renderAutoPaymentButtons();
+      renderReceiptChoiceButtons();
       setStep('start');
+      renderSimulationScreen();
       log('pompe-log', 'info', 'Pompe réactivée : vous pouvez démarrer une nouvelle livraison.');
     }
   }
@@ -1333,6 +1494,147 @@ var Sim = (function() {
     return hh + ':' + mm + ':' + ss;
   }
 
+  function formatTimeToMinutesLabel(raw) {
+    if (!raw) return '—';
+    var parts = String(raw).split(':');
+    if (parts.length < 2) return String(raw);
+    var h = Number(parts[0] || 0);
+    var m = Number(parts[1] || 0);
+    var totalMinutes = (h * 60) + m;
+    if (!Number.isFinite(totalMinutes) || totalMinutes < 0) return String(raw);
+    return totalMinutes + ' min';
+  }
+
+  function setRuntimeField(id, value) {
+    var node = document.getElementById(id);
+    if (!node) return;
+    node.textContent = value;
+  }
+
+  function findCarburantByLibelle(libelle) {
+    var sought = String(libelle || '').trim().toLowerCase();
+    if (!sought) return null;
+    return carburants.find(function(c) {
+      return String(c && c.libelle || '').trim().toLowerCase() === sought;
+    }) || null;
+  }
+
+  function renderSimulationScreen() {
+    var selectedPompe = getSelectedPompe();
+    var paymentBox = document.getElementById('runtime-payment-box');
+
+    if (!selectedPompe) {
+      setRuntimeField('runtime-point', 'Aucune sélection');
+      setRuntimeField('runtime-type', '—');
+      setRuntimeField('runtime-tarif-label', 'Prix au litre actuel');
+      setRuntimeField('runtime-tarif', '—');
+      setRuntimeField('runtime-wanted-label', 'Quantité souhaitée');
+      setRuntimeField('runtime-wanted', '—');
+      setRuntimeField('runtime-done-label', 'Quantité délivrée');
+      setRuntimeField('runtime-done', '—');
+      setRuntimeField('runtime-total-est', '—');
+      setRuntimeField('runtime-total-due', '—');
+      setRuntimeField('runtime-payment-mode', '—');
+      setRuntimeField('runtime-payment-info', '—');
+      setRuntimeField('runtime-payment-instr', 'Insérez ou présentez la carte puis suivez les instructions de l’automate.');
+      if (paymentBox) paymentBox.style.display = 'none';
+      return;
+    }
+
+    var isCarburant = String(selectedPompe.type_pompe || '') === 'carburant';
+    var isAuto24 = String(selectedPompe.mode || '').toLowerCase() === 'auto';
+    var tx = selectedPompe.transaction || null;
+
+    var pointType = isCarburant ? 'Pompe' : 'Borne';
+    setRuntimeField('runtime-point', pointType + ' n' + selectedPompe.numero);
+
+    if (isCarburant) {
+      var currentCarburant = tx && tx.libelle
+        ? findCarburantByLibelle(tx.libelle) || { libelle: tx.libelle, prix_litre: tx.prix_litre }
+        : getSelectedCarburant();
+
+      var fuelLabel = currentCarburant && currentCarburant.libelle
+        ? String(currentCarburant.libelle)
+        : 'Non défini';
+      var prixLitre = Number(
+        (tx && tx.prix_litre !== null && tx.prix_litre !== undefined) ? tx.prix_litre
+          : (currentCarburant && currentCarburant.prix_litre !== null && currentCarburant.prix_litre !== undefined) ? currentCarburant.prix_litre
+          : NaN
+      );
+
+      var wantedLitres = Number((document.getElementById('pompe-qty') || {}).value || 0);
+      var deliveredLitres = tx ? Number(tx.quantite_delivree || 0) : null;
+
+      var totalEstime = Number.isFinite(prixLitre) ? (wantedLitres * prixLitre) : NaN;
+      var totalDue = tx
+        ? Number(tx.prix_total || 0)
+        : totalEstime;
+
+      setRuntimeField('runtime-type', fuelLabel);
+      setRuntimeField('runtime-tarif-label', 'Prix au litre actuel');
+      setRuntimeField('runtime-tarif', Number.isFinite(prixLitre) ? (prixLitre.toFixed(3) + ' EUR/L') : '—');
+      setRuntimeField('runtime-wanted-label', 'Quantité souhaitée');
+      setRuntimeField('runtime-wanted', wantedLitres.toFixed(2) + ' L');
+      setRuntimeField('runtime-done-label', 'Quantité délivrée');
+      setRuntimeField('runtime-done', deliveredLitres !== null ? (deliveredLitres.toFixed(2) + ' L') : '—');
+      setRuntimeField('runtime-total-est', Number.isFinite(totalEstime) ? formatMoney(totalEstime) : '—');
+      setRuntimeField('runtime-total-due', Number.isFinite(totalDue) ? formatMoney(totalDue) : '—');
+    } else {
+      var minutesInput = document.getElementById('borne-minutes');
+      var minutes = Number(minutesInput ? minutesInput.value : 0);
+      var puissanceKw = getBornePowerKw(selectedPompe);
+      var wantedKwh = minutesToKwh(minutes, selectedPompe);
+      var doneKwh = tx ? Number(tx.quantite_delivree || 0) : null;
+      var prixKwh = Number(
+        (tx && tx.prix_kwh !== null && tx.prix_kwh !== undefined) ? tx.prix_kwh
+          : (selectedPompe.derniere_transaction && selectedPompe.derniere_transaction.prix_kwh !== null && selectedPompe.derniere_transaction.prix_kwh !== undefined) ? selectedPompe.derniere_transaction.prix_kwh
+          : NaN
+      );
+      var totalEstimeElec = Number.isFinite(prixKwh) ? (wantedKwh * prixKwh) : NaN;
+      var totalDueElec = tx ? Number(tx.prix_total || 0) : totalEstimeElec;
+
+      var chargeType = String((tx && tx.type_charge) || selectedPompe.sous_type || '').toLowerCase();
+      var chargeLabel = chargeType ? ('Chargeur ' + chargeType) : 'Chargeur';
+
+      setRuntimeField('runtime-type', chargeLabel);
+      setRuntimeField('runtime-tarif-label', 'Modalité / type de charge');
+      setRuntimeField('runtime-tarif', chargeType ? (chargeType + ' (' + puissanceKw + ' kW)') : (puissanceKw + ' kW'));
+      setRuntimeField('runtime-wanted-label', 'Temps de charge souhaité');
+      setRuntimeField('runtime-wanted', minutes + ' min (~' + wantedKwh.toFixed(1) + ' kWh)');
+      setRuntimeField('runtime-done-label', 'Temps de charge réalisé');
+      setRuntimeField(
+        'runtime-done',
+        tx
+          ? (formatTimeToMinutesLabel(tx.temps_charge) + ' (~' + Number(doneKwh || 0).toFixed(2) + ' kWh)')
+          : '—'
+      );
+      setRuntimeField('runtime-total-est', Number.isFinite(totalEstimeElec) ? formatMoney(totalEstimeElec) : '—');
+      setRuntimeField('runtime-total-due', Number.isFinite(totalDueElec) ? formatMoney(totalDueElec) : '—');
+    }
+
+    if (paymentBox) {
+      paymentBox.style.display = isAuto24 ? '' : 'none';
+    }
+
+    if (isAuto24) {
+      var modeLabel = selectedAutoPaymentMethod === 'cce' ? 'Carte CCE' : 'Carte bancaire';
+      var infoPaiement = selectedAutoPaymentMethod === 'cce'
+        ? (
+          selectedCceCard && Number(selectedCceCard.id_carte_CE || 0) > 0
+            ? ('Carte #' + selectedCceCard.id_carte_CE + ' — Solde ' + Number(selectedCceCard.solde_client || 0).toFixed(2) + ' EUR')
+            : 'Aucune carte CCE sélectionnée'
+        )
+        : 'Paiement carte bancaire automatique';
+      setRuntimeField('runtime-payment-instr', 'Paiement sur automate 24 : suivez les instructions affichées sur la borne.');
+      setRuntimeField('runtime-payment-mode', modeLabel);
+      setRuntimeField('runtime-payment-info', infoPaiement);
+    } else {
+      setRuntimeField('runtime-payment-mode', 'Encaissement en caisse');
+      setRuntimeField('runtime-payment-info', 'Le paiement sera réalisé à la caisse employé.');
+      setRuntimeField('runtime-payment-instr', 'Pas de paiement automate pour cette pompe manuelle.');
+    }
+  }
+
   function updateBornePreview() {
     var valueNode = document.getElementById('borne-minutes-val');
     var input = document.getElementById('borne-minutes');
@@ -1341,6 +1643,7 @@ var Sim = (function() {
     var pompe = getSelectedPompe();
     var kwh = minutesToKwh(minutes, pompe);
     valueNode.textContent = minutes + ' min (~' + kwh.toFixed(1) + ' kWh)';
+    renderSimulationScreen();
   }
 
   function requiresAutoPaymentChoice(pompe) {
@@ -1362,6 +1665,7 @@ var Sim = (function() {
       info.textContent = '';
       cceSelectWrap.style.display = 'none';
       cceSelect.innerHTML = '';
+      renderSimulationScreen();
       return;
     }
 
@@ -1412,6 +1716,7 @@ var Sim = (function() {
       cceSelectWrap.style.display = 'none';
       info.textContent = 'Paiement automatique en carte bancaire.';
     }
+    renderSimulationScreen();
   }
 
   function selectAutoPayment(method) {
@@ -1419,6 +1724,7 @@ var Sim = (function() {
     if (normalized !== 'cce') normalized = 'cb';
     selectedAutoPaymentMethod = normalized;
     renderAutoPaymentButtons();
+    renderSimulationScreen();
   }
 
   function selectAutoPaymentCce(idCarte) {
@@ -1433,6 +1739,38 @@ var Sim = (function() {
       selectedCceCard = found;
     }
     renderAutoPaymentButtons();
+    renderSimulationScreen();
+  }
+
+  function renderReceiptChoiceButtons() {
+    var wrap = document.getElementById('pompe-recu-buttons');
+    var info = document.getElementById('pompe-recu-info');
+    if (!wrap || !info) return;
+
+    var choices = [
+      { key: 'sans', label: 'Sans reçu' },
+      { key: 'avec', label: 'Avec reçu' },
+    ];
+
+    wrap.innerHTML = choices.map(function(choice) {
+      var selectedClass = choice.key === selectedReceiptMode ? ' selected' : '';
+      return '<button type="button" class="sim-fuel-btn' + selectedClass + '"'
+        + ' onclick="Sim.selectReceiptMode(\'' + choice.key + '\')">'
+        + esc(choice.label)
+        + '</button>';
+    }).join('');
+
+    if (selectedReceiptMode === 'avec') {
+      info.textContent = 'Un ticket sera affiché à la fin de la livraison quand la transaction sera disponible.';
+    } else {
+      info.textContent = 'Aucun ticket ne sera affiché.';
+    }
+    renderSimulationScreen();
+  }
+
+  function selectReceiptMode(mode) {
+    selectedReceiptMode = (String(mode || '').toLowerCase() === 'avec') ? 'avec' : 'sans';
+    renderReceiptChoiceButtons();
   }
 
   function renderCarburantsButtons() {
@@ -1442,6 +1780,7 @@ var Sim = (function() {
     if (!carburants.length) {
       selectedCarburantId = null;
       wrap.innerHTML = '<span class="sim-fuel-empty">Aucun carburant disponible.</span>';
+      renderSimulationScreen();
       return;
     }
 
@@ -1460,11 +1799,13 @@ var Sim = (function() {
         + esc(c.libelle || ('Carburant #' + idEnergie))
         + '</button>';
     }).join('');
+    renderSimulationScreen();
   }
 
   function selectCarburant(idEnergie) {
     selectedCarburantId = Number(idEnergie || 0);
     renderCarburantsButtons();
+    renderSimulationScreen();
   }
 
   function startPompesSSE() {
@@ -1587,6 +1928,7 @@ var Sim = (function() {
     document.getElementById('pompe-carburant-opts').style.display = p.type_pompe === 'carburant' ? '' : 'none';
     document.getElementById('pompe-elec-opts').style.display = p.type_pompe === 'electricite' ? '' : 'none';
     document.getElementById('pompe-auto-pay-opts').style.display = requiresAutoPaymentChoice(p) ? '' : 'none';
+    document.getElementById('pompe-recu-opts').style.display = requiresAutoPaymentChoice(p) ? '' : 'none';
     if (p.type_pompe === 'carburant') {
       if (!carburants.length) {
         refreshCarburants();
@@ -1598,6 +1940,8 @@ var Sim = (function() {
       updateBornePreview();
     }
     renderAutoPaymentButtons();
+    renderReceiptChoiceButtons();
+    renderSimulationScreen();
 
     setStep('start');
     renderPompes();
@@ -1639,11 +1983,14 @@ var Sim = (function() {
       var selectedPompe = getSelectedPompe();
       var reason = getStartBlockReason(selectedPompe);
       document.getElementById('pompe-auto-pay-opts').style.display = requiresAutoPaymentChoice(selectedPompe) ? '' : 'none';
+      document.getElementById('pompe-recu-opts').style.display = requiresAutoPaymentChoice(selectedPompe) ? '' : 'none';
       renderAutoPaymentButtons();
+      renderReceiptChoiceButtons();
       if (reason) {
         setStartReason(reason + ' Réactivation automatique au démarrage.', 'warn');
       }
     }
+    renderSimulationScreen();
     refreshStartButtonState();
   }
 
@@ -1760,12 +2107,40 @@ var Sim = (function() {
     endRequestRunning = true;
     btn.disabled = true;
 
-    api('POST', '/json/pompes/' + selectedPompeId + '/terminer', payload).then(function() {
+    api('POST', '/json/pompes/' + selectedPompeId + '/terminer', payload).then(function(response) {
       var typeLabel = p.type_pompe === 'carburant' ? 'pompe' : 'borne';
       var modeLabel = payload && payload.mode_paiement === 'cce' ? 'CCE' : 'Carte bancaire';
       log('pompe-log','ok','Livraison terminée sur ' + typeLabel + ' n' + p.numero + ' -- paiement auto: ' + modeLabel + '.');
       return refreshPompes().then(function() {
         setStep('done');
+        return response;
+      });
+    }).then(function(response) {
+      if (selectedReceiptMode !== 'avec') return;
+
+      var idTransaction = Number(response && response.id_transaction || 0);
+      if (idTransaction <= 0) {
+        log('pompe-log', 'info', 'Reçu non généré : transaction non finalisée (paiement en caisse requis).');
+        return;
+      }
+
+      var modePaiement = payload && payload.mode_paiement === 'cce' ? 'cce' : 'cb';
+      return api('POST', '/json/recus', {
+        id_transactions: [idTransaction],
+        mode_paiement: modePaiement
+      }).then(function(created) {
+        var list = Array.isArray(created && created.recus) ? created.recus : [];
+        if (!list.length) {
+          throw new Error('Création du reçu échouée.');
+        }
+        var recuId = Number(list[0].id_recu || 0);
+        if (recuId <= 0) {
+          throw new Error('Identifiant reçu invalide.');
+        }
+        refreshRecus();
+        return showRecuById(recuId, true);
+      }).catch(function(e) {
+        log('pompe-log', 'err', 'Impossible d’afficher le reçu : ' + e.message);
       });
     }).catch(function(e) {
       log('pompe-log','err','Échec fin livraison : ' + e.message);
@@ -1778,12 +2153,14 @@ var Sim = (function() {
   function resetPompe() {
     selectedPompeId = null;
     selectedCarburantId = null;
+    selectedReceiptMode = 'sans';
     startRequestRunning = false;
     endRequestRunning = false;
     document.getElementById('pompe-select').innerHTML = '<option value="">Aucune</option>';
     document.getElementById('pompe-carburant-opts').style.display = 'none';
     document.getElementById('pompe-elec-opts').style.display = 'none';
     document.getElementById('pompe-auto-pay-opts').style.display = 'none';
+    document.getElementById('pompe-recu-opts').style.display = 'none';
     var borneInput = document.getElementById('borne-minutes');
     if (borneInput) borneInput.value = 30;
     updateBornePreview();
@@ -1791,8 +2168,10 @@ var Sim = (function() {
     document.getElementById('btn-demarrer').textContent = 'Démarrer la livraison';
     document.getElementById('btn-terminer').disabled = false;
     document.getElementById('btn-terminer').textContent = 'Terminer la livraison';
+    renderReceiptChoiceButtons();
     setStartReason('');
     setStep('select');
+    renderSimulationScreen();
     refreshPompes();
   }
 
@@ -1807,6 +2186,10 @@ var Sim = (function() {
     renderPopupCatalog();
     updateBornePreview();
     renderAutoPaymentButtons();
+    renderReceiptChoiceButtons();
+    renderSimulationScreen();
+    var recuOpts = document.getElementById('pompe-recu-opts');
+    if (recuOpts) recuOpts.style.display = 'none';
     refreshCCE();
     refreshCarburants();
     refreshRecus();
@@ -1826,11 +2209,14 @@ var Sim = (function() {
     selectCarburant: selectCarburant,
     selectAutoPayment: selectAutoPayment,
     selectAutoPaymentCce: selectAutoPaymentCce,
+    selectReceiptMode: selectReceiptMode,
     updateBornePreview: updateBornePreview,
+    renderSimulationScreen: renderSimulationScreen,
     refreshCCE: refreshCCE,
     selectCCE: selectCCE,
     refreshRecus: refreshRecus,
-    showRecu: showRecu
+    showRecu: showRecu,
+    showRecuById: showRecuById
   };
 })();
 </script>

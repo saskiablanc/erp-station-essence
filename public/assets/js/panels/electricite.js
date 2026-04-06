@@ -22,6 +22,15 @@ const PompeElectricite = (() => {
     return parseFloat(n).toFixed(dec);
   }
 
+  function _escapeHtml(value) {
+    return String(value ?? "")
+      .replaceAll("&", "&amp;")
+      .replaceAll("<", "&lt;")
+      .replaceAll(">", "&gt;")
+      .replaceAll('"', "&quot;")
+      .replaceAll("'", "&#39;");
+  }
+
   function _formatDate(d) {
     if (!d) return "\u2014";
     const dt = new Date(d);
@@ -53,6 +62,24 @@ const PompeElectricite = (() => {
   function _lastCardLabel(p) {
     const mode = String(p?.derniere_carte || "").toUpperCase();
     return mode === "CCE" ? "CCE" : "Carte bancaire";
+  }
+
+  function _lastCardDetailedLabel(p) {
+    const mode = String(p?.derniere_carte || "").toUpperCase();
+    if (mode === "CCE") return "Carte CCE";
+    if (mode === "CB") return "Carte bancaire";
+    return "Non renseignée";
+  }
+
+  function _infoBtnHTML(idPompe) {
+    return `
+      <button
+        type="button"
+        class="pe-info-btn"
+        onclick="PompeElectricite.showInfos(${idPompe})"
+        title="Informations borne"
+      >i</button>
+    `;
   }
 
   function _toggleBtnHTML(p, options = {}) {
@@ -93,6 +120,7 @@ const PompeElectricite = (() => {
     const typeLabel = isRapide ? "Rapide" : "Lent";
 
     const toggleDisabled = isEnCours;
+    const topInfoBtn = _infoBtnHTML(p.id_pompe);
     const topToggleBtn = _toggleBtnHTML(p, { disabled: toggleDisabled });
     const actionBtn = `<span class="pe-carte-label">${_lastCardLabel(p)}</span>`;
 
@@ -108,8 +136,11 @@ const PompeElectricite = (() => {
           <img class="pe-card-type-icon" src="${ELEC_ICON_SRC}" alt="" aria-hidden="true">
           <span class="pe-card-num">${num}</span>
           <span class="pe-card-type">${typeLabel}</span>
-          ${topToggleBtn}
-          ${_ledHTML(p.statut)}
+          <div class="pe-top-actions">
+            ${topInfoBtn}
+            ${topToggleBtn}
+            ${_ledHTML(p.statut)}
+          </div>
         </div>
         <div class="pe-card-date">${date}</div>
         <div class="pe-card-row"><span class="pe-row-label">Quantité (H)</span><span class="pe-row-val">${kwh}</span></div>
@@ -213,5 +244,80 @@ const PompeElectricite = (() => {
     }
   }
 
-  return { buildHTML, onData, activer, toggle };
+  async function showInfos(idPompe) {
+    const pompe = _pompes.find((x) => Number(x.id_pompe) === Number(idPompe));
+    if (!pompe) {
+      Toast.warn("Borne introuvable.");
+      return;
+    }
+
+    const tx = pompe.transaction || pompe.derniere_transaction || null;
+    if (!tx) {
+      await Swal.fire({
+        icon: "info",
+        title: `Borne n°${_numAff(pompe)}`,
+        text: "Aucune transaction en cours ou passée.",
+        confirmButtonText: "OK",
+        customClass: {
+          popup: "ticket-swal-popup",
+          title: "ticket-swal-title",
+          htmlContainer: "ticket-swal-text",
+          confirmButton: "ticket-swal-btn",
+        },
+        buttonsStyling: false,
+      });
+      return;
+    }
+
+    const date = _formatDate(tx.date_heure || pompe.date_debut);
+    const natureBase = String(tx.type_charge || pompe.sous_type || "").toLowerCase();
+    const nature = natureBase
+      ? `Chargeur ${natureBase}`
+      : "Chargeur électrique";
+    const quantite = `${_fmt(tx.quantite_delivree, 2)} kWh`;
+    const total = `${_fmt(tx.prix_total, 2)} €`;
+    const carte = _lastCardDetailedLabel(pompe);
+
+    await Swal.fire({
+      title: `Informations borne n°${_numAff(pompe)}`,
+      html: `
+        <div class="pompe-info-grid">
+          <div class="pompe-info-row">
+            <span class="pompe-info-label">Numéro borne</span>
+            <span class="pompe-info-value">${_escapeHtml(_numAff(pompe))}</span>
+          </div>
+          <div class="pompe-info-row">
+            <span class="pompe-info-label">Nature délivrée</span>
+            <span class="pompe-info-value">${_escapeHtml(nature)}</span>
+          </div>
+          <div class="pompe-info-row">
+            <span class="pompe-info-label">Quantité délivrée</span>
+            <span class="pompe-info-value">${_escapeHtml(quantite)}</span>
+          </div>
+          <div class="pompe-info-row">
+            <span class="pompe-info-label">Total à payer</span>
+            <span class="pompe-info-value">${_escapeHtml(total)}</span>
+          </div>
+          <div class="pompe-info-row">
+            <span class="pompe-info-label">Date / heure</span>
+            <span class="pompe-info-value">${_escapeHtml(date)}</span>
+          </div>
+          <div class="pompe-info-row">
+            <span class="pompe-info-label">Carte utilisée</span>
+            <span class="pompe-info-value">${_escapeHtml(carte)}</span>
+          </div>
+        </div>
+      `,
+      confirmButtonText: "Fermer",
+      customClass: {
+        popup: "ticket-swal-popup",
+        title: "ticket-swal-title",
+        htmlContainer: "ticket-swal-text",
+        confirmButton: "ticket-swal-btn",
+      },
+      buttonsStyling: false,
+    });
+  }
+
+  return { buildHTML, onData, activer, toggle, showInfos };
 })();

@@ -138,15 +138,17 @@ window.TicketPaymentShared = (() => {
         channel.close();
       } catch (_) {}
     }
-    try {
-      localStorage.setItem(
-        'unica_cce_balance_ping',
-        JSON.stringify({
-          ts: Date.now(),
-          id_carte_CE: Number(message?.id_carte_CE || 0),
-        }),
-      );
-    } catch (_) {}
+    if (String(message?.type || '') === 'cce-balance-updated') {
+      try {
+        localStorage.setItem(
+          'unica_cce_balance_ping',
+          JSON.stringify({
+            ts: Date.now(),
+            id_carte_CE: Number(message?.id_carte_CE || 0),
+          }),
+        );
+      } catch (_) {}
+    }
   }
 
   async function getScannedCceInfo() {

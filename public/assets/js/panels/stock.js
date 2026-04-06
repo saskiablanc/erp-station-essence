@@ -34,6 +34,13 @@ const StockPanel = (() => {
     return String(Math.max(0, Math.trunc(value)));
   }
 
+  function isSeuilAtteint(item) {
+    const seuil = Number(item?.seuil_alerte);
+    const quantite = Number(item?.quantite_stock);
+    if (!Number.isFinite(seuil) || !Number.isFinite(quantite)) return false;
+    return quantite <= seuil;
+  }
+
   function normalizeSearch(value) {
     return String(value ?? "")
       .normalize("NFD")
@@ -43,8 +50,9 @@ const StockPanel = (() => {
   }
 
   function rowHtml(item, mode) {
+    const alertClass = isSeuilAtteint(item) ? " stock-row-alert" : "";
     return `
-      <tr>
+      <tr class="${alertClass.trim()}">
         <td class="stock-col-name">${escapeHtml(item.libelle)}</td>
         <td class="stock-col-qty">${escapeHtml(formatQuantite(item, mode))}</td>
         <td class="stock-col-threshold">${escapeHtml(formatSeuilAlerte(item, mode))}</td>

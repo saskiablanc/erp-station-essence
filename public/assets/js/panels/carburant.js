@@ -67,6 +67,15 @@ const PompeCarburant = (() => {
     return parseFloat(n).toFixed(dec);
   }
 
+  function _escapeHtml(value) {
+    return String(value ?? "")
+      .replaceAll("&", "&amp;")
+      .replaceAll("<", "&lt;")
+      .replaceAll(">", "&gt;")
+      .replaceAll('"', "&quot;")
+      .replaceAll("'", "&#39;");
+  }
+
   function _formatDate(d) {
     if (!d) return "\u2014";
     const dt = new Date(d);
@@ -88,6 +97,24 @@ const PompeCarburant = (() => {
   function _lastCardLabel(p) {
     const mode = String(p?.derniere_carte || "").toUpperCase();
     return mode === "CCE" ? "CCE" : "Carte bancaire";
+  }
+
+  function _lastCardDetailedLabel(p) {
+    const mode = String(p?.derniere_carte || "").toUpperCase();
+    if (mode === "CCE") return "Carte CCE";
+    if (mode === "CB") return "Carte bancaire";
+    return "Non renseignée";
+  }
+
+  function _infoBtnHTML(idPompe) {
+    return `
+      <button
+        type="button"
+        class="pc-info-btn"
+        onclick="PompeCarburant.showInfos(${idPompe})"
+        title="Informations pompe"
+      >i</button>
+    `;
   }
 
   function _toggleBtnHTML(p, options = {}) {
@@ -133,6 +160,7 @@ const PompeCarburant = (() => {
     );
 
     const toggleDisabled = isEnCours || (isDesact && txCurrent && !isAuto);
+    const topInfoBtn = _infoBtnHTML(p.id_pompe);
     const topToggleBtn = _toggleBtnHTML(p, { disabled: toggleDisabled });
 
     let actionBtn = "";
@@ -164,8 +192,11 @@ const PompeCarburant = (() => {
             <span class="pc-card-num">${p.numero}</span>
             <span class="pc-card-mode-label${!isManuel ? " auto" : ""}">${isManuel ? "MANUEL" : "AUTO"}</span>
           </div>
-          ${topToggleBtn}
-          ${_ledHTML(p.statut)}
+          <div class="pc-top-actions">
+            ${topInfoBtn}
+            ${topToggleBtn}
+            ${_ledHTML(p.statut)}
+          </div>
         </div>
         <div class="pc-card-date">${date}</div>
         <div class="pc-card-row"><span class="pc-row-label">Type</span><span class="pc-row-val">${carbBadge}</span></div>
@@ -296,5 +327,82 @@ const PompeCarburant = (() => {
     }
   }
 
-  return { buildHTML, onData, encaisser, activer, toggle };
+  async function showInfos(idPompe) {
+    const pompe = _pompes.find((x) => Number(x.id_pompe) === Number(idPompe));
+    if (!pompe) {
+      Toast.warn("Pompe introuvable.");
+      return;
+    }
+
+    const tx = pompe.transaction || pompe.derniere_transaction || null;
+    if (!tx) {
+      await Swal.fire({
+        icon: "info",
+        title: `Pompe n°${pompe.numero}`,
+        text: "Aucune transaction en cours ou passée.",
+        confirmButtonText: "OK",
+        customClass: {
+          popup: "ticket-swal-popup",
+          title: "ticket-swal-title",
+          htmlContainer: "ticket-swal-text",
+          confirmButton: "ticket-swal-btn",
+        },
+        buttonsStyling: false,
+      });
+      return;
+    }
+
+    const date = _formatDate(tx.date_heure || pompe.date_debut);
+    const nature = tx.libelle ? `Carburant ${tx.libelle}` : "Carburant";
+    const quantite = `${_fmt(tx.quantite_delivree, 2)} L`;
+    const total = `${_fmt(tx.prix_total, 2)} €`;
+    const carte = _lastCardDetailedLabel(pompe);
+    const carteRow = pompe.mode === "auto"
+      ? `
+          <div class="pompe-info-row">
+            <span class="pompe-info-label">Carte utilisée</span>
+            <span class="pompe-info-value">${_escapeHtml(carte)}</span>
+          </div>
+        `
+      : "";
+
+    await Swal.fire({
+      title: `Informations pompe n°${pompe.numero}`,
+      html: `
+        <div class="pompe-info-grid">
+          <div class="pompe-info-row">
+            <span class="pompe-info-label">Numéro pompe</span>
+            <span class="pompe-info-value">${_escapeHtml(pompe.numero)}</span>
+          </div>
+          <div class="pompe-info-row">
+            <span class="pompe-info-label">Nature délivrée</span>
+            <span class="pompe-info-value">${_escapeHtml(nature)}</span>
+          </div>
+          <div class="pompe-info-row">
+            <span class="pompe-info-label">Quantité délivrée</span>
+            <span class="pompe-info-value">${_escapeHtml(quantite)}</span>
+          </div>
+          <div class="pompe-info-row">
+            <span class="pompe-info-label">Total à payer</span>
+            <span class="pompe-info-value">${_escapeHtml(total)}</span>
+          </div>
+          <div class="pompe-info-row">
+            <span class="pompe-info-label">Date / heure</span>
+            <span class="pompe-info-value">${_escapeHtml(date)}</span>
+          </div>
+          ${carteRow}
+        </div>
+      `,
+      confirmButtonText: "Fermer",
+      customClass: {
+        popup: "ticket-swal-popup",
+        title: "ticket-swal-title",
+        htmlContainer: "ticket-swal-text",
+        confirmButton: "ticket-swal-btn",
+      },
+      buttonsStyling: false,
+    });
+  }
+
+  return { buildHTML, onData, encaisser, activer, toggle, showInfos };
 })();

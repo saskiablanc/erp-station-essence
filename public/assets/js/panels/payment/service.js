@@ -404,10 +404,20 @@ window.TicketPaymentService = (() => {
           receiptState = 'missing';
         } else {
           try {
-            await Requetes.creerRecus({
+            const receiptResponse = await Requetes.creerRecus({
               id_transactions: transactionIds,
               mode_paiement: primaryMethod,
             });
+            const createdRecus = Array.isArray(receiptResponse?.recus) ? receiptResponse.recus : [];
+            const createdReceiptIds = createdRecus
+              .map((r) => Number(r?.id_recu || 0))
+              .filter((id) => id > 0);
+            if (createdReceiptIds.length > 0) {
+              notifySimulator({
+                type: 'sim-recu-created',
+                recu_ids: createdReceiptIds,
+              });
+            }
             await wait(800);
             receiptState = 'printing';
           } catch (_) {

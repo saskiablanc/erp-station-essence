@@ -197,6 +197,13 @@
   display: none;
 }
 
+.pc-top-actions {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
 .pc-led {
   display: inline-block;
   width: 8px;
@@ -238,6 +245,30 @@
 .pc-toggle-btn:disabled {
   opacity: 0.45;
   cursor: default;
+}
+
+.pc-info-btn {
+  width: 16px;
+  min-width: 16px;
+  height: 16px;
+  border-radius: 5px;
+  border: 1px solid var(--border);
+  background: var(--surface2);
+  color: var(--accent);
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.15s;
+  padding: 0;
+}
+.pc-info-btn:hover {
+  border-color: var(--border-active);
+  color: var(--accent);
 }
 
 /* Date */
@@ -537,6 +568,13 @@
   flex-shrink: 0;
 }
 
+.pe-top-actions {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
 .pe-toggle-btn {
   width: 16px;
   min-width: 16px;
@@ -570,6 +608,30 @@
 .pe-toggle-btn:disabled {
   opacity: 0.45;
   cursor: default;
+}
+
+.pe-info-btn {
+  width: 16px;
+  min-width: 16px;
+  height: 16px;
+  border-radius: 5px;
+  border: 1px solid var(--border);
+  background: var(--surface2);
+  color: var(--accent);
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.15s;
+  padding: 0;
+}
+.pe-info-btn:hover {
+  border-color: var(--border-active);
+  color: var(--accent);
 }
 
 /* Date */
@@ -663,6 +725,35 @@
   font-weight: 700;
   color: var(--text-dim);
   letter-spacing: 0.5px;
+}
+
+.pompe-info-grid {
+  display: grid;
+  gap: 7px;
+  margin-top: 6px;
+}
+.pompe-info-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.65);
+}
+.pompe-info-label {
+  font-family: var(--display);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-mid);
+}
+.pompe-info-value {
+  font-family: var(--mono);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text);
+  text-align: right;
 }
 
 @media (max-width: 1500px) {
