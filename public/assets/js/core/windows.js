@@ -4,11 +4,13 @@
  */
 const WM = (() => {
   const PANELS = {};
+  let dragDropSortable = null;
 
   const EMPLOYE_LAYOUT_VERSION = "v6";
   const GERANT_LAYOUT_VERSION = "v7";
   const HAND_STORAGE_KEY = "caisse_hand_v2";
   const LAYOUT_MODE_STORAGE_PREFIX = "caisse_layout_mode_v1";
+  const LAYOUT_MODE_STORAGE_KEY = `${LAYOUT_MODE_STORAGE_PREFIX}_shared`;
   const LAYOUT_MODE_SANDBOX = "sandbox";
   const LAYOUT_MODE_DRAGDROP = "dragdrop";
   const LAYOUT_SLOT_OVERRIDES_PREFIX = "caisse_layout_slots_v1";
@@ -17,21 +19,37 @@ const WM = (() => {
     typeof CAISSE_MODE !== "undefined" && CAISSE_MODE === "gerant";
   const getLayoutVersion = () =>
     isGerantMode() ? GERANT_LAYOUT_VERSION : EMPLOYE_LAYOUT_VERSION;
-  const getLayoutModeStorageKey = () =>
+  const getLegacyLayoutModeStorageKey = () =>
     `${LAYOUT_MODE_STORAGE_PREFIX}_${isGerantMode() ? "gerant" : "employe"}`;
+  const getLayoutModeStorageKey = () => LAYOUT_MODE_STORAGE_KEY;
   const getLayoutSlotOverridesStorageKey = (hand) =>
     `${LAYOUT_SLOT_OVERRIDES_PREFIX}_${getLayoutVersion()}_${flipHand(hand)}`;
   const normalizeLayoutMode = (mode) =>
     mode === LAYOUT_MODE_DRAGDROP ? LAYOUT_MODE_DRAGDROP : LAYOUT_MODE_SANDBOX;
 
   function getLayoutMode() {
-    return normalizeLayoutMode(
-      localStorage.getItem(getLayoutModeStorageKey()) || LAYOUT_MODE_SANDBOX,
-    );
+    const shared = localStorage.getItem(getLayoutModeStorageKey());
+    if (shared) return normalizeLayoutMode(shared);
+
+    // Migration douce des anciens modes stockés par rôle vers une clé partagée.
+    const legacy = localStorage.getItem(getLegacyLayoutModeStorageKey());
+    const resolved = normalizeLayoutMode(legacy || LAYOUT_MODE_SANDBOX);
+    localStorage.setItem(getLayoutModeStorageKey(), resolved);
+    return resolved;
   }
 
   function isDragDropMode() {
     return getLayoutMode() === LAYOUT_MODE_DRAGDROP;
+  }
+
+  function canUseSortableDragDrop() {
+    return typeof window !== "undefined" && typeof window.Sortable !== "undefined";
+  }
+
+  function useSortableDragDrop() {
+    // En D&D, on conserve le moteur de déplacement "sandbox-like" (interact.js)
+    // pour une sensation plus directe au drag.
+    return false;
   }
 
   function syncLayoutModeClass() {
@@ -45,6 +63,8 @@ const WM = (() => {
     if (next !== LAYOUT_MODE_DRAGDROP) {
       clearDragDropHints();
     }
+    ensureSortableDragDropEngine();
+    syncInteractDragState();
     updateResizeHandlesForAllWindows();
     return next;
   }
@@ -547,23 +567,6 @@ const WM = (() => {
     return null;
   }
 
-  function getWindowUnderClientPoint(clientPoint, sourceEl = null) {
-    if (!clientPoint) return null;
-    let best = null;
-    document.querySelectorAll(".win").forEach((win) => {
-      if (!win || win === sourceEl) return;
-      const rect = win.getBoundingClientRect();
-      const inX = clientPoint.x >= rect.left && clientPoint.x <= rect.right;
-      const inY = clientPoint.y >= rect.top && clientPoint.y <= rect.bottom;
-      if (!inX || !inY) return;
-      const z = Number.parseInt(win.style.zIndex || "0", 10) || 0;
-      if (!best || z >= best.z) {
-        best = { win, z };
-      }
-    });
-    return best?.win || null;
-  }
-
   function placeWindowInSlot(el, slotId, slots) {
     const slot = slots?.[slotId];
     if (!slot || !el) return;
@@ -613,34 +616,60 @@ const WM = (() => {
     clearSlotPreview();
   }
 
+  function elevateDraggingWindow(el) {
+    if (!el) return;
+    if (el.dataset.ddPrevZ === undefined) {
+      el.dataset.ddPrevZ = el.style.zIndex || "";
+    }
+    el.style.zIndex = String((State.all().zTop || 100) + 5000);
+  }
+
+  function restoreDraggingWindowZ(el) {
+    if (!el) return;
+    if (el.dataset.ddPrevZ === undefined) return;
+    const prev = el.dataset.ddPrevZ;
+    if (prev === "") el.style.removeProperty("z-index");
+    else el.style.zIndex = prev;
+    delete el.dataset.ddPrevZ;
+  }
+
+  function cleanupDragDropState(el) {
+    if (!el) return;
+    el._ddPointer = null;
+    el._ddTargetSlotId = null;
+    el._ddOriginSlotId = null;
+    if (el._ddPointerMoveHandler) {
+      window.removeEventListener("pointermove", el._ddPointerMoveHandler, true);
+      el._ddPointerMoveHandler = null;
+    }
+  }
+
   function updateDragDropHints(sourceEl, evt = null) {
     if (!isDragDropMode() || !sourceEl) return;
     const slots = getSlotTemplateForCurrentHand();
     const pointerPoint = getCanvasPointFromEvent(evt) || sourceEl._ddPointer || null;
-    const clientPoint =
-      getClientPointFromEvent(evt) || sourceEl._ddClientPointer || null;
-    const hoveredWindow = getWindowUnderClientPoint(clientPoint, sourceEl);
-    const hoveredSlotId =
-      hoveredWindow &&
-      hoveredWindow.dataset.slotId &&
-      slots[hoveredWindow.dataset.slotId]
-        ? hoveredWindow.dataset.slotId
-        : null;
     const pointerSlotId = getSlotIdAtCanvasPoint(
       pointerPoint,
       slots,
     );
     const targetSlotId =
-      hoveredSlotId || pointerSlotId || getClosestSlotId(sourceEl, slots);
+      pointerSlotId || sourceEl._ddTargetSlotId || getClosestSlotId(sourceEl, slots);
     const sourceSlotId =
       sourceEl.dataset.slotId && slots[sourceEl.dataset.slotId]
         ? sourceEl.dataset.slotId
         : null;
 
-    clearDragDropHints();
-    sourceEl.classList.add("win-dd-source");
+    if (!sourceEl.classList.contains("win-dd-source")) {
+      sourceEl.classList.add("win-dd-source");
+    }
+    document.querySelectorAll(".win-dd-swap-candidate").forEach((node) => {
+      node.classList.remove("win-dd-swap-candidate");
+    });
 
-    if (!targetSlotId) return;
+    if (!targetSlotId) {
+      clearSlotPreview();
+      return;
+    }
     sourceEl._ddTargetSlotId = targetSlotId;
 
     const occupant = [...document.querySelectorAll(".win")].find(
@@ -652,6 +681,77 @@ const WM = (() => {
       occupant.classList.add("win-dd-swap-candidate");
     }
     showSlotPreview(targetSlotId, slots, willSwap);
+  }
+
+  function ensureSortableDragDropEngine() {
+    const canvas = document.getElementById("canvas");
+    if (!canvas || !canUseSortableDragDrop() || !useSortableDragDrop()) {
+      if (dragDropSortable) {
+        dragDropSortable.option("disabled", true);
+      }
+      return;
+    }
+
+    if (!dragDropSortable) {
+      dragDropSortable = window.Sortable.create(canvas, {
+        draggable: ".win",
+        handle: ".win-title",
+        animation: 0,
+        forceFallback: true,
+        fallbackOnBody: true,
+        fallbackTolerance: 0,
+        delay: 0,
+        touchStartThreshold: 1,
+        fallbackClass: "wm-sortable-fallback",
+        disabled: !isDragDropMode(),
+        onStart(evt) {
+          if (!isDragDropMode()) return;
+          const el = evt.item;
+          if (!el) return;
+          el._ddOriginSlotId = el.dataset.slotId || null;
+          el._ddTargetSlotId = null;
+          el._ddPointer = getCanvasPointFromEvent(evt.originalEvent) || null;
+          el._ddClientPointer = getClientPointFromEvent(evt.originalEvent) || null;
+          updateDragDropHints(el, evt.originalEvent);
+        },
+        onMove(evt, originalEvent) {
+          if (!isDragDropMode()) return false;
+          const sourceEl = evt.dragged;
+          if (!sourceEl) return false;
+          sourceEl._ddPointer =
+            getCanvasPointFromEvent(originalEvent) || sourceEl._ddPointer || null;
+          sourceEl._ddClientPointer =
+            getClientPointFromEvent(originalEvent) || sourceEl._ddClientPointer || null;
+          updateDragDropHints(sourceEl, originalEvent);
+          // Laisser Sortable suivre la souris sans blocage.
+          return true;
+        },
+        onEnd(evt) {
+          const el = evt.item;
+          if (!el) return;
+          if (!isDragDropMode()) {
+            cleanupDragDropState(el);
+            clearDragDropHints();
+            return;
+          }
+          snapWindowToNearestSlot(el, evt.originalEvent, el._ddTargetSlotId);
+          cleanupDragDropState(el);
+        },
+      });
+      return;
+    }
+
+    dragDropSortable.option("disabled", !isDragDropMode());
+  }
+
+  function syncInteractDragState() {
+    const disableInteractDrag =
+      isDragDropMode() && canUseSortableDragDrop() && useSortableDragDrop();
+    document.querySelectorAll(".win").forEach((el) => {
+      try {
+        interact(el).draggable({ enabled: !disableInteractDrag });
+      } catch (_) {}
+    });
   }
 
   function persistDragDropLayout() {
@@ -1042,21 +1142,13 @@ const WM = (() => {
     if (!isDragDropMode() || !el) return;
     const slots = getSlotTemplateForCurrentHand();
     const pointerPoint = getCanvasPointFromEvent(evt) || el._ddPointer || null;
-    const clientPoint = getClientPointFromEvent(evt) || el._ddClientPointer || null;
-    const hoveredWindow = getWindowUnderClientPoint(clientPoint, el);
-    const hoveredSlotId =
-      hoveredWindow &&
-      hoveredWindow.dataset.slotId &&
-      slots[hoveredWindow.dataset.slotId]
-        ? hoveredWindow.dataset.slotId
-        : null;
     const pointerSlotId = getSlotIdAtCanvasPoint(
       pointerPoint,
       slots,
     );
     const targetSlotId =
       (forcedTargetSlotId && slots[forcedTargetSlotId] && forcedTargetSlotId) ||
-      hoveredSlotId ||
+      el._ddTargetSlotId ||
       pointerSlotId ||
       getClosestSlotId(el, slots);
     if (!targetSlotId) return;
@@ -1149,7 +1241,7 @@ const WM = (() => {
 
     interact(el).draggable({
       allowFrom: "#wt-" + id,
-      inertia: { resistance: 30 },
+      inertia: false,
       modifiers: [
         interact.modifiers.restrictRect({
           restriction: "#canvas",
@@ -1159,25 +1251,19 @@ const WM = (() => {
       listeners: {
         start(e) {
           if (el.classList.contains("maximized")) return false;
+          if (isDragDropMode() && canUseSortableDragDrop() && useSortableDragDrop()) return false;
           el.classList.add("dragging");
           if (isDragDropMode()) {
+            elevateDraggingWindow(el);
             el._ddOriginSlotId = el.dataset.slotId || null;
             el._ddTargetSlotId = null;
             el._ddPointer = getCanvasPointFromEvent(e) || null;
-            el._ddClientPointer = getClientPointFromEvent(e) || null;
-            const onPointerMove = (ev) => {
-              el._ddPointer = getCanvasPointFromEvent(ev) || el._ddPointer || null;
-              el._ddClientPointer =
-                getClientPointFromEvent(ev) || el._ddClientPointer || null;
-              updateDragDropHints(el, ev);
-            };
-            el._ddPointerMoveHandler = onPointerMove;
-            window.addEventListener("pointermove", onPointerMove, true);
             updateDragDropHints(el);
           }
         },
         move(e) {
           if (el.classList.contains("maximized")) return;
+          if (isDragDropMode() && canUseSortableDragDrop() && useSortableDragDrop()) return;
           const x = (parseFloat(el.dataset.x) || 0) + e.dx;
           const y = (parseFloat(el.dataset.y) || 0) + e.dy;
           el.style.transform = `translate(${x}px,${y}px)`;
@@ -1185,25 +1271,18 @@ const WM = (() => {
           el.dataset.y = y;
           if (isDragDropMode()) {
             el._ddPointer = getCanvasPointFromEvent(e) || el._ddPointer || null;
-            el._ddClientPointer =
-              getClientPointFromEvent(e) || el._ddClientPointer || null;
             updateDragDropHints(el, e);
           }
         },
         end(e) {
+          if (isDragDropMode() && canUseSortableDragDrop() && useSortableDragDrop()) {
+            return;
+          }
           el.classList.remove("dragging");
           if (isDragDropMode()) {
-            if (el._ddPointerMoveHandler) {
-              window.removeEventListener(
-                "pointermove",
-                el._ddPointerMoveHandler,
-                true,
-              );
-              el._ddPointerMoveHandler = null;
-            }
+            restoreDraggingWindowZ(el);
             snapWindowToNearestSlot(el, e, el._ddTargetSlotId);
             el._ddPointer = null;
-            el._ddClientPointer = null;
             el._ddTargetSlotId = null;
             el._ddOriginSlotId = null;
           } else {
@@ -1273,6 +1352,7 @@ const WM = (() => {
       if (slots[id]) el.dataset.slotId = id;
     }
     updateResizeHandlesForWindow(el);
+    syncInteractDragState();
     if (def.onMount) def.onMount(id);
     updateTaskbar();
   }
@@ -1325,6 +1405,7 @@ const WM = (() => {
     if (isDragDropMode()) {
       normalizeWindowsToSlots();
     }
+    ensureSortableDragDropEngine();
     focus(id);
   }
 
@@ -1384,6 +1465,8 @@ const WM = (() => {
     if (isDragDropMode()) {
       applyStableZOrderForDragDrop();
     }
+    ensureSortableDragDropEngine();
+    syncInteractDragState();
     updateResizeHandlesForAllWindows();
     updateTaskbar();
   }

@@ -320,6 +320,11 @@ body.is-resizing #canvas * {
   background: rgba(245, 158, 11, 0.12);
 }
 
+.wm-sortable-fallback {
+  transition: none !important;
+  will-change: transform, left, top;
+}
+
 /* ── MAXIMIZE POPUP OVERLAY ──────────────────────────────── */
 .wm-max-overlay {
   position: fixed;
