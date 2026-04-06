@@ -10,14 +10,22 @@
     renderNav,
     getDefaultTableId,
     togglePinnedTable,
+    initProfileSelector,
+    refreshVisibleTables,
+    applyProfileMode,
   } = ns;
 
 function onMount(id) {
   const root = document.getElementById("win-" + id);
   if (!root) return;
   root._bddTable = SCHEMAS.produit ? "produit" : getDefaultTableId();
+  root._bddProfile =
+    typeof Requetes !== "undefined" && Requetes.bddGetProfile
+      ? Requetes.bddGetProfile()
+      : "courante";
 
   renderNav(root);
+  applyProfileMode(root);
 
   root.querySelector(".bdd-nav")?.addEventListener("click", (event) => {
     const pinBtn = event.target.closest("[data-pin-table]");
@@ -34,9 +42,7 @@ function onMount(id) {
 
     root._bddTable = tab.dataset.table;
     renderNav(root);
-    const s = SCHEMAS[tab.dataset.table] || {};
-    const addBtn = root.querySelector(".bdd-add-btn");
-    if (addBtn) addBtn.style.display = s.canAdd ? "" : "none";
+    applyProfileMode(root);
     void loadTable(root);
   });
 
@@ -51,11 +57,12 @@ function onMount(id) {
     if (db) void openDelete(root, db.dataset.key);
   });
 
-  const initialSchema = SCHEMAS[root._bddTable] || {};
-  const addBtn = root.querySelector(".bdd-add-btn");
-  if (addBtn) addBtn.style.display = initialSchema.canAdd ? "" : "none";
-
-  void loadTable(root);
+  void (async () => {
+    await initProfileSelector(root);
+    await refreshVisibleTables(root);
+    applyProfileMode(root);
+    await loadTable(root);
+  })();
 }
 
 

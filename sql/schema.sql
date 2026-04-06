@@ -1,17 +1,20 @@
 -- ============================================================
---  UNICA Station — Schéma de la base de données
---  SAE R409 — Projet 4E — Groupe 3B
---  Compatible MySQL 8+ / MariaDB 10.5+
---  Collation : utf8mb4_general_ci
+--  WRAPPER SCHEMA
+--  Rejoue le schema.sql dans :
+--   - unica_station
+--   - unica_station_archives
+--  Ne crée aucune base
 -- ============================================================
+
+-- ============================================================
+--  BASE 1 : COURANTE
+-- ============================================================
+USE `unica_station`;
 
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
 SET FOREIGN_KEY_CHECKS = 0;
 SET NAMES utf8mb4;
 
--- ============================================================
---  SUPPRESSION des tables existantes (ordre inverse des FKs)
--- ============================================================
 DROP TABLE IF EXISTS `ValidationIncidents`;
 DROP TABLE IF EXISTS `ValidationTransactions`;
 DROP TABLE IF EXISTS `TransactionProduit`;
@@ -39,18 +42,12 @@ DROP TABLE IF EXISTS `Produit`;
 DROP TABLE IF EXISTS `Article`;
 DROP TABLE IF EXISTS `Connexion`;
 
--- ============================================================
---  ARTICLE
--- ============================================================
 CREATE TABLE `Article` (
   `id_article`   BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   `type_article` VARCHAR(30) NOT NULL,
   PRIMARY KEY (`id_article`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
--- ============================================================
---  ENERGIE / CARBURANT / ELECTRICITE
--- ============================================================
 CREATE TABLE `Energie` (
   `id_energie`   BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   `id_article`   BIGINT UNSIGNED NOT NULL,
@@ -78,9 +75,6 @@ CREATE TABLE `Electricite` (
   KEY `fk_electricite_energie` (`id_energie`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
--- ============================================================
---  PRODUIT / STOCK
--- ============================================================
 CREATE TABLE `Produit` (
   `code_barres`     BIGINT UNSIGNED NOT NULL,
   `id_article`      BIGINT UNSIGNED NOT NULL,
@@ -99,9 +93,6 @@ CREATE TABLE `Stock` (
   UNIQUE KEY `uk_stock_article` (`id_article`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
--- ============================================================
---  CONNEXION
--- ============================================================
 CREATE TABLE `Connexion` (
   `id_connexion` INT UNSIGNED NOT NULL AUTO_INCREMENT,
   `identifiant`  VARCHAR(100) NOT NULL,
@@ -111,9 +102,6 @@ CREATE TABLE `Connexion` (
   UNIQUE KEY `identifiant` (`identifiant`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
--- ============================================================
---  CLIENT / CARTE CE / PARAMETRES CCE / BONUS CCE
--- ============================================================
 CREATE TABLE `Client` (
   `id_client` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   `nom`       VARCHAR(50) NOT NULL,
@@ -149,9 +137,6 @@ CREATE TABLE `BonusCCE` (
   PRIMARY KEY (`id_bonus`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
--- ============================================================
---  POMPE
--- ============================================================
 CREATE TABLE `Pompe` (
   `id_pompe`               BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   `numero`                 INT NOT NULL,
@@ -165,9 +150,6 @@ CREATE TABLE `Pompe` (
   KEY `fk_pompe_transaction_energie` (`id_transaction_energie`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
--- ============================================================
---  TRANSACTION / TRANSACTION_PRODUIT / TRANSACTION_ENERGIE / CCE / RECU
--- ============================================================
 CREATE TABLE `Transaction` (
   `id_transaction` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   `prix_total`     DECIMAL(10,3) NOT NULL,
@@ -215,9 +197,6 @@ CREATE TABLE `Recu` (
   KEY `id_transaction` (`id_transaction`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
--- ============================================================
---  RÉAPPROVISIONNEMENT
--- ============================================================
 CREATE TABLE `Reapprovisionnement` (
   `id_reappro`     BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   `statut_reappro` ENUM('En cours','En retard','Arrivé','Annulé') NOT NULL DEFAULT 'En cours',
@@ -247,9 +226,6 @@ CREATE TABLE `ValeursDefautReappro` (
   UNIQUE KEY `uk_article` (`id_article`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
--- ============================================================
---  INCIDENTS / JOURS / HORAIRES
--- ============================================================
 CREATE TABLE `FicheIncident` (
   `id_ref_unique`  BIGINT NOT NULL AUTO_INCREMENT,
   `date_creation`  DATE NOT NULL,
@@ -284,9 +260,6 @@ CREATE TABLE `JourFermeture` (
   PRIMARY KEY (`id_fermeture`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
--- ============================================================
---  VALIDATION JOURNALIÈRE
--- ============================================================
 CREATE TABLE `ValidationTransactions` (
   `id_validation_tx` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   `date_jour`        DATE NOT NULL,
@@ -294,8 +267,7 @@ CREATE TABLE `ValidationTransactions` (
   `date_validation`  DATETIME NOT NULL,
   PRIMARY KEY (`id_validation_tx`),
   KEY `idx_date_jour` (`date_jour`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci
-  COMMENT='Validation de la table relevé des transactions journalières';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 CREATE TABLE `ValidationIncidents` (
   `id_validation_inc` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -304,12 +276,328 @@ CREATE TABLE `ValidationIncidents` (
   `date_validation`   DATETIME NOT NULL,
   PRIMARY KEY (`id_validation_inc`),
   KEY `idx_date_jour` (`date_jour`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci
-  COMMENT='Validation de la table relevé des incidents journaliers';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+ALTER TABLE `Energie`
+  ADD CONSTRAINT `fk_energie_article` FOREIGN KEY (`id_article`) REFERENCES `Article` (`id_article`);
+
+ALTER TABLE `Carburant`
+  ADD CONSTRAINT `fk_carburant_energie` FOREIGN KEY (`id_energie`) REFERENCES `Energie` (`id_energie`);
+
+ALTER TABLE `Electricite`
+  ADD CONSTRAINT `fk_electricite_energie` FOREIGN KEY (`id_energie`) REFERENCES `Energie` (`id_energie`);
+
+ALTER TABLE `Produit`
+  ADD CONSTRAINT `fk_produit_article` FOREIGN KEY (`id_article`) REFERENCES `Article` (`id_article`);
+
+ALTER TABLE `Stock`
+  ADD CONSTRAINT `fk_stock_article` FOREIGN KEY (`id_article`) REFERENCES `Article` (`id_article`);
+
+ALTER TABLE `CarteCE`
+  ADD CONSTRAINT `fk_carte_client` FOREIGN KEY (`id_client`) REFERENCES `Client` (`id_client`);
+
+ALTER TABLE `TransactionCCE`
+  ADD CONSTRAINT `fk_txcce_carte` FOREIGN KEY (`id_carte_CE`) REFERENCES `CarteCE` (`id_carte_CE`),
+  ADD CONSTRAINT `fk_txcce_tx` FOREIGN KEY (`id_transaction`) REFERENCES `Transaction` (`id_transaction`);
+
+ALTER TABLE `TransactionEnergie`
+  ADD CONSTRAINT `fk_te_energie` FOREIGN KEY (`id_energie`) REFERENCES `Energie` (`id_energie`),
+  ADD CONSTRAINT `fk_te_transaction` FOREIGN KEY (`id_transaction`) REFERENCES `Transaction` (`id_transaction`);
+
+ALTER TABLE `TransactionProduit`
+  ADD CONSTRAINT `fk_tp_produit` FOREIGN KEY (`code_barres`) REFERENCES `Produit` (`code_barres`),
+  ADD CONSTRAINT `fk_tp_transaction` FOREIGN KEY (`id_transaction`) REFERENCES `Transaction` (`id_transaction`);
+
+ALTER TABLE `Recu`
+  ADD CONSTRAINT `fk_recu_transaction` FOREIGN KEY (`id_transaction`) REFERENCES `Transaction` (`id_transaction`);
+
+ALTER TABLE `LigneReappro`
+  ADD CONSTRAINT `fk_lr_reappro` FOREIGN KEY (`id_reappro`) REFERENCES `Reapprovisionnement` (`id_reappro`),
+  ADD CONSTRAINT `fk_lr_article` FOREIGN KEY (`id_article`) REFERENCES `Article` (`id_article`);
+
+ALTER TABLE `ValeursDefautReappro`
+  ADD CONSTRAINT `fk_vdr_article` FOREIGN KEY (`id_article`) REFERENCES `Article` (`id_article`);
+
+ALTER TABLE `Horaire`
+  ADD CONSTRAINT `fk_horaire_jour` FOREIGN KEY (`id_jour`) REFERENCES `JourSemaine` (`id_jour`);
+
+SET FOREIGN_KEY_CHECKS = 1;
 
 -- ============================================================
---  CLÉS ÉTRANGÈRES
+--  BASE 2 : ARCHIVES
 -- ============================================================
+USE `unica_station_archives`;
+
+SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
+SET FOREIGN_KEY_CHECKS = 0;
+SET NAMES utf8mb4;
+
+DROP TABLE IF EXISTS `ValidationIncidents`;
+DROP TABLE IF EXISTS `ValidationTransactions`;
+DROP TABLE IF EXISTS `TransactionProduit`;
+DROP TABLE IF EXISTS `TransactionEnergie`;
+DROP TABLE IF EXISTS `TransactionCCE`;
+DROP TABLE IF EXISTS `Recu`;
+DROP TABLE IF EXISTS `Transaction`;
+DROP TABLE IF EXISTS `LigneReappro`;
+DROP TABLE IF EXISTS `Reapprovisionnement`;
+DROP TABLE IF EXISTS `ValeursDefautReappro`;
+DROP TABLE IF EXISTS `FicheIncident`;
+DROP TABLE IF EXISTS `JourFermeture`;
+DROP TABLE IF EXISTS `Horaire`;
+DROP TABLE IF EXISTS `JourSemaine`;
+DROP TABLE IF EXISTS `BonusCCE`;
+DROP TABLE IF EXISTS `ParametresCCE`;
+DROP TABLE IF EXISTS `CarteCE`;
+DROP TABLE IF EXISTS `Client`;
+DROP TABLE IF EXISTS `Pompe`;
+DROP TABLE IF EXISTS `Stock`;
+DROP TABLE IF EXISTS `Carburant`;
+DROP TABLE IF EXISTS `Electricite`;
+DROP TABLE IF EXISTS `Energie`;
+DROP TABLE IF EXISTS `Produit`;
+DROP TABLE IF EXISTS `Article`;
+DROP TABLE IF EXISTS `Connexion`;
+
+-- Rejouer exactement le même bloc CREATE TABLE + ALTER TABLE
+-- que ci-dessus dans cette base archive.
+
+CREATE TABLE `Article` (
+  `id_article`   BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `type_article` VARCHAR(30) NOT NULL,
+  PRIMARY KEY (`id_article`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+CREATE TABLE `Energie` (
+  `id_energie`   BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `id_article`   BIGINT UNSIGNED NOT NULL,
+  `type_energie` ENUM('carburant','electricite') NOT NULL,
+  PRIMARY KEY (`id_energie`),
+  KEY `id_article` (`id_article`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+CREATE TABLE `Carburant` (
+  `id_carburant`  BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `id_energie`    BIGINT UNSIGNED NOT NULL,
+  `prix_litre`    DECIMAL(10,3) NOT NULL,
+  `livraison_min` DECIMAL(10,3) NOT NULL DEFAULT 5.000,
+  `libelle`       VARCHAR(50) NOT NULL,
+  PRIMARY KEY (`id_carburant`),
+  KEY `id_energie` (`id_energie`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+CREATE TABLE `Electricite` (
+  `id_electricite` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `id_energie`     BIGINT UNSIGNED NOT NULL,
+  `prix_kwh`       DECIMAL(10,3) NOT NULL,
+  `type_charge`    ENUM('rapide','lente') NOT NULL,
+  PRIMARY KEY (`id_electricite`),
+  KEY `fk_electricite_energie` (`id_energie`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+CREATE TABLE `Produit` (
+  `code_barres`     BIGINT UNSIGNED NOT NULL,
+  `id_article`      BIGINT UNSIGNED NOT NULL,
+  `libelle_produit` VARCHAR(255) NOT NULL,
+  `prix`            DECIMAL(10,3) NOT NULL,
+  PRIMARY KEY (`code_barres`),
+  KEY `id_article` (`id_article`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+CREATE TABLE `Stock` (
+  `id_stock`        BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `id_article`      BIGINT UNSIGNED NOT NULL,
+  `quantite_stock`  DECIMAL(10,3) NOT NULL,
+  `type_quantite`   ENUM('litre','unite') NOT NULL,
+  PRIMARY KEY (`id_stock`),
+  UNIQUE KEY `uk_stock_article` (`id_article`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+CREATE TABLE `Connexion` (
+  `id_connexion` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `identifiant`  VARCHAR(100) NOT NULL,
+  `mdp`          VARCHAR(255) NOT NULL,
+  `role`         ENUM('employe','gerant') NOT NULL DEFAULT 'employe',
+  PRIMARY KEY (`id_connexion`),
+  UNIQUE KEY `identifiant` (`identifiant`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+CREATE TABLE `Client` (
+  `id_client` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `nom`       VARCHAR(50) NOT NULL,
+  `prenom`    VARCHAR(50) NOT NULL,
+  `email`     VARCHAR(100) NOT NULL,
+  `num_tel`   VARCHAR(20) NOT NULL,
+  PRIMARY KEY (`id_client`),
+  UNIQUE KEY `uk_client_email` (`email`),
+  UNIQUE KEY `uk_client_num_tel` (`num_tel`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+CREATE TABLE `CarteCE` (
+  `id_carte_CE`            BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `id_client`              BIGINT UNSIGNED NOT NULL,
+  `code_secret`            INT NOT NULL,
+  `solde_client`           DECIMAL(10,3) NOT NULL,
+  `date_dernier_apport`    DATE NOT NULL,
+  `montant_dernier_apport` INT NOT NULL,
+  PRIMARY KEY (`id_carte_CE`),
+  KEY `id_client` (`id_client`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+CREATE TABLE `ParametresCCE` (
+  `id_parametre` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `montant_min`  DECIMAL(10,2) NOT NULL DEFAULT 50.00,
+  PRIMARY KEY (`id_parametre`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+CREATE TABLE `BonusCCE` (
+  `id_bonus`      INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `tranche`       DECIMAL(10,2) NOT NULL,
+  `montant_bonus` DECIMAL(10,2) NOT NULL,
+  PRIMARY KEY (`id_bonus`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+CREATE TABLE `Pompe` (
+  `id_pompe`               BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `numero`                 INT NOT NULL,
+  `type_pompe`             ENUM('carburant','electricite') NOT NULL,
+  `sous_type`              ENUM('rapide','lente') DEFAULT NULL,
+  `mode`                   ENUM('manuel','auto') NOT NULL,
+  `statut`                 ENUM('active','desactivee','en_cours') NOT NULL DEFAULT 'active',
+  `date_debut`             DATETIME DEFAULT NULL,
+  `id_transaction_energie` BIGINT UNSIGNED DEFAULT NULL,
+  PRIMARY KEY (`id_pompe`),
+  KEY `fk_pompe_transaction_energie` (`id_transaction_energie`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+CREATE TABLE `Transaction` (
+  `id_transaction` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `prix_total`     DECIMAL(10,3) NOT NULL,
+  `date_heure`     DATETIME NOT NULL,
+  PRIMARY KEY (`id_transaction`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+CREATE TABLE `TransactionCCE` (
+  `id_transaction` BIGINT UNSIGNED NOT NULL,
+  `id_carte_CE`    BIGINT UNSIGNED NOT NULL,
+  PRIMARY KEY (`id_transaction`, `id_carte_CE`),
+  KEY `id_carte_CE` (`id_carte_CE`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+CREATE TABLE `TransactionEnergie` (
+  `id_transaction_energie` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `id_transaction`         BIGINT UNSIGNED DEFAULT NULL,
+  `id_energie`             BIGINT UNSIGNED NOT NULL,
+  `quantite_delivree`      DECIMAL(10,3) NOT NULL,
+  `temps_charge`           TIME NOT NULL,
+  `statut`                 ENUM('en_cours','payee') NOT NULL DEFAULT 'en_cours',
+  `id_pompe`               BIGINT UNSIGNED DEFAULT NULL,
+  PRIMARY KEY (`id_transaction_energie`),
+  KEY `id_transaction` (`id_transaction`),
+  KEY `id_energie` (`id_energie`),
+  KEY `fk_te_pompe` (`id_pompe`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+CREATE TABLE `TransactionProduit` (
+  `id_transaction_produit`  BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `id_transaction`          BIGINT UNSIGNED NOT NULL,
+  `code_barres`             BIGINT UNSIGNED NOT NULL,
+  `quantite_produit_totale` INT NOT NULL,
+  PRIMARY KEY (`id_transaction_produit`),
+  KEY `id_transaction` (`id_transaction`),
+  KEY `code_barres` (`code_barres`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+CREATE TABLE `Recu` (
+  `id_recu`        BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `id_transaction` BIGINT UNSIGNED NOT NULL,
+  `num_carte`      INT NOT NULL,
+  `horodatage`     DATETIME NOT NULL,
+  PRIMARY KEY (`id_recu`),
+  KEY `id_transaction` (`id_transaction`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+CREATE TABLE `Reapprovisionnement` (
+  `id_reappro`     BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `statut_reappro` ENUM('En cours','En retard','Arrivé','Annulé') NOT NULL DEFAULT 'En cours',
+  `date_reappro`   DATE NOT NULL,
+  `date_souhaitee` DATE DEFAULT NULL,
+  `est_auto`       TINYINT(1) NOT NULL DEFAULT 0,
+  PRIMARY KEY (`id_reappro`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+CREATE TABLE `LigneReappro` (
+  `id_reappro`   BIGINT UNSIGNED NOT NULL,
+  `id_article`   BIGINT UNSIGNED NOT NULL,
+  `quantite`     DECIMAL(10,3) NOT NULL,
+  `date_arrivee` DATE DEFAULT NULL,
+  PRIMARY KEY (`id_reappro`, `id_article`),
+  KEY `fk_lr_article` (`id_article`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+CREATE TABLE `ValeursDefautReappro` (
+  `id_valeur_reappro_defaut` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `id_article`       BIGINT UNSIGNED NOT NULL,
+  `seuil_alerte`     DECIMAL(10,3) NOT NULL DEFAULT 10.000,
+  `volume`           DECIMAL(10,3) NOT NULL DEFAULT 50.000,
+  `frequence_valeur` INT NOT NULL DEFAULT 7,
+  `frequence_unite`  ENUM('jour','semaine','mois') NOT NULL DEFAULT 'semaine',
+  PRIMARY KEY (`id_valeur_reappro_defaut`),
+  UNIQUE KEY `uk_article` (`id_article`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+CREATE TABLE `FicheIncident` (
+  `id_ref_unique`  BIGINT NOT NULL AUTO_INCREMENT,
+  `date_creation`  DATE NOT NULL,
+  `heure_creation` TIME NOT NULL,
+  `type_incident`  VARCHAR(100) NOT NULL,
+  `detail_tech`    TEXT NOT NULL,
+  `solution`       TEXT NOT NULL,
+  PRIMARY KEY (`id_ref_unique`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+CREATE TABLE `JourSemaine` (
+  `id_jour` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `libelle` VARCHAR(10) NOT NULL,
+  PRIMARY KEY (`id_jour`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+CREATE TABLE `Horaire` (
+  `id_horaire`      BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `id_jour`         BIGINT UNSIGNED NOT NULL,
+  `heure_ouverture` TIME NOT NULL,
+  `heure_fermeture` TIME NOT NULL,
+  `est_ferme`       TINYINT(1) NOT NULL,
+  PRIMARY KEY (`id_horaire`),
+  KEY `id_jour` (`id_jour`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+CREATE TABLE `JourFermeture` (
+  `id_fermeture`   BIGINT NOT NULL AUTO_INCREMENT,
+  `date_fermeture` DATE NOT NULL,
+  `motif`          VARCHAR(100) NOT NULL,
+  `recurrent`      TINYINT(1) NOT NULL DEFAULT 0,
+  PRIMARY KEY (`id_fermeture`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+CREATE TABLE `ValidationTransactions` (
+  `id_validation_tx` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `date_jour`        DATE NOT NULL,
+  `est_valide`       TINYINT(1) NOT NULL DEFAULT 0,
+  `date_validation`  DATETIME NOT NULL,
+  PRIMARY KEY (`id_validation_tx`),
+  KEY `idx_date_jour` (`date_jour`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+CREATE TABLE `ValidationIncidents` (
+  `id_validation_inc` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `date_jour`         DATE NOT NULL,
+  `est_valide`        TINYINT(1) NOT NULL DEFAULT 0,
+  `date_validation`   DATETIME NOT NULL,
+  PRIMARY KEY (`id_validation_inc`),
+  KEY `idx_date_jour` (`date_jour`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
 ALTER TABLE `Energie`
   ADD CONSTRAINT `fk_energie_article` FOREIGN KEY (`id_article`) REFERENCES `Article` (`id_article`);
 

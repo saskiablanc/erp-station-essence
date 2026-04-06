@@ -9,7 +9,7 @@ SET SQL_MODE = 'NO_AUTO_VALUE_ON_ZERO';
 SET FOREIGN_KEY_CHECKS = 0;
 START TRANSACTION;
 SET NAMES utf8mb4;
-
+USE `unica_station`;
 -- ============================================================
 --  ARTICLE
 -- ============================================================
@@ -7234,6 +7234,507 @@ INSERT INTO `ValidationIncidents` (`date_jour`, `est_valide`, `date_validation`)
 ('2026-04-04', 1, '2026-04-04 21:30:00'),
 ('2026-04-05', 1, '2026-04-05 21:30:00'),
 ('2026-04-07', 1, '2026-04-07 21:30:00');
+
+
+USE `unica_station_archives`;
+
+SET SQL_MODE = 'NO_AUTO_VALUE_ON_ZERO';
+SET FOREIGN_KEY_CHECKS = 0;
+START TRANSACTION;
+SET NAMES utf8mb4;
+
+-- ============================================================
+--  ARTICLE
+-- ============================================================
+INSERT INTO `Article` (`id_article`, `type_article`) VALUES
+(1, 'Carburant'),
+(2, 'Carburant'),
+(3, 'Carburant'),
+(4, 'Electricite'),
+(5, 'Electricite'),
+(6, 'Snack'),
+(7, 'Boisson'),
+(8, 'Auto'),
+(9, 'Service'),
+(10, 'Alimentation');
+
+ALTER TABLE `Article` AUTO_INCREMENT = 11;
+
+-- ============================================================
+--  ENERGIE
+-- ============================================================
+INSERT INTO `Energie` (`id_energie`, `id_article`, `type_energie`) VALUES
+(1, 1, 'carburant'),
+(2, 2, 'carburant'),
+(3, 3, 'carburant'),
+(4, 4, 'electricite'),
+(5, 5, 'electricite');
+
+ALTER TABLE `Energie` AUTO_INCREMENT = 6;
+
+-- ============================================================
+--  CARBURANT
+-- ============================================================
+INSERT INTO `Carburant` (`id_carburant`, `id_energie`, `prix_litre`, `livraison_min`, `libelle`) VALUES
+(1, 1, 1.799, 5.000, 'SP95'),
+(2, 2, 1.899, 5.000, 'SP98'),
+(3, 3, 1.699, 5.000, 'Gazole');
+
+ALTER TABLE `Carburant` AUTO_INCREMENT = 4;
+
+-- ============================================================
+--  ELECTRICITE
+-- ============================================================
+INSERT INTO `Electricite` (`id_electricite`, `id_energie`, `prix_kwh`, `type_charge`) VALUES
+(1, 4, 0.650, 'rapide'),
+(2, 5, 0.300, 'lente');
+
+ALTER TABLE `Electricite` AUTO_INCREMENT = 3;
+
+-- ============================================================
+--  PRODUIT
+-- ============================================================
+INSERT INTO `Produit` (`code_barres`, `id_article`, `libelle_produit`, `prix`) VALUES
+(3017620425035, 6, 'Chips Lay''s Nature 45g', 1.490),
+(5449000214911, 7, 'Coca-Cola 50cl', 2.190),
+(3760020509100, 8, 'Chargeur universel VE domicile', 29.900),
+(3700000000010, 9, 'Jeton aspirateur', 2.000),
+(3560070976843, 10, 'Sandwich Jambon-Beurre', 3.990);
+
+-- ============================================================
+--  STOCK
+-- ============================================================
+INSERT INTO `Stock` (`id_stock`, `id_article`, `quantite_stock`, `type_quantite`) VALUES
+(1, 6, 25.000, 'unite'),
+(2, 7, 18.000, 'unite'),
+(3, 8, 8.000, 'unite'),
+(4, 9, 12.000, 'unite'),
+(5, 10, 10.000, 'unite'),
+(6, 1, 1800.000, 'litre'),
+(7, 2, 1600.000, 'litre'),
+(8, 3, 2000.000, 'litre');
+
+ALTER TABLE `Stock` AUTO_INCREMENT = 9;
+
+-- ============================================================
+--  CONNEXION
+-- ============================================================
+INSERT INTO `Connexion` (`id_connexion`, `identifiant`, `mdp`, `role`) VALUES
+(1, 'employe1', 'password', 'employe'),
+(2, 'gerant1', 'password', 'gerant');
+
+ALTER TABLE `Connexion` AUTO_INCREMENT = 3;
+
+-- ============================================================
+--  CLIENT
+-- ============================================================
+INSERT INTO `Client` (`id_client`, `nom`, `prenom`, `email`, `num_tel`) VALUES
+(1, 'Zari', 'Mouad', 'mouad.zari@unica.fr', '0612345001'),
+(2, 'Blanc', 'Saskia', 'saskia.blanc@unica.fr', '0612345002'),
+(3, 'Mongrandi', 'Lenny', 'lenny.mongrandi@unica.fr', '0612345003'),
+(4, 'Bachov', 'Steven', 'steven.bachov@unica.fr', '0612345004');
+
+ALTER TABLE `Client` AUTO_INCREMENT = 5;
+
+-- ============================================================
+--  CARTE CE
+-- ============================================================
+INSERT INTO `CarteCE` (`id_carte_CE`, `id_client`, `code_secret`, `solde_client`, `date_dernier_apport`, `montant_dernier_apport`) VALUES
+(1, 1, 1234, 130.000, '2026-02-15', 100),
+(2, 2, 5678, 80.000, '2026-03-15', 100),
+(3, 3, 9012, 50.000, '2026-03-20', 50);
+
+ALTER TABLE `CarteCE` AUTO_INCREMENT = 4;
+
+-- ============================================================
+--  PARAMETRES CCE
+-- ============================================================
+INSERT INTO `ParametresCCE` (`id_parametre`, `montant_min`) VALUES
+(1, 50.00);
+
+ALTER TABLE `ParametresCCE` AUTO_INCREMENT = 2;
+
+-- ============================================================
+--  BONUS CCE
+-- ============================================================
+INSERT INTO `BonusCCE` (`id_bonus`, `tranche`, `montant_bonus`) VALUES
+(1, 100.00, 10.00),
+(2, 200.00, 25.00);
+
+ALTER TABLE `BonusCCE` AUTO_INCREMENT = 3;
+
+-- ============================================================
+--  POMPE
+-- ============================================================
+INSERT INTO `Pompe` (`id_pompe`, `numero`, `type_pompe`, `sous_type`, `mode`, `statut`, `date_debut`, `id_transaction_energie`) VALUES
+(1, 1, 'carburant', NULL, 'manuel', 'active', NULL, NULL),
+(2, 2, 'carburant', NULL, 'auto', 'active', NULL, NULL),
+(3, 1, 'electricite', 'rapide', 'auto', 'active', NULL, NULL),
+(4, 2, 'electricite', 'lente', 'auto', 'active', NULL, NULL);
+
+ALTER TABLE `Pompe` AUTO_INCREMENT = 5;
+
+-- ============================================================
+--  TRANSACTION (version réduite archive)
+-- ============================================================
+INSERT INTO `Transaction` (`id_transaction`, `prix_total`, `date_heure`) VALUES
+(1, 78.023, '2026-01-01 08:07:36'),
+(2, 65.793, '2026-01-01 01:05:05'),
+(3, 18.929, '2026-01-01 08:01:33'),
+(4, 24.804, '2026-01-01 03:31:16'),
+(5, 77.494, '2026-01-02 08:20:21'),
+(6, 38.782, '2026-01-02 20:39:01'),
+(7, 2.190,  '2026-01-03 07:56:53'),
+(8, 29.900, '2026-01-10 10:50:15'),
+(9, 49.562, '2026-02-06 19:39:55'),
+(10, 84.367,'2026-03-05 00:21:15'),
+(11, 72.254,'2026-03-06 04:25:17'),
+(12, 79.855,'2026-03-19 05:35:42');
+
+ALTER TABLE `Transaction` AUTO_INCREMENT = 13;
+
+-- ============================================================
+--  TRANSACTION CCE
+-- ============================================================
+INSERT INTO `TransactionCCE` (`id_transaction`, `id_carte_CE`) VALUES
+(1, 2),
+(6, 1),
+(9, 3);
+
+-- ============================================================
+--  TRANSACTION ENERGIE
+-- ============================================================
+INSERT INTO `TransactionEnergie` (`id_transaction_energie`, `id_transaction`, `id_energie`, `quantite_delivree`, `temps_charge`, `statut`, `id_pompe`) VALUES
+(1, 1, 1, 43.370, '00:00:00', 'payee', 1),
+(2, 2, 3, 38.724, '00:00:00', 'payee', 2),
+(3, 5, 4, 69.222, '00:41:00', 'payee', 3),
+(4, 6, 5, 52.100, '01:12:00', 'payee', 4),
+(5, 9, 2, 29.172, '00:00:00', 'payee', 2),
+(6, 10, 1, 46.841, '00:00:00', 'payee', 1),
+(7, 11, 4, 111.900, '01:28:00', 'payee', 3),
+(8, 12, 3, 47.000, '00:00:00', 'payee', 2);
+
+ALTER TABLE `TransactionEnergie` AUTO_INCREMENT = 9;
+
+-- ============================================================
+--  TRANSACTION PRODUIT
+-- ============================================================
+INSERT INTO `TransactionProduit` (`id_transaction_produit`, `id_transaction`, `code_barres`, `quantite_produit_totale`) VALUES
+(1, 3, 3017620425035, 2),
+(2, 3, 5449000214911, 1),
+(3, 4, 5449000214911, 1),
+(4, 4, 3560070976843, 4),
+(5, 7, 5449000214911, 1),
+(6, 8, 3760020509100, 1);
+
+ALTER TABLE `TransactionProduit` AUTO_INCREMENT = 7;
+
+-- ============================================================
+--  RECU
+-- ============================================================
+INSERT INTO `Recu` (`id_recu`, `id_transaction`, `num_carte`, `horodatage`) VALUES
+(1, 1, 671858, '2026-01-01 08:07:36'),
+(2, 2, 554812, '2026-01-01 01:05:05'),
+(3, 6, 451245, '2026-01-02 20:39:01'),
+(4, 8, 778899, '2026-01-10 10:50:15'),
+(5, 10, 998877, '2026-03-05 00:21:15');
+
+ALTER TABLE `Recu` AUTO_INCREMENT = 6;
+
+-- ============================================================
+--  DONNÉES HISTORIQUES ARCHIVE (2021 → 2025)
+--  Objectif: fournir un volume crédible de transactions archivées
+-- ============================================================
+
+-- Clients et cartes CCE supplémentaires pour varier les paiements.
+INSERT INTO `Client` (`id_client`, `nom`, `prenom`, `email`, `num_tel`) VALUES
+(5, 'Martin', 'Laura', 'laura.martin@archive.unica.fr', '0612345005'),
+(6, 'Perez', 'Nolan', 'nolan.perez@archive.unica.fr', '0612345006'),
+(7, 'Rossi', 'Emma', 'emma.rossi@archive.unica.fr', '0612345007'),
+(8, 'Petit', 'Yanis', 'yanis.petit@archive.unica.fr', '0612345008'),
+(9, 'Garcia', 'Lea', 'lea.garcia@archive.unica.fr', '0612345009'),
+(10, 'Durand', 'Theo', 'theo.durand@archive.unica.fr', '0612345010');
+
+ALTER TABLE `Client` AUTO_INCREMENT = 11;
+
+INSERT INTO `CarteCE` (`id_carte_CE`, `id_client`, `code_secret`, `solde_client`, `date_dernier_apport`, `montant_dernier_apport`) VALUES
+(4, 4, 3456, 95.000, '2025-09-17', 80),
+(5, 5, 4567, 160.000, '2025-11-08', 120),
+(6, 6, 6789, 72.000, '2025-12-02', 60),
+(7, 7, 1122, 210.000, '2025-10-28', 200),
+(8, 8, 3344, 44.000, '2025-07-14', 50),
+(9, 9, 5566, 118.000, '2025-08-25', 100),
+(10, 10, 7788, 88.000, '2025-06-19', 75);
+
+ALTER TABLE `CarteCE` AUTO_INCREMENT = 11;
+
+-- 550 transactions supplémentaires (110 par année: 2021, 2022, 2023, 2024, 2025).
+INSERT INTO `Transaction` (`id_transaction`, `prix_total`, `date_heure`)
+SELECT
+  1000 + n AS id_transaction,
+  ROUND(6 + (MOD(n * 173, 940) / 10), 3) AS prix_total,
+  TIMESTAMP(
+    DATE_ADD(
+      MAKEDATE(2021 + FLOOR((n - 1) / 110), 1),
+      INTERVAL MOD(n * 17, 365) DAY
+    ),
+    SEC_TO_TIME(MOD(n * 1379, 86400))
+  ) AS date_heure
+FROM (
+  SELECT (u.n + d.n * 10 + c.n * 100 + 1) AS n
+  FROM
+    (SELECT 0 AS n UNION ALL SELECT 1 UNION ALL SELECT 2 UNION ALL SELECT 3 UNION ALL SELECT 4 UNION ALL SELECT 5 UNION ALL SELECT 6 UNION ALL SELECT 7 UNION ALL SELECT 8 UNION ALL SELECT 9) u
+  CROSS JOIN
+    (SELECT 0 AS n UNION ALL SELECT 1 UNION ALL SELECT 2 UNION ALL SELECT 3 UNION ALL SELECT 4 UNION ALL SELECT 5 UNION ALL SELECT 6 UNION ALL SELECT 7 UNION ALL SELECT 8 UNION ALL SELECT 9) d
+  CROSS JOIN
+    (SELECT 0 AS n UNION ALL SELECT 1 UNION ALL SELECT 2 UNION ALL SELECT 3 UNION ALL SELECT 4 UNION ALL SELECT 5) c
+  WHERE (u.n + d.n * 10 + c.n * 100 + 1) <= 550
+) seq;
+
+ALTER TABLE `Transaction` AUTO_INCREMENT = 1551;
+
+-- Transactions énergie (carburant + charge rapide/lente), majorité du flux.
+INSERT INTO `TransactionEnergie`
+(`id_transaction`, `id_energie`, `quantite_delivree`, `temps_charge`, `statut`, `id_pompe`)
+SELECT
+  t.id_transaction,
+  calc.id_energie,
+  CASE
+    WHEN calc.id_energie IN (4, 5)
+      THEN ROUND(8 + (MOD(t.id_transaction * 19, 580) / 10), 3)
+    ELSE ROUND(15 + (MOD(t.id_transaction * 23, 500) / 10), 3)
+  END AS quantite_delivree,
+  CASE
+    WHEN calc.id_energie IN (4, 5)
+      THEN SEC_TO_TIME((20 + MOD(t.id_transaction * 7, 180)) * 60)
+    ELSE '00:00:00'
+  END AS temps_charge,
+  'payee' AS statut,
+  CASE
+    WHEN calc.id_energie = 4 THEN 3
+    WHEN calc.id_energie = 5 THEN 4
+    ELSE 1 + MOD(t.id_transaction, 2)
+  END AS id_pompe
+FROM `Transaction` t
+JOIN (
+  SELECT
+    id_transaction,
+    CASE
+      WHEN MOD(id_transaction, 6) IN (0, 1) THEN 4
+      WHEN MOD(id_transaction, 6) = 2 THEN 5
+      WHEN MOD(id_transaction, 6) = 3 THEN 1
+      WHEN MOD(id_transaction, 6) = 4 THEN 2
+      ELSE 3
+    END AS id_energie
+  FROM `Transaction`
+  WHERE id_transaction BETWEEN 1001 AND 1550
+    AND MOD(id_transaction, 10) <= 6
+) calc ON calc.id_transaction = t.id_transaction;
+
+ALTER TABLE `TransactionEnergie` AUTO_INCREMENT = 5000;
+
+-- Transactions produit (lignes variées, parfois plusieurs articles dans le même ticket).
+INSERT INTO `TransactionProduit`
+(`id_transaction`, `code_barres`, `quantite_produit_totale`)
+SELECT
+  t.id_transaction,
+  CASE MOD(t.id_transaction, 5)
+    WHEN 0 THEN 3017620425035
+    WHEN 1 THEN 5449000214911
+    WHEN 2 THEN 3760020509100
+    WHEN 3 THEN 3700000000010
+    ELSE 3560070976843
+  END AS code_barres,
+  1 + MOD(t.id_transaction, 4) AS quantite_produit_totale
+FROM `Transaction` t
+WHERE t.id_transaction BETWEEN 1001 AND 1550
+  AND MOD(t.id_transaction, 10) IN (1, 2, 3, 7, 8, 9);
+
+INSERT INTO `TransactionProduit`
+(`id_transaction`, `code_barres`, `quantite_produit_totale`)
+SELECT
+  t.id_transaction,
+  CASE MOD(t.id_transaction + 2, 5)
+    WHEN 0 THEN 3017620425035
+    WHEN 1 THEN 5449000214911
+    WHEN 2 THEN 3760020509100
+    WHEN 3 THEN 3700000000010
+    ELSE 3560070976843
+  END AS code_barres,
+  1 + MOD(t.id_transaction, 2) AS quantite_produit_totale
+FROM `Transaction` t
+WHERE t.id_transaction BETWEEN 1001 AND 1550
+  AND MOD(t.id_transaction, 15) = 0;
+
+ALTER TABLE `TransactionProduit` AUTO_INCREMENT = 5000;
+
+-- Paiements CCE sur une partie des transactions.
+INSERT INTO `TransactionCCE` (`id_transaction`, `id_carte_CE`)
+SELECT
+  t.id_transaction,
+  1 + MOD(t.id_transaction, 10) AS id_carte_CE
+FROM `Transaction` t
+WHERE t.id_transaction BETWEEN 1001 AND 1550
+  AND (MOD(t.id_transaction, 5) = 0 OR MOD(t.id_transaction, 11) = 0);
+
+-- Reçus: une partie des transactions a un ticket imprimé.
+INSERT INTO `Recu` (`id_transaction`, `num_carte`, `horodatage`)
+SELECT
+  t.id_transaction,
+  CASE
+    WHEN txc.id_carte_CE IS NOT NULL
+      THEN 900000 + (txc.id_carte_CE * 100) + MOD(t.id_transaction, 100)
+    WHEN MOD(t.id_transaction, 4) = 0
+      THEN 0
+    ELSE 400000 + MOD(t.id_transaction * 97, 500000)
+  END AS num_carte,
+  DATE_ADD(t.date_heure, INTERVAL MOD(t.id_transaction, 13) MINUTE) AS horodatage
+FROM `Transaction` t
+LEFT JOIN `TransactionCCE` txc
+  ON txc.id_transaction = t.id_transaction
+WHERE t.id_transaction BETWEEN 1001 AND 1550
+  AND MOD(t.id_transaction, 4) <> 1;
+
+ALTER TABLE `Recu` AUTO_INCREMENT = 5000;
+
+-- Incidents historiques supplémentaires.
+INSERT INTO `FicheIncident` (`id_ref_unique`, `date_creation`, `heure_creation`, `type_incident`, `detail_tech`, `solution`)
+SELECT
+  1000 + n AS id_ref_unique,
+  DATE_ADD(
+    MAKEDATE(2021 + FLOOR((n - 1) / 8), 1),
+    INTERVAL MOD(n * 29, 340) DAY
+  ) AS date_creation,
+  SEC_TO_TIME(MOD(n * 2411, 86400)) AS heure_creation,
+  CASE MOD(n, 5)
+    WHEN 0 THEN 'Panne borne'
+    WHEN 1 THEN 'Problème caisse'
+    WHEN 2 THEN 'Alerte stock'
+    WHEN 3 THEN 'Incident client'
+    ELSE 'Maintenance préventive'
+  END AS type_incident,
+  CONCAT('Incident archive #', n, ' - detail technique historise.') AS detail_tech,
+  CONCAT('Action correctrice appliquee (archive) #', n) AS solution
+FROM (
+  SELECT (u.n + d.n * 10 + 1) AS n
+  FROM
+    (SELECT 0 AS n UNION ALL SELECT 1 UNION ALL SELECT 2 UNION ALL SELECT 3 UNION ALL SELECT 4 UNION ALL SELECT 5 UNION ALL SELECT 6 UNION ALL SELECT 7 UNION ALL SELECT 8 UNION ALL SELECT 9) u
+  CROSS JOIN
+    (SELECT 0 AS n UNION ALL SELECT 1 UNION ALL SELECT 2 UNION ALL SELECT 3) d
+  WHERE (u.n + d.n * 10 + 1) <= 40
+) seq_inc;
+
+-- Marquage des journées validées pour les transactions/incidents archivés.
+INSERT IGNORE INTO `ValidationTransactions` (`date_jour`, `est_valide`, `date_validation`)
+SELECT DISTINCT
+  DATE(t.date_heure) AS date_jour,
+  1 AS est_valide,
+  TIMESTAMP(DATE(t.date_heure), '21:30:00') AS date_validation
+FROM `Transaction` t
+WHERE t.id_transaction BETWEEN 1001 AND 1550;
+
+INSERT IGNORE INTO `ValidationIncidents` (`date_jour`, `est_valide`, `date_validation`)
+SELECT DISTINCT
+  fi.date_creation AS date_jour,
+  1 AS est_valide,
+  TIMESTAMP(fi.date_creation, '21:30:00') AS date_validation
+FROM `FicheIncident` fi
+WHERE fi.date_creation BETWEEN '2021-01-01' AND '2025-12-31';
+
+-- ============================================================
+--  REAPPROVISIONNEMENT
+-- ============================================================
+INSERT INTO `Reapprovisionnement` (`id_reappro`, `statut_reappro`, `date_reappro`, `date_souhaitee`, `est_auto`) VALUES
+(1, 'En cours', '2026-03-15', '2026-03-20', 1),
+(2, 'Arrivé', '2026-03-05', '2026-03-08', 0);
+
+ALTER TABLE `Reapprovisionnement` AUTO_INCREMENT = 3;
+
+-- ============================================================
+--  LIGNE REAPPRO
+-- ============================================================
+INSERT INTO `LigneReappro` (`id_reappro`, `id_article`, `quantite`, `date_arrivee`) VALUES
+(1, 6, 40.000, NULL),
+(1, 7, 30.000, NULL),
+(2, 1, 1200.000, '2026-03-08'),
+(2, 2, 1000.000, '2026-03-08');
+
+-- ============================================================
+--  VALEURS DEFAUT REAPPRO
+-- ============================================================
+INSERT INTO `ValeursDefautReappro` (`id_valeur_reappro_defaut`, `id_article`, `seuil_alerte`, `volume`, `frequence_valeur`, `frequence_unite`) VALUES
+(1, 1, 500.000, 1000.000, 2, 'semaine'),
+(2, 2, 500.000, 1000.000, 2, 'semaine'),
+(3, 6, 10.000, 50.000, 1, 'semaine'),
+(4, 7, 10.000, 40.000, 1, 'semaine'),
+(5, 10, 5.000, 20.000, 3, 'jour');
+
+ALTER TABLE `ValeursDefautReappro` AUTO_INCREMENT = 6;
+
+-- ============================================================
+--  FICHE INCIDENT
+-- ============================================================
+INSERT INTO `FicheIncident` (`id_ref_unique`, `date_creation`, `heure_creation`, `type_incident`, `detail_tech`, `solution`) VALUES
+(1, '2026-03-12', '09:15:00', 'Panne pompe', 'Pompe 2 inactive après un paiement.', 'Redémarrage manuel effectué.'),
+(2, '2026-03-22', '14:40:00', 'Borne lente', 'Temps de charge anormalement long sur borne lente.', 'Contrôle technique planifié.');
+
+ALTER TABLE `FicheIncident` AUTO_INCREMENT = 3;
+
+-- ============================================================
+--  JOURS DE LA SEMAINE
+-- ============================================================
+INSERT INTO `JourSemaine` (`id_jour`, `libelle`) VALUES
+(1, 'Lundi'),
+(2, 'Mardi'),
+(3, 'Mercredi'),
+(4, 'Jeudi'),
+(5, 'Vendredi'),
+(6, 'Samedi'),
+(7, 'Dimanche');
+
+ALTER TABLE `JourSemaine` AUTO_INCREMENT = 8;
+
+-- ============================================================
+--  HORAIRES
+-- ============================================================
+INSERT INTO `Horaire` (`id_horaire`, `id_jour`, `heure_ouverture`, `heure_fermeture`, `est_ferme`) VALUES
+(1, 1, '06:00:00', '22:00:00', 0),
+(2, 2, '06:00:00', '22:00:00', 0),
+(3, 3, '06:00:00', '22:00:00', 0),
+(4, 4, '06:00:00', '22:00:00', 0),
+(5, 5, '06:00:00', '22:00:00', 0),
+(6, 6, '07:00:00', '22:00:00', 0),
+(7, 7, '08:00:00', '21:00:00', 0);
+
+ALTER TABLE `Horaire` AUTO_INCREMENT = 8;
+
+-- ============================================================
+--  JOURS DE FERMETURE
+-- ============================================================
+INSERT INTO `JourFermeture` (`id_fermeture`, `date_fermeture`, `motif`, `recurrent`) VALUES
+(1, '2026-05-01', 'Fête du Travail', 1);
+
+ALTER TABLE `JourFermeture` AUTO_INCREMENT = 2;
+
+-- ============================================================
+--  VALIDATION TRANSACTIONS
+-- ============================================================
+INSERT INTO `ValidationTransactions` (`date_jour`, `est_valide`, `date_validation`) VALUES
+('2026-01-01', 1, '2026-01-01 21:30:00'),
+('2026-01-02', 1, '2026-01-02 21:30:00'),
+('2026-01-03', 1, '2026-01-03 21:30:00'),
+('2026-01-10', 1, '2026-01-10 21:30:00'),
+('2026-02-06', 1, '2026-02-06 21:30:00'),
+('2026-03-05', 1, '2026-03-05 21:30:00'),
+('2026-03-06', 1, '2026-03-06 21:30:00'),
+('2026-03-19', 1, '2026-03-19 21:30:00');
+
+-- ============================================================
+--  VALIDATION INCIDENTS
+-- ============================================================
+INSERT INTO `ValidationIncidents` (`date_jour`, `est_valide`, `date_validation`) VALUES
+('2026-03-12', 1, '2026-03-12 21:30:00'),
+('2026-03-22', 1, '2026-03-22 21:30:00');
 
 SET FOREIGN_KEY_CHECKS = 1;
 COMMIT;

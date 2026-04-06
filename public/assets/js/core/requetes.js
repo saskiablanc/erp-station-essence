@@ -9,11 +9,80 @@ const Requetes = (() => {
     typeof window !== "undefined" && window.APP_BASE_URL
       ? window.APP_BASE_URL
       : "";
+  const BDD_PROFILE_STORAGE_KEY = "bdd_profile_v1";
+  const BDD_DEFAULT_PROFILE = "courante";
+  const BDD_YEAR_STORAGE_KEY = "bdd_archive_year_v1";
+  const BDD_DEFAULT_YEAR = "2025";
+  let bddProfile = BDD_DEFAULT_PROFILE;
+  let bddYear = BDD_DEFAULT_YEAR;
 
   function withBase(route) {
     if (!BASE) return route;
     if (route.startsWith("/")) return `${BASE}${route}`;
     return `${BASE}/${route}`;
+  }
+
+  function normalizeBddProfile(profile) {
+    const value = String(profile || "").trim();
+    return value || BDD_DEFAULT_PROFILE;
+  }
+
+  function readBddProfile() {
+    try {
+      if (typeof localStorage === "undefined") return BDD_DEFAULT_PROFILE;
+      return normalizeBddProfile(
+        localStorage.getItem(BDD_PROFILE_STORAGE_KEY) || BDD_DEFAULT_PROFILE,
+      );
+    } catch (_) {
+      return BDD_DEFAULT_PROFILE;
+    }
+  }
+
+  function writeBddProfile(profile) {
+    try {
+      if (typeof localStorage === "undefined") return;
+      localStorage.setItem(BDD_PROFILE_STORAGE_KEY, normalizeBddProfile(profile));
+    } catch (_) {}
+  }
+
+  function withBddProfile(route) {
+    const profile = encodeURIComponent(normalizeBddProfile(bddProfile));
+    const sep = route.includes("?") ? "&" : "?";
+    return `${route}${sep}profile=${profile}`;
+  }
+
+  function normalizeBddYear(year) {
+    const value = String(year || "").trim();
+    if (/^\d{4}$/.test(value)) return value;
+    return BDD_DEFAULT_YEAR;
+  }
+
+  function readBddYear() {
+    try {
+      if (typeof localStorage === "undefined") return BDD_DEFAULT_YEAR;
+      return normalizeBddYear(
+        localStorage.getItem(BDD_YEAR_STORAGE_KEY) || BDD_DEFAULT_YEAR,
+      );
+    } catch (_) {
+      return BDD_DEFAULT_YEAR;
+    }
+  }
+
+  function writeBddYear(year) {
+    try {
+      if (typeof localStorage === "undefined") return;
+      localStorage.setItem(BDD_YEAR_STORAGE_KEY, normalizeBddYear(year));
+    } catch (_) {}
+  }
+
+  function withBddQuery(route) {
+    const profile = normalizeBddProfile(bddProfile);
+    let next = withBddProfile(route);
+    if (profile === "archive") {
+      const year = encodeURIComponent(normalizeBddYear(bddYear));
+      next += `&year=${year}`;
+    }
+    return next;
   }
 
   async function appel(methode, route, corps = null) {
@@ -37,6 +106,9 @@ const Requetes = (() => {
     }
     return data;
   }
+
+  bddProfile = readBddProfile();
+  bddYear = readBddYear();
 
   return {
     // ── Auth ──────────────────────────────────────────────
@@ -157,11 +229,32 @@ const Requetes = (() => {
         "GET",
         `/json/validation/incidents?date=${encodeURIComponent(date)}`,
       ),
+
+    // ── Base de données — profil (courante / archive) ─────
+    bddGetProfile: () => normalizeBddProfile(bddProfile),
+    bddSetProfile: (profile) => {
+      bddProfile = normalizeBddProfile(profile);
+      writeBddProfile(bddProfile);
+      return bddProfile;
+    },
+    bddGetYear: () => normalizeBddYear(bddYear),
+    bddSetYear: (year) => {
+      bddYear = normalizeBddYear(year);
+      writeBddYear(bddYear);
+      return bddYear;
+    },
+    bddProfiles: () => appel("GET", "/json/bdd/profiles"),
+    bddTables: () => appel("GET", withBddProfile("/json/bdd/tables")),
+
     // ── Sprint 6 — Base de données (US19) ─────────────────
     // 4 méthodes génériques — la table est passée en paramètre
-    bddGet: (table) => appel("GET", `/json/bdd/${table}`),
-    bddPost: (table, d) => appel("POST", `/json/bdd/${table}`, d),
-    bddPut: (table, id, d) => appel("POST", `/json/bdd/${table}/${id}`, d),
-    bddDel: (table, id) => appel("POST", `/json/bdd/${table}/${id}/suppr`),
+    bddGet: (table) => appel("GET", withBddQuery(`/json/bdd/${table}`)),
+    bddPost: (table, d) => appel("POST", withBddProfile(`/json/bdd/${table}`), d),
+    bddPut: (table, id, d) =>
+      appel("POST", withBddProfile(`/json/bdd/${table}/${id}`), d),
+    bddDel: (table, id) =>
+      appel("POST", withBddProfile(`/json/bdd/${table}/${id}/suppr`)),
+    bddGetRecuDetail: (id) =>
+      appel("GET", withBddQuery(`/json/bdd/recu/${id}/detail`)),
   };
 })();

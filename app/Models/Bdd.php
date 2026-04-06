@@ -11,9 +11,9 @@ class Bdd
 {
     private Database $db;
 
-    public function __construct()
+    public function __construct(string $profile = 'courante')
     {
-        $this->db = Database::getInstance('courante');
+        $this->db = Database::getInstance($profile);
     }
 
     private function fetch(string $sql, array $p = []): array
@@ -469,9 +469,20 @@ class Bdd
     // ═══════════════════════════════════════════════════════
     //  Transaction
     // ═══════════════════════════════════════════════════════
-    public function getTransaction(): array
+    public function getTransaction(?int $year = null): array
     {
-        return $this->rows("SELECT id_transaction,prix_total,date_heure FROM `Transaction` ORDER BY id_transaction DESC LIMIT 500");
+        $where = '';
+        $params = [];
+        if ($year !== null) {
+            $where = ' WHERE YEAR(date_heure) = :year';
+            $params[':year'] = $year;
+        }
+        return $this->rows(
+            "SELECT id_transaction,prix_total,date_heure
+             FROM `Transaction`{$where}
+             ORDER BY id_transaction DESC LIMIT 500",
+            $params
+        );
     }
     public function addTransaction(array $d): array
     {
@@ -522,13 +533,22 @@ class Bdd
     // ═══════════════════════════════════════════════════════
     //  TransactionCCE — PK composite (id_transaction, id_carte_CE)
     // ═══════════════════════════════════════════════════════
-    public function getTransactionCCE(): array
+    public function getTransactionCCE(?int $year = null): array
     {
+        $where = '';
+        $params = [];
+        if ($year !== null) {
+            $where = ' WHERE YEAR(t.date_heure) = :year';
+            $params[':year'] = $year;
+        }
         return $this->rows(
-            "SELECT id_transaction,id_carte_CE
-             FROM TransactionCCE
-             ORDER BY id_transaction DESC, id_carte_CE DESC
-             LIMIT 500"
+            "SELECT tx.id_transaction,tx.id_carte_CE
+             FROM TransactionCCE tx
+             JOIN `Transaction` t ON t.id_transaction = tx.id_transaction
+             {$where}
+             ORDER BY tx.id_transaction DESC, tx.id_carte_CE DESC
+             LIMIT 500",
+            $params
         );
     }
     public function addTransactionCCE(array $d): array
@@ -580,16 +600,25 @@ class Bdd
     //  TransactionProduit
     //  ATTENTION : colonne FK avec espace : ` id_transaction`
     // ═══════════════════════════════════════════════════════
-    public function getTransactionProduit(): array
+    public function getTransactionProduit(?int $year = null): array
     {
         // La colonne FK s'appelle ` id_transaction` (avec espace)
+        $where = '';
+        $params = [];
+        if ($year !== null) {
+            $where = ' WHERE YEAR(t.date_heure) = :year';
+            $params[':year'] = $year;
+        }
         return $this->rows(
             "SELECT id_transaction_produit,
-                    `" . " id_transaction" . "` AS id_transaction,
+                    tp.`" . " id_transaction" . "` AS id_transaction,
                     code_barres,
                     quantite_produit_totale
-             FROM TransactionProduit
-             ORDER BY `" . " id_transaction" . "` DESC LIMIT 500"
+             FROM TransactionProduit tp
+             JOIN `Transaction` t ON t.id_transaction = tp.`" . " id_transaction" . "`
+             {$where}
+             ORDER BY tp.`" . " id_transaction" . "` DESC LIMIT 500",
+            $params
         );
     }
     public function addTransactionProduit(array $d): array
@@ -625,15 +654,24 @@ class Bdd
     // ═══════════════════════════════════════════════════════
     private const TE_PK = ' id_transaction_energie'; // espace intentionnel
 
-    public function getTransactionEnergie(): array
+    public function getTransactionEnergie(?int $year = null): array
     {
         $pkQ = '`' . self::TE_PK . '`';
+        $where = '';
+        $params = [];
+        if ($year !== null) {
+            $where = ' WHERE te.id_transaction IS NOT NULL AND YEAR(t.date_heure) = :year';
+            $params[':year'] = $year;
+        }
         return $this->rows(
             "SELECT {$pkQ} AS id_transaction_energie,
-                    id_transaction, id_energie, quantite_delivree,
-                    temps_charge, statut, id_pompe
-             FROM TransactionEnergie
-             ORDER BY {$pkQ} DESC LIMIT 500"
+                    te.id_transaction, te.id_energie, te.quantite_delivree,
+                    te.temps_charge, te.statut, te.id_pompe
+             FROM TransactionEnergie te
+             LEFT JOIN `Transaction` t ON t.id_transaction = te.id_transaction
+             {$where}
+             ORDER BY {$pkQ} DESC LIMIT 500",
+            $params
         );
     }
     public function addTransactionEnergie(array $d): array
@@ -675,9 +713,22 @@ class Bdd
     // ═══════════════════════════════════════════════════════
     //  Recu
     // ═══════════════════════════════════════════════════════
-    public function getRecu(): array
+    public function getRecu(?int $year = null): array
     {
-        return $this->rows("SELECT id_recu,id_transaction,num_carte,horodatage FROM `Recu` ORDER BY id_recu DESC LIMIT 500");
+        $where = '';
+        $params = [];
+        if ($year !== null) {
+            $where = ' WHERE YEAR(t.date_heure) = :year';
+            $params[':year'] = $year;
+        }
+        return $this->rows(
+            "SELECT r.id_recu,r.id_transaction,r.num_carte,r.horodatage
+             FROM `Recu` r
+             JOIN `Transaction` t ON t.id_transaction = r.id_transaction
+             {$where}
+             ORDER BY r.id_recu DESC LIMIT 500",
+            $params
+        );
     }
     public function getRecuDetail(int $idRecu): array
     {

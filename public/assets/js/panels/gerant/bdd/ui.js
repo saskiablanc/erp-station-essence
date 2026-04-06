@@ -15,9 +15,143 @@
     isPinnedTable,
     sortGroups,
   } = ns;
+const ARCHIVE_YEARS = ["2021", "2022", "2023", "2024", "2025"];
 
-function buildNavHTML(activeTable) {
-  return sortGroups(GROUPS)
+function isReadOnlyProfile(root) {
+  const profile =
+    root?._bddProfile ||
+    (typeof Requetes !== "undefined" && Requetes.bddGetProfile
+      ? Requetes.bddGetProfile()
+      : "courante");
+  return profile !== "courante";
+}
+
+function getGroupsForRoot(root) {
+  const visible = Array.isArray(root?._bddVisibleTables)
+    ? root._bddVisibleTables
+    : null;
+  const groups = sortGroups(GROUPS);
+  if (!visible || visible.length === 0) return groups;
+  const visibleSet = new Set(visible.map((id) => String(id || "").trim()));
+  return groups.filter((group) => visibleSet.has(group.id));
+}
+
+function profileLabel(profile) {
+  const value = String(profile || "").trim();
+  if (value === "courante") return "Courante";
+  if (value === "archive") return "Archive";
+  if (!value) return "Courante";
+  return value.charAt(0).toUpperCase() + value.slice(1);
+}
+
+function applyProfileMode(root) {
+  const schema = SCHEMAS[root._bddTable || "produit"] || {};
+  const addBtn = root.querySelector(".bdd-add-btn");
+  const readOnly = isReadOnlyProfile(root);
+  const yearWrap = root.querySelector(".bdd-year-wrap");
+
+  if (addBtn) {
+    addBtn.style.display = schema.canAdd && !readOnly ? "" : "none";
+  }
+  if (yearWrap) {
+    yearWrap.style.display = readOnly ? "inline-flex" : "none";
+  }
+  root.classList.toggle("bdd-readonly", readOnly);
+}
+
+async function refreshVisibleTables(root) {
+  let visible = null;
+  try {
+    const resp = await Requetes.bddTables();
+    if (Array.isArray(resp?.tables)) {
+      visible = resp.tables
+        .map((id) => String(id || "").trim())
+        .filter(Boolean);
+    }
+  } catch (_) {}
+
+  root._bddVisibleTables = visible;
+
+  const groups = getGroupsForRoot(root);
+  if (!groups.some((g) => g.id === root._bddTable)) {
+    root._bddTable = groups[0]?.id || getDefaultTableId();
+  }
+  renderNav(root);
+}
+
+async function initProfileSelector(root) {
+  const select = root.querySelector(".bdd-profile-select");
+  const yearSelect = root.querySelector(".bdd-year-select");
+  if (!select) return;
+
+  let profiles = ["courante"];
+  try {
+    const resp = await Requetes.bddProfiles();
+    if (Array.isArray(resp?.profiles) && resp.profiles.length > 0) {
+      profiles = resp.profiles.map((p) => String(p || "").trim()).filter(Boolean);
+    }
+  } catch (_) {}
+
+  if (!profiles.length) profiles = ["courante"];
+
+  const current = Requetes.bddSetProfile(Requetes.bddGetProfile());
+  const selected = profiles.includes(current)
+    ? current
+    : profiles.includes("courante")
+      ? "courante"
+      : profiles[0];
+
+  root._bddProfile = selected;
+  Requetes.bddSetProfile(selected);
+
+  if (yearSelect) {
+    yearSelect.innerHTML = ARCHIVE_YEARS
+      .map((year) => `<option value="${esc(year)}">${esc(year)}</option>`)
+      .join("");
+    const currentYear = Requetes.bddGetYear();
+    const selectedYear = ARCHIVE_YEARS.includes(currentYear)
+      ? currentYear
+      : ARCHIVE_YEARS[ARCHIVE_YEARS.length - 1];
+    root._bddYear = Requetes.bddSetYear(selectedYear);
+    yearSelect.value = selectedYear;
+
+    yearSelect.addEventListener("change", () => {
+      const nextYear = String(yearSelect.value || ARCHIVE_YEARS[0]);
+      root._bddYear = Requetes.bddSetYear(nextYear);
+      void loadTable(root);
+    });
+  }
+
+  select.innerHTML = profiles
+    .map(
+      (profile) =>
+        `<option value="${esc(profile)}">${esc(profileLabel(profile))}</option>`,
+    )
+    .join("");
+  select.value = selected;
+  applyProfileMode(root);
+
+  select.addEventListener("change", () => {
+    const next = String(select.value || "courante").trim() || "courante";
+    root._bddProfile = Requetes.bddSetProfile(next);
+    if (yearSelect) {
+      const currentYear = Requetes.bddGetYear();
+      const selectedYear = ARCHIVE_YEARS.includes(currentYear)
+        ? currentYear
+        : ARCHIVE_YEARS[ARCHIVE_YEARS.length - 1];
+      root._bddYear = Requetes.bddSetYear(selectedYear);
+      yearSelect.value = selectedYear;
+    }
+    void (async () => {
+      await refreshVisibleTables(root);
+      applyProfileMode(root);
+      await loadTable(root);
+    })();
+  });
+}
+
+function buildNavHTML(activeTable, groups = sortGroups(GROUPS)) {
+  return groups
     .map(function (group) {
       const active = group.id === activeTable;
       const pinned = isPinnedTable(group.id);
@@ -45,14 +179,15 @@ function getDefaultTableId() {
 function renderNav(root) {
   const nav = root.querySelector(".bdd-nav");
   if (!nav) return;
+  const groups = getGroupsForRoot(root);
 
   const activeTable =
-    root._bddTable && SCHEMAS[root._bddTable]
+    root._bddTable && SCHEMAS[root._bddTable] && groups.some((g) => g.id === root._bddTable)
       ? root._bddTable
-      : getDefaultTableId();
+      : groups[0]?.id || getDefaultTableId();
 
   root._bddTable = activeTable;
-  nav.innerHTML = buildNavHTML(activeTable);
+  nav.innerHTML = buildNavHTML(activeTable, groups);
 }
 
 function buildHTML() {
@@ -60,7 +195,17 @@ function buildHTML() {
     <div class="bdd-panel">
       <div class="bdd-nav">${buildNavHTML("produit")}</div>
       <div class="bdd-content">
-        <div class="bdd-toolbar"><button class="bdd-add-btn">+ Ajouter Ligne</button></div>
+        <div class="bdd-toolbar">
+          <div class="bdd-toolbar-left">
+            <span class="bdd-profile-label">Base :</span>
+            <select class="bdd-profile-select" aria-label="Choix base de données"></select>
+            <div class="bdd-year-wrap" style="display:none">
+              <span class="bdd-profile-label">Année :</span>
+              <select class="bdd-year-select" aria-label="Choix année archive"></select>
+            </div>
+          </div>
+          <button class="bdd-add-btn">+ Ajouter Ligne</button>
+        </div>
         <div class="bdd-table-wrap">
           <div class="bdd-table-center">
             <table class="bdd-table">
@@ -82,7 +227,8 @@ function renderTable(root, schema, rows, lockedDates) {
   const tbody = root.querySelector(".bdd-tbody");
   if (!thead || !tbody) return;
 
-  const showAct = schema.canEdit || schema.canDel;
+  const readOnly = isReadOnlyProfile(root);
+  const showAct = !readOnly && (schema.canEdit || schema.canDel);
   thead.innerHTML =
     schema.cols
       .map(
@@ -136,7 +282,7 @@ function renderTable(root, schema, rows, lockedDates) {
 
 function setLoading(root, on) {
   root
-    .querySelectorAll(".bdd-add-btn,.bdd-edit-btn,.bdd-del-btn")
+    .querySelectorAll(".bdd-add-btn,.bdd-edit-btn,.bdd-del-btn,.bdd-profile-select,.bdd-year-select")
     .forEach((b) => (b.disabled = on));
 }
 
@@ -146,9 +292,18 @@ async function loadTable(root) {
   const tbody = root.querySelector(".bdd-tbody");
   if (tbody)
     tbody.innerHTML = `<tr><td class="bdd-empty" colspan="10">Chargement…</td></tr>`;
+  applyProfileMode(root);
   setLoading(root, true);
   try {
-    const needsLock = LOCKED_TABLES.has(tableId);
+    if (!schema) {
+      if (tbody) {
+        tbody.innerHTML =
+          '<tr><td class="bdd-empty" colspan="10">Aucune table disponible pour ce profil.</td></tr>';
+      }
+      return;
+    }
+
+    const needsLock = !isReadOnlyProfile(root) && LOCKED_TABLES.has(tableId);
     const [resp, lockedDates] = await Promise.all([
       schema.load(),
       needsLock ? getLockedDates() : Promise.resolve(null),
@@ -156,6 +311,7 @@ async function loadTable(root) {
     const rows = resp[schema.dataKey] || resp.rows || [];
     root._bddRows = rows;
     renderTable(root, schema, rows, lockedDates);
+    applyProfileMode(root);
   } catch (e) {
     if (tbody)
       tbody.innerHTML = `<tr><td class="bdd-empty bdd-empty--err" colspan="10">${esc(e.message)}</td></tr>`;
@@ -173,6 +329,10 @@ async function loadTable(root) {
     buildHTML,
     buildNavHTML,
     getDefaultTableId,
+    initProfileSelector,
+    refreshVisibleTables,
+    applyProfileMode,
+    getGroupsForRoot,
     renderNav,
     renderTable,
     setLoading,
