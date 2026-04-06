@@ -310,10 +310,7 @@ const WM = (() => {
       body.scrollWidth,
       contentRoot?.scrollWidth || 0,
     );
-    const minWidth = Math.max(
-      320,
-      Number(def.fullscreenMinWidth || 0),
-    );
+    const minWidth = Math.max(320, Number(def.fullscreenMinWidth || 0));
     const targetWidth = Math.min(maxW, Math.max(minWidth, Math.ceil(contentWidth)));
 
     const contentHeight = Math.max(
@@ -321,10 +318,7 @@ const WM = (() => {
       title.offsetHeight + body.scrollHeight,
       title.offsetHeight + (contentRoot?.scrollHeight || 0),
     );
-    const minHeight = Math.max(
-      160,
-      Number(def.fullscreenMinHeight || 0),
-    );
+    const minHeight = Math.max(160, Number(def.fullscreenMinHeight || 0));
     const targetHeight = Math.min(maxH, Math.max(minHeight, Math.ceil(contentHeight)));
 
     el._maxFitWidth = targetWidth;
@@ -521,6 +515,85 @@ const WM = (() => {
     return closestId;
   }
 
+  function getClosestSlotIdToPoint(point, slots, used = new Set()) {
+    if (!point || !slots) return null;
+    let closestId = null;
+    let bestDistance = Number.POSITIVE_INFINITY;
+
+    Object.keys(slots).forEach((slotId) => {
+      if (used.has(slotId)) return;
+      const slot = slots[slotId];
+      const dx = point.x - (slot.x + slot.w / 2);
+      const dy = point.y - (slot.y + slot.h / 2);
+      const dist = dx * dx + dy * dy;
+      if (dist < bestDistance) {
+        bestDistance = dist;
+        closestId = slotId;
+      }
+    });
+
+    return closestId;
+  }
+
+  function getIntersectionArea(a, b) {
+    const left = Math.max(a.x, b.x);
+    const top = Math.max(a.y, b.y);
+    const right = Math.min(a.x + a.w, b.x + b.w);
+    const bottom = Math.min(a.y + a.h, b.y + b.h);
+    const w = right - left;
+    const h = bottom - top;
+    if (w <= 0 || h <= 0) return 0;
+    return w * h;
+  }
+
+  function getBestSlotIdByOverlap(el, slots, used = new Set()) {
+    if (!el || !slots) return null;
+    const winRect = getWindowAbsoluteRect(el);
+    const winCenter = getWindowRectMetrics(el);
+    let bestSlotId = null;
+    let bestArea = -1;
+    let bestDistance = Number.POSITIVE_INFINITY;
+
+    Object.keys(slots).forEach((slotId) => {
+      if (used.has(slotId)) return;
+      const slot = slots[slotId];
+      const area = getIntersectionArea(winRect, slot);
+      const dx = winCenter.cx - (slot.x + slot.w / 2);
+      const dy = winCenter.cy - (slot.y + slot.h / 2);
+      const dist = dx * dx + dy * dy;
+
+      if (area > bestArea || (area === bestArea && dist < bestDistance)) {
+        bestArea = area;
+        bestDistance = dist;
+        bestSlotId = slotId;
+      }
+    });
+
+    if (bestArea > 0) return bestSlotId;
+    return getClosestSlotId(el, slots, used);
+  }
+
+  function resolveDragDropTargetSlotId(el, slots, pointerPoint, fallbackSlotId) {
+    if (!el || !slots) return null;
+
+    // 1. Si la souris est clairement dans un slot, on respecte cette intention.
+    const pointerSlotId = getSlotIdAtCanvasPoint(pointerPoint, slots);
+    if (pointerSlotId) return pointerSlotId;
+
+    // 2. Si la souris est proche d'un slot, on s'en sert pour aider sur les petits panneaux.
+    const closestToPointer = getClosestSlotIdToPoint(pointerPoint, slots);
+    if (closestToPointer) return closestToPointer;
+
+    // 3. Sinon, on se base sur le panel lui-même.
+    const byOverlap = getBestSlotIdByOverlap(el, slots);
+    if (byOverlap) return byOverlap;
+
+    // 4. Dernier recours : on garde l'ancien slot.
+    if (fallbackSlotId && slots[fallbackSlotId]) return fallbackSlotId;
+
+    return null;
+  }
+
   function getClientPointFromEvent(evt) {
     if (!evt) return null;
     const clientFromInteract = evt.interaction?.coords?.cur?.client;
@@ -646,30 +719,44 @@ const WM = (() => {
 
   function updateDragDropHints(sourceEl, evt = null) {
     if (!isDragDropMode() || !sourceEl) return;
+
     const slots = getSlotTemplateForCurrentHand();
     const pointerPoint = getCanvasPointFromEvent(evt) || sourceEl._ddPointer || null;
-    const pointerSlotId = getSlotIdAtCanvasPoint(
-      pointerPoint,
-      slots,
-    );
-    const targetSlotId =
-      pointerSlotId || sourceEl._ddTargetSlotId || getClosestSlotId(sourceEl, slots);
+
     const sourceSlotId =
       sourceEl.dataset.slotId && slots[sourceEl.dataset.slotId]
         ? sourceEl.dataset.slotId
         : null;
 
+    const fallbackSlotId =
+      (sourceEl._ddOriginSlotId &&
+        slots[sourceEl._ddOriginSlotId] &&
+        sourceEl._ddOriginSlotId) ||
+      sourceSlotId ||
+      sourceEl._ddTargetSlotId ||
+      null;
+
+    const targetSlotId = resolveDragDropTargetSlotId(
+      sourceEl,
+      slots,
+      pointerPoint,
+      fallbackSlotId,
+    );
+
     if (!sourceEl.classList.contains("win-dd-source")) {
       sourceEl.classList.add("win-dd-source");
     }
+
     document.querySelectorAll(".win-dd-swap-candidate").forEach((node) => {
       node.classList.remove("win-dd-swap-candidate");
     });
 
     if (!targetSlotId) {
+      sourceEl._ddTargetSlotId = null;
       clearSlotPreview();
       return;
     }
+
     sourceEl._ddTargetSlotId = targetSlotId;
 
     const occupant = [...document.querySelectorAll(".win")].find(
@@ -677,9 +764,11 @@ const WM = (() => {
     );
 
     const willSwap = !!occupant && targetSlotId !== sourceSlotId;
+
     if (occupant) {
       occupant.classList.add("win-dd-swap-candidate");
     }
+
     showSlotPreview(targetSlotId, slots, willSwap);
   }
 
@@ -1138,24 +1227,25 @@ const WM = (() => {
     updateResizeHandlesForAllWindows(slots);
   }
 
-  function snapWindowToNearestSlot(el, evt = null, forcedTargetSlotId = null) {
+  function snapWindowToNearestSlot(el, evt = null) {
     if (!isDragDropMode() || !el) return;
+
     const slots = getSlotTemplateForCurrentHand();
     const pointerPoint = getCanvasPointFromEvent(evt) || el._ddPointer || null;
-    const pointerSlotId = getSlotIdAtCanvasPoint(
-      pointerPoint,
-      slots,
-    );
-    const targetSlotId =
-      (forcedTargetSlotId && slots[forcedTargetSlotId] && forcedTargetSlotId) ||
-      el._ddTargetSlotId ||
-      pointerSlotId ||
-      getClosestSlotId(el, slots);
-    if (!targetSlotId) return;
 
     const previousSlotId =
       (el._ddOriginSlotId && slots[el._ddOriginSlotId] && el._ddOriginSlotId) ||
       (el.dataset.slotId && slots[el.dataset.slotId] ? el.dataset.slotId : null);
+
+    const targetSlotId = resolveDragDropTargetSlotId(
+      el,
+      slots,
+      pointerPoint,
+      previousSlotId,
+    );
+
+    if (!targetSlotId) return;
+
     const occupant = [...document.querySelectorAll(".win")].find(
       (other) => other !== el && other.dataset.slotId === targetSlotId,
     );
@@ -1163,11 +1253,17 @@ const WM = (() => {
     placeWindowInSlot(el, targetSlotId, slots);
 
     if (occupant) {
-      if (previousSlotId && slots[previousSlotId]) {
+      if (
+        previousSlotId &&
+        slots[previousSlotId] &&
+        previousSlotId !== targetSlotId
+      ) {
         placeWindowInSlot(occupant, previousSlotId, slots);
       } else {
         const fallbackSlot = getClosestSlotId(occupant, slots);
-        if (fallbackSlot) placeWindowInSlot(occupant, fallbackSlot, slots);
+        if (fallbackSlot && fallbackSlot !== targetSlotId) {
+          placeWindowInSlot(occupant, fallbackSlot, slots);
+        }
       }
     }
 
@@ -1258,6 +1354,12 @@ const WM = (() => {
             el._ddOriginSlotId = el.dataset.slotId || null;
             el._ddTargetSlotId = null;
             el._ddPointer = getCanvasPointFromEvent(e) || null;
+            const pointerTracker = (ev) => {
+              el._ddPointer = getCanvasPointFromEvent(ev) || el._ddPointer || null;
+              updateDragDropHints(el, ev);
+            };
+            el._ddPointerMoveHandler = pointerTracker;
+            window.addEventListener("pointermove", pointerTracker, true);
             updateDragDropHints(el);
           }
         },
@@ -1280,8 +1382,12 @@ const WM = (() => {
           }
           el.classList.remove("dragging");
           if (isDragDropMode()) {
+            if (el._ddPointerMoveHandler) {
+              window.removeEventListener("pointermove", el._ddPointerMoveHandler, true);
+              el._ddPointerMoveHandler = null;
+            }
             restoreDraggingWindowZ(el);
-            snapWindowToNearestSlot(el, e, el._ddTargetSlotId);
+            snapWindowToNearestSlot(el, e);
             el._ddPointer = null;
             el._ddTargetSlotId = null;
             el._ddOriginSlotId = null;
