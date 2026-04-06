@@ -679,6 +679,214 @@ class Bdd
     {
         return $this->rows("SELECT id_recu,id_transaction,num_carte,horodatage FROM `Recu` ORDER BY id_recu DESC LIMIT 500");
     }
+    public function getRecuDetail(int $idRecu): array
+    {
+        if ($idRecu <= 0) {
+            throw new RuntimeException('id_recu invalide');
+        }
+
+        $recu = $this->db->query(
+            "SELECT r.id_recu,
+                    r.id_transaction,
+                    r.num_carte,
+                    r.horodatage,
+                    t.prix_total,
+                    t.date_heure
+             FROM `Recu` r
+             JOIN `Transaction` t ON t.id_transaction = r.id_transaction
+             WHERE r.id_recu = :id
+             LIMIT 1",
+            [':id' => $idRecu]
+        )->fetch(PDO::FETCH_ASSOC);
+
+        if (!$recu) {
+            throw new RuntimeException('Reçu introuvable');
+        }
+
+        $idTransaction = (int)($recu['id_transaction'] ?? 0);
+        if ($idTransaction <= 0) {
+            throw new RuntimeException('Transaction du reçu introuvable');
+        }
+        $tpCol = 'id_transaction';
+        try {
+            $columns = $this->db->query('SHOW COLUMNS FROM `TransactionProduit`')->fetchAll(PDO::FETCH_ASSOC) ?: [];
+            $names = array_map(static fn(array $c): string => (string)($c['Field'] ?? ''), $columns);
+            if (in_array(' id_transaction', $names, true)) {
+                $tpCol = ' id_transaction';
+            }
+        } catch (\Throwable $e) {
+            // no-op: fallback sur id_transaction
+        }
+
+        $tpColQ = '`' . $tpCol . '`';
+
+        $txProduitsRows = $this->db->query(
+            "SELECT tp.code_barres,
+                    tp.quantite_produit_totale,
+                    p.libelle_produit,
+                    p.prix
+             FROM TransactionProduit tp
+             LEFT JOIN Produit p ON p.code_barres = tp.code_barres
+             WHERE tp.{$tpColQ} = :id
+             ORDER BY tp.id_transaction_produit ASC",
+            [':id' => $idTransaction]
+        )->fetchAll(PDO::FETCH_ASSOC) ?: [];
+
+        $txEnergiesRows = $this->db->query(
+            "SELECT te.id_energie,
+                    te.quantite_delivree,
+                    te.temps_charge,
+                    e.type_energie,
+                    c.libelle AS carburant_libelle,
+                    c.prix_litre,
+                    el.type_charge,
+                    el.prix_kwh
+             FROM TransactionEnergie te
+             LEFT JOIN Energie e ON e.id_energie = te.id_energie
+             LEFT JOIN Carburant c ON c.id_energie = te.id_energie
+             LEFT JOIN Electricite el ON el.id_energie = te.id_energie
+             WHERE te.id_transaction = :id
+             ORDER BY te.id_energie ASC",
+            [':id' => $idTransaction]
+        )->fetchAll(PDO::FETCH_ASSOC) ?: [];
+
+        $txCceRows = $this->db->query(
+            'SELECT id_carte_CE
+             FROM TransactionCCE
+             WHERE id_transaction = :id',
+            [':id' => $idTransaction]
+        )->fetchAll(PDO::FETCH_ASSOC) ?: [];
+
+        $lines = [];
+
+        foreach ($txProduitsRows as $row) {
+            $code = (string)($row['code_barres'] ?? '');
+            $quantite = (int)($row['quantite_produit_totale'] ?? 0);
+            if ($quantite <= 0) $quantite = 1;
+            $prixUnitaire = (float)($row['prix'] ?? 0);
+            $montant = $quantite * $prixUnitaire;
+
+            $lines[] = [
+                'type'         => 'achat',
+                'nature'       => 'produit',
+                'label'        => (string)($row['libelle_produit'] ?? ('Produit ' . $code)),
+                'detail'       => $quantite . ' x ' . number_format($prixUnitaire, 2, '.', ''),
+                'quantite'     => $quantite,
+                'prix_unitaire'=> $prixUnitaire,
+                'montant'      => $montant,
+                'reference'    => $code,
+                'vat_rate'     => 5.5,
+            ];
+        }
+
+        foreach ($txEnergiesRows as $row) {
+            $idEnergie = (int)($row['id_energie'] ?? 0);
+            $quantite = (float)($row['quantite_delivree'] ?? 0);
+            $typeEnergie = strtolower(trim((string)($row['type_energie'] ?? '')));
+            $carburantLabel = trim((string)($row['carburant_libelle'] ?? ''));
+            $typeCharge = trim((string)($row['type_charge'] ?? ''));
+            $tempsCharge = trim((string)($row['temps_charge'] ?? ''));
+
+            $isElectric = ($typeEnergie === 'electricite') || ((float)($row['prix_kwh'] ?? 0) > 0);
+            $prixUnitaire = (float)($isElectric ? ($row['prix_kwh'] ?? 0) : ($row['prix_litre'] ?? 0));
+            $montant = $quantite * $prixUnitaire;
+            $detailCharge = ($tempsCharge !== '' && $tempsCharge !== '00:00:00') ? (' — ' . $tempsCharge) : '';
+
+            if ($isElectric) {
+                $label = 'Chargeur' . ($typeCharge !== '' ? (' ' . $typeCharge) : '');
+                $detail = number_format($quantite, 3, '.', '') . ' kWh x ' . number_format($prixUnitaire, 2, '.', '') . $detailCharge;
+                $nature = 'rechargement_chargeur';
+            } else {
+                $label = 'Carburant ' . ($carburantLabel !== '' ? $carburantLabel : ('#' . $idEnergie));
+                $detail = number_format($quantite, 2, '.', '') . ' L x ' . number_format($prixUnitaire, 2, '.', '') . $detailCharge;
+                $nature = 'carburant';
+            }
+
+            $lines[] = [
+                'type'         => 'achat',
+                'nature'       => $nature,
+                'label'        => $label,
+                'detail'       => $detail,
+                'quantite'     => 1,
+                'prix_unitaire'=> $prixUnitaire,
+                'montant'      => $montant,
+                'reference'    => (string)$idEnergie,
+                'vat_rate'     => 20.0,
+            ];
+        }
+
+        $hasCce = count($txCceRows) > 0;
+
+        if (count($lines) === 0 && $hasCce) {
+            $totalLigne = (float)($recu['prix_total'] ?? 0);
+            $idCarte = (int)($txCceRows[0]['id_carte_CE'] ?? 0);
+            $lines[] = [
+                'type'         => 'service',
+                'nature'       => 'rechargement_cce',
+                'label'        => 'Rechargement CCE',
+                'detail'       => $idCarte > 0 ? ('Carte #' . $idCarte) : 'Recharge de carte CCE',
+                'quantite'     => 1,
+                'prix_unitaire'=> $totalLigne,
+                'montant'      => $totalLigne,
+                'reference'    => '',
+                'vat_rate'     => 0.0,
+            ];
+        }
+        if (count($lines) === 0) {
+            $totalLigne = (float)($recu['prix_total'] ?? 0);
+            $lines[] = [
+                'type'         => 'service',
+                'nature'       => 'transaction_sans_detail',
+                'label'        => 'Transaction sans détail article',
+                'detail'       => 'Aucune ligne produit/énergie retrouvée en base',
+                'quantite'     => 1,
+                'prix_unitaire'=> $totalLigne,
+                'montant'      => $totalLigne,
+                'reference'    => '',
+                'vat_rate'     => 0.0,
+            ];
+        }
+
+        $totalCalc = 0.0;
+        $totalArticles = 0;
+        $vatByRate = [];
+        foreach ($lines as $line) {
+            $lineTotal = (float)($line['montant'] ?? 0);
+            $rate = (float)($line['vat_rate'] ?? 0);
+            $totalCalc += $lineTotal;
+            $totalArticles += (int)($line['quantite'] ?? 0);
+
+            $vat = ($rate > 0)
+                ? ($lineTotal - ($lineTotal / (1 + ($rate / 100))))
+                : 0.0;
+            if (!isset($vatByRate[(string)$rate])) $vatByRate[(string)$rate] = 0.0;
+            $vatByRate[(string)$rate] += $vat;
+        }
+
+        $totalTransaction = (float)($recu['prix_total'] ?? 0);
+        if ($totalTransaction <= 0) $totalTransaction = $totalCalc;
+
+        return [
+            'recu' => [
+                'id_recu'        => (int)($recu['id_recu'] ?? 0),
+                'id_transaction' => $idTransaction,
+                'num_carte'      => (int)($recu['num_carte'] ?? 0),
+                'horodatage'     => (string)($recu['horodatage'] ?? ''),
+            ],
+            'transaction' => [
+                'id_transaction' => $idTransaction,
+                'prix_total'     => $totalTransaction,
+                'date_heure'     => (string)($recu['date_heure'] ?? ''),
+            ],
+            'lines' => $lines,
+            'total' => $totalTransaction,
+            'paymentLabel' => $hasCce
+                ? 'Carte CCE'
+                : ((int)($recu['num_carte'] ?? 0) > 0 ? 'Carte bancaire' : 'Espèces'),
+            'totalArticles' => $totalArticles,
+            'vatByRate' => $vatByRate,
+        ];
+    }
     public function addRecu(array $d): array
     {
         $idT=(int)($d['id_transaction']??0); $num=(int)($d['num_carte']??0);

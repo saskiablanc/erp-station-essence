@@ -56,6 +56,11 @@ class BddController extends Controller
         });
     }
 
+    public function getRecuDetail(string $id): void
+    {
+        $this->wrap(fn() => $this->bdd()->getRecuDetail((int)$id));
+    }
+
     public function addTable(string $table): void
     {
         $d = $this->body();

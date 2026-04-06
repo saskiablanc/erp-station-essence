@@ -342,6 +342,185 @@
       border-color:var(--accent);
       color:var(--accent);
     }
+
+    /* ── Reçus ── */
+    .sim-receipts-wrap {
+      border:1.5px solid var(--border);
+      border-radius:10px;
+      overflow:hidden;
+      background:rgba(255,255,255,.66);
+    }
+    .sim-receipts-table {
+      width:100%;
+      border-collapse:collapse;
+      table-layout:fixed;
+    }
+    .sim-receipts-table th,
+    .sim-receipts-table td {
+      border-bottom:1px solid var(--border);
+      padding:8px 10px;
+      font-size:11px;
+      text-align:left;
+      vertical-align:middle;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+    }
+    .sim-receipts-table th {
+      background:var(--surface2);
+      color:var(--text-mid);
+      text-transform:uppercase;
+      letter-spacing:.03em;
+      font-weight:600;
+    }
+    .sim-receipts-table tr:hover td { background:rgba(129,140,248,.08); }
+    .sim-receipts-table tbody tr { cursor:pointer; }
+    .sim-receipts-table td:last-child { text-align:right; }
+    .sim-receipts-empty {
+      padding:14px;
+      color:var(--text-dim);
+      font-style:italic;
+      font-size:11px;
+    }
+
+    .sim-recu-btn {
+      height:28px;
+      padding:0 10px;
+      border:1.5px solid var(--border);
+      border-radius:999px;
+      background:#fff;
+      color:var(--text-mid);
+      font-family:var(--mono);
+      font-size:11px;
+      cursor:pointer;
+      transition:all .12s;
+    }
+    .sim-recu-btn:hover {
+      border-color:var(--accent);
+      color:var(--accent);
+    }
+
+    .sim-recu-popup {
+      border:1.5px solid #111 !important;
+      border-radius:4px !important;
+      background:#fff !important;
+      color:#111 !important;
+      box-shadow:0 10px 36px rgba(0,0,0,.22) !important;
+    }
+    .sim-recu-ticket {
+      width:100%;
+      max-width:430px;
+      margin:0 auto;
+      text-align:left;
+      color:#111;
+      font-family:var(--mono);
+      font-size:12px;
+      line-height:1.3;
+    }
+    .sim-recu-scroll {
+      max-height:64vh;
+      overflow-y:auto;
+      padding-right:2px;
+    }
+    .sim-recu-center { text-align:center; }
+    .sim-recu-head {
+      text-align:center;
+      font-family:var(--mono);
+      font-size:30px;
+      font-weight:700;
+      letter-spacing:.02em;
+      margin-bottom:2px;
+    }
+    .sim-recu-sub {
+      text-align:center;
+      font-size:12px;
+      margin-bottom:8px;
+    }
+    .sim-recu-sep {
+      white-space:nowrap;
+      overflow:hidden;
+      color:#111;
+      margin:6px 0;
+      font-size:12px;
+    }
+    .sim-recu-meta div {
+      display:flex;
+      justify-content:space-between;
+      gap:10px;
+      margin:2px 0;
+      font-size:12px;
+    }
+    .sim-recu-items {
+      margin-top:4px;
+      border-top:1px dashed #111;
+      border-bottom:1px dashed #111;
+      padding:6px 0;
+    }
+    .sim-recu-items-head {
+      display:grid;
+      grid-template-columns:48px minmax(0,1fr) 96px;
+      gap:8px;
+      align-items:end;
+      margin-bottom:6px;
+      font-weight:700;
+      font-size:12px;
+      text-transform:uppercase;
+    }
+    .sim-recu-item {
+      display:grid;
+      grid-template-columns:48px minmax(0,1fr) 96px;
+      gap:8px;
+      align-items:start;
+      margin:4px 0;
+      font-size:12px;
+    }
+    .sim-recu-item-qty { text-align:right; font-weight:600; }
+    .sim-recu-item-name { font-weight:500; }
+    .sim-recu-item-detail {
+      font-size:11px;
+      color:#2a2a2a;
+      margin-top:1px;
+      word-break:break-word;
+    }
+    .sim-recu-item-amount {
+      text-align:right;
+      font-weight:700;
+      white-space:nowrap;
+    }
+    .sim-recu-total {
+      margin-top:8px;
+      font-size:12px;
+    }
+    .sim-recu-total div {
+      display:flex;
+      justify-content:space-between;
+      gap:12px;
+      margin:2px 0;
+    }
+    .sim-recu-total strong { font-size:14px; }
+    .sim-recu-foot {
+      margin-top:10px;
+      text-align:center;
+      font-size:11px;
+    }
+    .sim-recu-barcode {
+      height:54px;
+      margin:8px 10px 4px;
+      background:
+        repeating-linear-gradient(
+          90deg,
+          #111 0px, #111 2px,
+          #fff 2px, #fff 4px,
+          #111 4px, #111 5px,
+          #fff 5px, #fff 8px
+        );
+      border:1px solid #111;
+    }
+    .sim-recu-small {
+      text-align:center;
+      font-size:11px;
+      margin-top:3px;
+    }
   </style>
 </head>
 <body>
@@ -363,6 +542,7 @@
     <div class="sim-nav-title">Actions</div>
     <button class="sim-nav-btn active" data-panel="cce">Carte CCE</button>
     <button class="sim-nav-btn" data-panel="pompes">Pompes et Bornes</button>
+    <button class="sim-nav-btn" data-panel="recus">Reçu</button>
     <button class="sim-nav-btn" data-panel="popups">Catalogue Pop-ups</button>
   </nav>
 
@@ -511,6 +691,23 @@
       </div>
     </div>
 
+    <!-- ══════ REÇUS ══════ -->
+    <div id="panel-recus" class="sim-panel">
+      <div class="sim-section">
+        <div class="sim-section-title">Reçus</div>
+        <div class="sim-section-desc">
+          Sélectionnez un reçu pour afficher un ticket de caisse simulé.
+          Les reçus affichés ci-dessous proviennent de la base de données.
+        </div>
+
+        <div class="sim-card">
+          <div class="sim-card-title"><span class="dot dot--green"></span> Historique des reçus</div>
+          <div id="recus-wrap" class="sim-receipts-wrap"></div>
+          <div id="recus-log" class="sim-log"></div>
+        </div>
+      </div>
+    </div>
+
   </div>
 </div>
 
@@ -567,6 +764,7 @@ var Sim = (function() {
   var selectedCceCard = null;
   var currentStep = 'select';
   var cces = [];
+  var recus = [];
   var waitingForScan = false;
   var pompesSse = null;
   var pompesSseRetryTimer = null;
@@ -696,6 +894,7 @@ var Sim = (function() {
         if (panel) panel.classList.add('active');
         if (btn.dataset.panel === 'pompes') refreshPompes();
         if (btn.dataset.panel === 'cce') refreshCCE();
+        if (btn.dataset.panel === 'recus') refreshRecus();
       });
     });
   }
@@ -744,6 +943,192 @@ var Sim = (function() {
       }
     }).catch(function(e) {
       log('cce-log', 'err', 'Échec lecture carte #' + id + ' : ' + e.message);
+    });
+  }
+
+  // ══════════════════════════════════════════════════════
+  //  REÇUS
+  // ══════════════════════════════════════════════════════
+  function formatMoney(v) {
+    return Number(v || 0).toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' EUR';
+  }
+
+  function formatDateTime(raw) {
+    if (!raw) return '—';
+    var text = String(raw).trim();
+    var d = new Date(text.replace(' ', 'T'));
+    if (!isNaN(d.getTime())) return d.toLocaleString('fr-FR');
+    return text;
+  }
+
+  function refreshRecus() {
+    return api('GET', '/json/bdd/recu').then(function(data) {
+      recus = Array.isArray(data && data.rows) ? data.rows : [];
+      renderRecus();
+      log('recus-log', 'ok', recus.length + ' reçu(x) chargé(s).');
+    }).catch(function(e) {
+      recus = [];
+      renderRecus();
+      log('recus-log', 'err', 'Erreur chargement reçus : ' + e.message);
+    });
+  }
+
+  function renderRecus() {
+    var wrap = document.getElementById('recus-wrap');
+    if (!wrap) return;
+
+    if (!recus.length) {
+      wrap.innerHTML = '<div class="sim-receipts-empty">Aucun reçu enregistré.</div>';
+      return;
+    }
+
+    wrap.innerHTML = '<table class="sim-receipts-table">'
+      + '<thead><tr>'
+      + '<th style="width:90px">Reçu</th>'
+      + '<th style="width:110px">Transaction</th>'
+      + '<th>Horodatage</th>'
+      + '<th style="width:120px">N° carte</th>'
+      + '<th style="width:90px"></th>'
+      + '</tr></thead>'
+      + '<tbody>'
+      + recus.map(function(r) {
+          var idRecu = Number(r.id_recu || 0);
+          var idTx = Number(r.id_transaction || 0);
+          var numCarte = Number(r.num_carte || 0);
+          return '<tr onclick="Sim.showRecu(' + idRecu + ')">'
+            + '<td>#' + idRecu + '</td>'
+            + '<td>#' + idTx + '</td>'
+            + '<td>' + esc(formatDateTime(r.horodatage)) + '</td>'
+            + '<td>' + (numCarte > 0 ? ('**** ' + String(numCarte).slice(-4)) : '—') + '</td>'
+            + '<td><button type="button" class="sim-recu-btn">Voir</button></td>'
+            + '</tr>';
+        }).join('')
+      + '</tbody></table>';
+  }
+
+  function loadRecuDetails(recu) {
+    var idTx = Number(recu && recu.id_transaction || 0);
+    if (idTx <= 0) return Promise.reject(new Error('Reçu sans transaction associée.'));
+
+    return api('GET', '/json/bdd/recu/' + Number(recu.id_recu || 0) + '/detail').then(function(data) {
+      var lines = Array.isArray(data && data.lines) ? data.lines : [];
+      var normalizedLines = lines.map(function(line) {
+        return {
+          label: String(line.label || ''),
+          detail: String(line.detail || ''),
+          total: Number(line.montant || 0),
+          qty: Number(line.quantite || 1),
+          vatRate: Number(line.vat_rate || 0),
+        };
+      });
+
+      var vatByRateRaw = (data && data.vatByRate && typeof data.vatByRate === 'object') ? data.vatByRate : {};
+      var vatByRate = {};
+      Object.keys(vatByRateRaw).forEach(function(rateKey) {
+        vatByRate[Number(rateKey)] = Number(vatByRateRaw[rateKey] || 0);
+      });
+
+      return {
+        recu: data && data.recu ? data.recu : recu,
+        transaction: data && data.transaction ? data.transaction : null,
+        lines: normalizedLines,
+        total: Number(data && data.total || 0),
+        paymentLabel: String(data && data.paymentLabel || 'Espèces'),
+        totalArticles: Number(data && data.totalArticles || 0),
+        vatByRate: vatByRate,
+      };
+    });
+  }
+
+  function showRecu(idRecu) {
+    var recu = recus.find(function(r) {
+      return Number(r.id_recu || 0) === Number(idRecu || 0);
+    });
+    if (!recu) {
+      Swal.fire({ icon: 'error', title: 'Reçu introuvable', text: 'Le reçu demandé est introuvable dans la liste actuelle.' });
+      return;
+    }
+
+    loadRecuDetails(recu).then(function(details) {
+      var itemsHtml = details.lines.length
+        ? details.lines.map(function(line) {
+            return '<div class="sim-recu-item">'
+              + '<div class="sim-recu-item-qty">x' + Number(line.qty || 1) + '</div>'
+              + '<div>'
+              + '<div class="sim-recu-item-name">' + esc(line.label) + '</div>'
+              + '<div class="sim-recu-item-detail">' + esc(line.detail) + '</div>'
+              + '</div>'
+              + '<div class="sim-recu-item-amount">' + esc(formatMoney(line.total)) + '</div>'
+              + '</div>';
+          }).join('')
+        : '<div class="sim-recu-item-detail">Aucun détail de ligne disponible pour ce reçu.</div>';
+
+      var recuId = Number(recu.id_recu || 0);
+      var txId = Number(recu.id_transaction || 0);
+      var cardText = Number(recu.num_carte || 0) > 0 ? ('**** ' + String(recu.num_carte).slice(-4)) : '—';
+      var txDateRaw = (details.transaction && details.transaction.date_heure) ? details.transaction.date_heure : recu.horodatage;
+      var txDate = formatDateTime(txDateRaw);
+      var barcodeValue = String(txId).padStart(12, '0');
+      var vatRows = Object.keys(details.vatByRate || {})
+        .map(function(rate) { return Number(rate); })
+        .sort(function(a, b) { return a - b; })
+        .map(function(rate) {
+          var amount = Number(details.vatByRate[rate] || 0);
+          return '<div><span>TVA ' + rate.toLocaleString('fr-FR', { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + '% :</span><span>' + esc(formatMoney(amount)) + '</span></div>';
+        }).join('');
+      var totalVat = Object.keys(details.vatByRate || {}).reduce(function(sum, rate) {
+        return sum + Number(details.vatByRate[rate] || 0);
+      }, 0);
+      var subtotalHt = Number(details.total || 0) - totalVat;
+      if (subtotalHt < 0) subtotalHt = 0;
+
+      var html = '<div class="sim-recu-ticket">'
+        + '<div class="sim-recu-scroll">'
+        + '<div class="sim-recu-head">UNICA</div>'
+        + '<div class="sim-recu-sub">UNICA Station</div>'
+        + '<div class="sim-recu-center">Adresse : 41 boulevard Napoléon III</div>'
+        + '<div class="sim-recu-center">06206 Nice cedex 3</div>'
+        + '<div class="sim-recu-center">Téléphone : 04 89 15 30 30</div>'
+        + '<div class="sim-recu-center">Mail : iut.scolarite@univ-cotedazur.fr</div>'
+        + '<div class="sim-recu-sep">----------------------------------------------</div>'
+        + '<div class="sim-recu-meta">'
+        + '<div><span>Reçu</span><span>#' + recuId + '</span></div>'
+        + '<div><span>Transaction</span><span>#' + txId + '</span></div>'
+        + '<div><span>Date</span><span>' + esc(txDate) + '</span></div>'
+        + '<div><span>Qt articles</span><span>' + Number(details.totalArticles || 0) + '</span></div>'
+        + '<div><span>Paiement</span><span>' + esc(details.paymentLabel) + '</span></div>'
+        + '<div><span>Carte</span><span>' + esc(cardText) + '</span></div>'
+        + '</div>'
+        + '<div class="sim-recu-sep">----------------------------------------------</div>'
+        + '<div class="sim-recu-items">'
+        + '<div class="sim-recu-items-head"><span>Qté</span><span>Articles</span><span style="text-align:right">Montant</span></div>'
+        + itemsHtml
+        + '</div>'
+        + '<div class="sim-recu-total">'
+        + '<div><span>Sous-total (HT)</span><span>' + esc(formatMoney(subtotalHt)) + '</span></div>'
+        + vatRows
+        + '<div><strong>Total TTC</strong><strong>' + esc(formatMoney(details.total)) + '</strong></div>'
+        + '</div>'
+        + '<div class="sim-recu-sep">==============================================</div>'
+        + '<div class="sim-recu-foot">Merci de votre visite.</div>'
+        + '<div class="sim-recu-small">À bientôt chez UNICA Station</div>'
+        + '<div class="sim-recu-barcode"></div>'
+        + '<div class="sim-recu-small">' + esc(barcodeValue) + '</div>'
+        + '<div class="sim-recu-small">' + esc(txDate) + '</div>'
+        + '</div>'
+        + '</div>';
+
+      Swal.fire({
+        width: 560,
+        showConfirmButton: false,
+        showCloseButton: true,
+        customClass: { popup: 'sim-recu-popup' },
+        html: html
+      });
+      log('recus-log', 'info', 'Affichage du reçu #' + recuId + '.');
+    }).catch(function(e) {
+      log('recus-log', 'err', 'Erreur ouverture reçu #' + Number(idRecu || 0) + ' : ' + e.message);
+      Swal.fire({ icon: 'error', title: 'Impossible d’ouvrir le reçu', text: e.message });
     });
   }
 
@@ -1424,6 +1809,7 @@ var Sim = (function() {
     renderAutoPaymentButtons();
     refreshCCE();
     refreshCarburants();
+    refreshRecus();
     startPompesSSE();
     window.addEventListener('storage', onStoragePing);
   }
@@ -1442,7 +1828,9 @@ var Sim = (function() {
     selectAutoPaymentCce: selectAutoPaymentCce,
     updateBornePreview: updateBornePreview,
     refreshCCE: refreshCCE,
-    selectCCE: selectCCE
+    selectCCE: selectCCE,
+    refreshRecus: refreshRecus,
+    showRecu: showRecu
   };
 })();
 </script>

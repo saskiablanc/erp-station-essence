@@ -174,6 +174,7 @@ $router->get( 'json/validation/transactions',         [new ValidationController(
 $router->get( 'json/validation/incidents',            [new ValidationController(), 'getIncidentsJour']);
 $bdd = new BddController();
  
+$router->get( 'json/bdd/recu/{id}/detail', [$bdd, 'getRecuDetail']);
 $router->get( 'json/bdd/{table}',            [$bdd, 'getTable']);
 $router->post('json/bdd/{table}',            [$bdd, 'addTable']);
 $router->post('json/bdd/{table}/{id}/suppr', [$bdd, 'delTable']);
