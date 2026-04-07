@@ -10,10 +10,14 @@ use RuntimeException;
 class Bdd
 {
     private Database $db;
+    private bool $isArchiveProfile = false;
+    private ?string $tpTransactionColumn = null;
+    private ?string $tePkColumn = null;
 
     public function __construct(string $profile = 'courante')
     {
         $this->db = Database::getInstance($profile);
+        $this->isArchiveProfile = ($profile === 'archive');
     }
 
     private function fetch(string $sql, array $p = []): array
@@ -30,12 +34,111 @@ class Bdd
         return ['rows' => $this->fetch($sql, $p)];
     }
 
+    private function quoteIdent(string $identifier): string
+    {
+        return '`' . str_replace('`', '``', $identifier) . '`';
+    }
+
+    private function archiveCutoffCondition(string $dateExpr): string
+    {
+        if (!$this->isArchiveProfile) {
+            return '';
+        }
+        return " AND {$dateExpr} <= DATE_SUB(NOW(), INTERVAL 1 YEAR)";
+    }
+
+    private function archiveCutoffWhere(string $dateExpr): string
+    {
+        if (!$this->isArchiveProfile) {
+            return '';
+        }
+        return " WHERE {$dateExpr} <= DATE_SUB(NOW(), INTERVAL 1 YEAR)";
+    }
+
+    private function detectColumnName(string $table, array $candidates, string $fallback): string
+    {
+        try {
+            $rows = $this->fetch('SHOW COLUMNS FROM ' . $this->quoteIdent($table));
+            $names = array_map(
+                static fn(array $row): string => (string)($row['Field'] ?? ''),
+                $rows
+            );
+            foreach ($candidates as $candidate) {
+                if (in_array($candidate, $names, true)) {
+                    return $candidate;
+                }
+            }
+        } catch (\Throwable $e) {
+            // fallback on known schema name
+        }
+        return $fallback;
+    }
+
+    private function transactionProduitTransactionColumn(): string
+    {
+        if ($this->tpTransactionColumn === null) {
+            $this->tpTransactionColumn = $this->detectColumnName(
+                'TransactionProduit',
+                ['id_transaction', ' id_transaction'],
+                'id_transaction'
+            );
+        }
+        return $this->tpTransactionColumn;
+    }
+
+    private function transactionEnergiePkColumn(): string
+    {
+        if ($this->tePkColumn === null) {
+            $this->tePkColumn = $this->detectColumnName(
+                'TransactionEnergie',
+                ['id_transaction_energie', ' id_transaction_energie'],
+                'id_transaction_energie'
+            );
+        }
+        return $this->tePkColumn;
+    }
+
     // ═══════════════════════════════════════════════════════
     //  Article
     // ═══════════════════════════════════════════════════════
-    public function getArticle(): array
+    public function getArticle(?int $year = null): array
     {
-        return $this->rows("SELECT id_article, type_article FROM Article ORDER BY id_article ASC");
+        if ($year === null) {
+            return $this->rows("SELECT id_article, type_article FROM Article ORDER BY id_article ASC");
+        }
+        return $this->rows(
+            "SELECT a.id_article, a.type_article
+             FROM Article a
+             WHERE EXISTS (
+                    SELECT 1
+                    FROM Produit p
+                    JOIN TransactionProduit tp ON tp.code_barres = p.code_barres
+                    JOIN `Transaction` t ON t.id_transaction = tp." . $this->quoteIdent($this->transactionProduitTransactionColumn()) . "
+                    WHERE p.id_article = a.id_article
+                      AND YEAR(t.date_heure) = :year_tx_prod" . $this->archiveCutoffCondition('t.date_heure') . "
+             )
+                OR EXISTS (
+                    SELECT 1
+                    FROM Energie e
+                    JOIN TransactionEnergie te ON te.id_energie = e.id_energie
+                    JOIN `Transaction` t ON t.id_transaction = te.id_transaction
+                    WHERE e.id_article = a.id_article
+                      AND YEAR(t.date_heure) = :year_tx_energy" . $this->archiveCutoffCondition('t.date_heure') . "
+                )
+                OR EXISTS (
+                    SELECT 1
+                    FROM LigneReappro lr
+                    JOIN Reapprovisionnement r ON r.id_reappro = lr.id_reappro
+                    WHERE lr.id_article = a.id_article
+                      AND YEAR(r.date_reappro) = :year_reappro
+                )
+             ORDER BY a.id_article ASC",
+            [
+                ':year_tx_prod' => $year,
+                ':year_tx_energy' => $year,
+                ':year_reappro' => $year,
+            ]
+        );
     }
     public function addArticle(array $d): array
     {
@@ -59,12 +162,27 @@ class Bdd
     // ═══════════════════════════════════════════════════════
     //  Produit
     // ═══════════════════════════════════════════════════════
-    public function getProduit(): array
+    public function getProduit(?int $year = null): array
     {
+        $where = '';
+        $params = [];
+        if ($year !== null) {
+            $where = " WHERE EXISTS (
+                        SELECT 1
+                        FROM TransactionProduit tp
+                        JOIN `Transaction` t ON t.id_transaction = tp." . $this->quoteIdent($this->transactionProduitTransactionColumn()) . "
+                        WHERE tp.code_barres = p.code_barres
+                          AND YEAR(t.date_heure) = :year" . $this->archiveCutoffCondition('t.date_heure') . "
+                      )";
+            $params[':year'] = $year;
+        }
         return ['produits' => $this->fetch(
             "SELECT p.code_barres, p.id_article, p.libelle_produit, p.prix
              FROM Produit p
+             {$where}
              ORDER BY p.libelle_produit ASC"
+            ,
+            $params
         )];
     }
     public function addProduit(array $d): array
@@ -110,9 +228,27 @@ class Bdd
     // ═══════════════════════════════════════════════════════
     //  Energie
     // ═══════════════════════════════════════════════════════
-    public function getEnergie(): array
+    public function getEnergie(?int $year = null): array
     {
-        return $this->rows("SELECT id_energie, id_article, type_energie FROM Energie ORDER BY id_energie ASC");
+        $where = '';
+        $params = [];
+        if ($year !== null) {
+            $where = " WHERE EXISTS (
+                        SELECT 1
+                        FROM TransactionEnergie te
+                        JOIN `Transaction` t ON t.id_transaction = te.id_transaction
+                        WHERE te.id_energie = e.id_energie
+                          AND YEAR(t.date_heure) = :year" . $this->archiveCutoffCondition('t.date_heure') . "
+                      )";
+            $params[':year'] = $year;
+        }
+        return $this->rows(
+            "SELECT e.id_energie, e.id_article, e.type_energie
+             FROM Energie e
+             {$where}
+             ORDER BY e.id_energie ASC",
+            $params
+        );
     }
     public function addEnergie(array $d): array
     {
@@ -136,8 +272,20 @@ class Bdd
     // ═══════════════════════════════════════════════════════
     //  Carburant
     // ═══════════════════════════════════════════════════════
-    public function getCarburant(): array
+    public function getCarburant(?int $year = null): array
     {
+        $where = '';
+        $params = [];
+        if ($year !== null) {
+            $where = " WHERE EXISTS (
+                        SELECT 1
+                        FROM TransactionEnergie te
+                        JOIN `Transaction` t ON t.id_transaction = te.id_transaction
+                        WHERE te.id_energie = c.id_energie
+                          AND YEAR(t.date_heure) = :year" . $this->archiveCutoffCondition('t.date_heure') . "
+                      )";
+            $params[':year'] = $year;
+        }
         return $this->rows(
             "SELECT c.id_carburant,
                     c.id_energie,
@@ -145,7 +293,10 @@ class Bdd
                     c.prix_litre,
                     c.livraison_min
              FROM Carburant c
+             {$where}
              ORDER BY c.libelle ASC"
+            ,
+            $params
         );
     }
     public function addCarburant(array $d): array
@@ -208,9 +359,27 @@ class Bdd
     // ═══════════════════════════════════════════════════════
     //  Electricite — type_charge enum('rapide','lente')
     // ═══════════════════════════════════════════════════════
-    public function getElectricite(): array
+    public function getElectricite(?int $year = null): array
     {
-        return $this->rows("SELECT id_electricite,id_energie,prix_kwh,type_charge FROM Electricite ORDER BY id_electricite ASC");
+        $where = '';
+        $params = [];
+        if ($year !== null) {
+            $where = " WHERE EXISTS (
+                        SELECT 1
+                        FROM TransactionEnergie te
+                        JOIN `Transaction` t ON t.id_transaction = te.id_transaction
+                        WHERE te.id_energie = e.id_energie
+                          AND YEAR(t.date_heure) = :year" . $this->archiveCutoffCondition('t.date_heure') . "
+                      )";
+            $params[':year'] = $year;
+        }
+        return $this->rows(
+            "SELECT e.id_electricite,e.id_energie,e.prix_kwh,e.type_charge
+             FROM Electricite e
+             {$where}
+             ORDER BY e.id_electricite ASC",
+            $params
+        );
     }
     public function addElectricite(array $d): array
     {
@@ -234,8 +403,40 @@ class Bdd
     // ═══════════════════════════════════════════════════════
     //  Stock — type_quantite enum('litre','unite')
     // ═══════════════════════════════════════════════════════
-    public function getStock(): array
+    public function getStock(?int $year = null): array
     {
+        $where = '';
+        $params = [];
+        if ($year !== null) {
+            $where = " WHERE EXISTS (
+                        SELECT 1
+                        FROM Produit p2
+                        JOIN TransactionProduit tp2 ON tp2.code_barres = p2.code_barres
+                        JOIN `Transaction` t2 ON t2.id_transaction = tp2." . $this->quoteIdent($this->transactionProduitTransactionColumn()) . "
+                        WHERE p2.id_article = s.id_article
+                          AND YEAR(t2.date_heure) = :year_tx_prod" . $this->archiveCutoffCondition('t2.date_heure') . "
+                      )
+                      OR EXISTS (
+                        SELECT 1
+                        FROM Energie e2
+                        JOIN TransactionEnergie te2 ON te2.id_energie = e2.id_energie
+                        JOIN `Transaction` t2 ON t2.id_transaction = te2.id_transaction
+                        WHERE e2.id_article = s.id_article
+                          AND YEAR(t2.date_heure) = :year_tx_energy" . $this->archiveCutoffCondition('t2.date_heure') . "
+                      )
+                      OR EXISTS (
+                        SELECT 1
+                        FROM LigneReappro lr2
+                        JOIN Reapprovisionnement r2 ON r2.id_reappro = lr2.id_reappro
+                        WHERE lr2.id_article = s.id_article
+                          AND YEAR(r2.date_reappro) = :year_reappro
+                      )";
+            $params = [
+                ':year_tx_prod' => $year,
+                ':year_tx_energy' => $year,
+                ':year_reappro' => $year,
+            ];
+        }
         return $this->rows(
             "SELECT
                 s.id_stock,
@@ -252,7 +453,10 @@ class Bdd
                ON e.id_article = a.id_article
              LEFT JOIN Carburant c
                ON c.id_energie = e.id_energie
+             {$where}
              ORDER BY s.id_stock ASC"
+            ,
+            $params
         );
     }
     public function addStock(array $d): array
@@ -278,9 +482,28 @@ class Bdd
     // ═══════════════════════════════════════════════════════
     //  Client
     // ═══════════════════════════════════════════════════════
-    public function getClient(): array
+    public function getClient(?int $year = null): array
     {
-        return ['clients' => $this->fetch("SELECT id_client,nom,prenom,email,num_tel FROM Client ORDER BY nom,prenom")];
+        $where = '';
+        $params = [];
+        if ($year !== null) {
+            $where = " WHERE EXISTS (
+                        SELECT 1
+                        FROM CarteCE cc
+                        JOIN TransactionCCE txc ON txc.id_carte_CE = cc.id_carte_CE
+                        JOIN `Transaction` t ON t.id_transaction = txc.id_transaction
+                        WHERE cc.id_client = c.id_client
+                          AND YEAR(t.date_heure) = :year" . $this->archiveCutoffCondition('t.date_heure') . "
+                      )";
+            $params[':year'] = $year;
+        }
+        return ['clients' => $this->fetch(
+            "SELECT c.id_client,c.nom,c.prenom,c.email,c.num_tel
+             FROM Client c
+             {$where}
+             ORDER BY c.nom,c.prenom",
+            $params
+        )];
     }
     public function addClient(array $d): array
     {
@@ -313,13 +536,32 @@ class Bdd
     // ═══════════════════════════════════════════════════════
     //  CarteCE
     // ═══════════════════════════════════════════════════════
-    public function getCarteCCE(): array
+    public function getCarteCCE(?int $year = null): array
     {
+        $where = '';
+        $params = [];
+        if ($year !== null) {
+            $where = " WHERE EXISTS (
+                        SELECT 1
+                        FROM TransactionCCE txc
+                        JOIN `Transaction` t ON t.id_transaction = txc.id_transaction
+                        WHERE txc.id_carte_CE = cc.id_carte_CE
+                          AND YEAR(t.date_heure) = :year_tx" . $this->archiveCutoffCondition('t.date_heure') . "
+                      )
+                      OR YEAR(cc.date_dernier_apport) = :year_apport";
+            $params = [
+                ':year_tx' => $year,
+                ':year_apport' => $year,
+            ];
+        }
         return ['cartes' => $this->fetch(
             "SELECT cc.id_carte_CE,c.nom,c.prenom,c.email,cc.code_secret,
                     cc.solde_client,cc.date_dernier_apport,cc.montant_dernier_apport
              FROM CarteCE cc JOIN Client c ON c.id_client=cc.id_client
+             {$where}
              ORDER BY c.nom,c.prenom"
+            ,
+            $params
         )];
     }
     public function updateCarteCCE(int $id, array $d): array
@@ -337,8 +579,9 @@ class Bdd
     // ═══════════════════════════════════════════════════════
     //  Connexion
     // ═══════════════════════════════════════════════════════
-    public function getConnexion(): array
+    public function getConnexion(?int $year = null): array
     {
+        unset($year);
         return $this->rows("SELECT id_connexion,identifiant,role FROM Connexion ORDER BY id_connexion ASC");
     }
     public function addConnexion(array $d): array
@@ -414,10 +657,11 @@ class Bdd
 
     private function guardTransactionProduit(int $id): void
     {
+        $tpColQ = $this->quoteIdent($this->transactionProduitTransactionColumn());
         $row = $this->db->query(
             'SELECT DATE(t.date_heure) AS jour
              FROM TransactionProduit tp
-             JOIN `Transaction` t ON t.id_transaction = tp.`' . ' id_transaction' . '`
+             JOIN `Transaction` t ON t.id_transaction = tp.' . $tpColQ . '
              WHERE tp.id_transaction_produit = :id LIMIT 1',
             ['id' => $id]
         )->fetch(\PDO::FETCH_ASSOC);
@@ -428,7 +672,7 @@ class Bdd
 
     private function guardTransactionEnergie(int $id): void
     {
-        $pkQ = '`' . self::TE_PK . '`';
+        $pkQ = $this->quoteIdent($this->transactionEnergiePkColumn());
         $row = $this->db->query(
             "SELECT DATE(t.date_heure) AS jour
              FROM TransactionEnergie te
@@ -474,8 +718,10 @@ class Bdd
         $where = '';
         $params = [];
         if ($year !== null) {
-            $where = ' WHERE YEAR(date_heure) = :year';
+            $where = ' WHERE YEAR(date_heure) = :year' . $this->archiveCutoffCondition('date_heure');
             $params[':year'] = $year;
+        } else {
+            $where = $this->archiveCutoffWhere('date_heure');
         }
         return $this->rows(
             "SELECT id_transaction,prix_total,date_heure
@@ -503,7 +749,8 @@ class Bdd
     public function deleteTransaction(int $id): void
     {
         $this->guardTransaction($id);
-        $pkQ = '`' . self::TE_PK . '`';
+        $pkQ = $this->quoteIdent($this->transactionEnergiePkColumn());
+        $tpColQ = $this->quoteIdent($this->transactionProduitTransactionColumn());
 
         $this->db->beginTransaction();
         try {
@@ -519,7 +766,7 @@ class Bdd
             // Cascade logique : enfants puis parent.
             $this->db->execute("DELETE FROM `Recu` WHERE id_transaction=:id", [':id' => $id]);
             $this->db->execute("DELETE FROM TransactionCCE WHERE id_transaction=:id", [':id' => $id]);
-            $this->db->execute("DELETE FROM TransactionProduit WHERE `" . " id_transaction" . "`=:id", [':id' => $id]);
+            $this->db->execute("DELETE FROM TransactionProduit WHERE {$tpColQ}=:id", [':id' => $id]);
             $this->db->execute("DELETE FROM TransactionEnergie WHERE id_transaction=:id", [':id' => $id]);
             $this->db->execute("DELETE FROM `Transaction` WHERE id_transaction=:id", [':id' => $id]);
 
@@ -538,8 +785,10 @@ class Bdd
         $where = '';
         $params = [];
         if ($year !== null) {
-            $where = ' WHERE YEAR(t.date_heure) = :year';
+            $where = ' WHERE YEAR(t.date_heure) = :year' . $this->archiveCutoffCondition('t.date_heure');
             $params[':year'] = $year;
+        } else {
+            $where = $this->archiveCutoffWhere('t.date_heure');
         }
         return $this->rows(
             "SELECT tx.id_transaction,tx.id_carte_CE
@@ -598,26 +847,27 @@ class Bdd
 
     // ═══════════════════════════════════════════════════════
     //  TransactionProduit
-    //  ATTENTION : colonne FK avec espace : ` id_transaction`
     // ═══════════════════════════════════════════════════════
     public function getTransactionProduit(?int $year = null): array
     {
-        // La colonne FK s'appelle ` id_transaction` (avec espace)
+        $tpColQ = $this->quoteIdent($this->transactionProduitTransactionColumn());
         $where = '';
         $params = [];
         if ($year !== null) {
-            $where = ' WHERE YEAR(t.date_heure) = :year';
+            $where = ' WHERE YEAR(t.date_heure) = :year' . $this->archiveCutoffCondition('t.date_heure');
             $params[':year'] = $year;
+        } else {
+            $where = $this->archiveCutoffWhere('t.date_heure');
         }
         return $this->rows(
             "SELECT id_transaction_produit,
-                    tp.`" . " id_transaction" . "` AS id_transaction,
+                    tp.{$tpColQ} AS id_transaction,
                     code_barres,
                     quantite_produit_totale
              FROM TransactionProduit tp
-             JOIN `Transaction` t ON t.id_transaction = tp.`" . " id_transaction" . "`
+             JOIN `Transaction` t ON t.id_transaction = tp.{$tpColQ}
              {$where}
-             ORDER BY tp.`" . " id_transaction" . "` DESC LIMIT 500",
+             ORDER BY tp.{$tpColQ} DESC LIMIT 500",
             $params
         );
     }
@@ -627,9 +877,9 @@ class Bdd
         $qty=(int)($d['quantite_produit_totale']??0);
         if ($idT<=0||$cb==='') throw new RuntimeException('Données invalides');
         $this->guardTransaction($idT);
-        // INSERT avec le nom de colonne exact (espace)
+        $tpColQ = $this->quoteIdent($this->transactionProduitTransactionColumn());
         $this->db->execute(
-            "INSERT INTO TransactionProduit(`" . " id_transaction" . "`,code_barres,quantite_produit_totale) VALUES(:t,:c,:q)",
+            "INSERT INTO TransactionProduit({$tpColQ},code_barres,quantite_produit_totale) VALUES(:t,:c,:q)",
             [':t'=>$idT,':c'=>$cb,':q'=>$qty]
         );
         return $this->getTransactionProduit();
@@ -649,19 +899,19 @@ class Bdd
 
     // ═══════════════════════════════════════════════════════
     //  TransactionEnergie
-    //  ATTENTION : PK avec espace : ` id_transaction_energie`
     //  Colonnes réelles : statut enum('en_cours','payee'), id_pompe
     // ═══════════════════════════════════════════════════════
-    private const TE_PK = ' id_transaction_energie'; // espace intentionnel
 
     public function getTransactionEnergie(?int $year = null): array
     {
-        $pkQ = '`' . self::TE_PK . '`';
+        $pkQ = $this->quoteIdent($this->transactionEnergiePkColumn());
         $where = '';
         $params = [];
         if ($year !== null) {
-            $where = ' WHERE te.id_transaction IS NOT NULL AND YEAR(t.date_heure) = :year';
+            $where = ' WHERE te.id_transaction IS NOT NULL AND YEAR(t.date_heure) = :year' . $this->archiveCutoffCondition('t.date_heure');
             $params[':year'] = $year;
+        } elseif ($this->isArchiveProfile) {
+            $where = ' WHERE te.id_transaction IS NOT NULL AND t.date_heure <= DATE_SUB(NOW(), INTERVAL 1 YEAR)';
         }
         return $this->rows(
             "SELECT {$pkQ} AS id_transaction_energie,
@@ -684,7 +934,6 @@ class Bdd
         if ($idT > 0) {
             $this->guardTransaction($idT);
         }
-        $pkQ = '`' . self::TE_PK . '`';
         $this->db->execute(
             "INSERT INTO TransactionEnergie(id_transaction,id_energie,quantite_delivree,temps_charge,statut,id_pompe) VALUES(:t,:e,:q,:c,:s,:p)",
             [':t'=>$idT?:null,':e'=>$idE,':q'=>$qty,':c'=>$tps,':s'=>$statut,':p'=>$idP]
@@ -694,7 +943,7 @@ class Bdd
     public function updateTransactionEnergie(int $id, array $d): array
     {
         $this->guardTransactionEnergie($id);
-        $pkQ = '`' . self::TE_PK . '`';
+        $pkQ = $this->quoteIdent($this->transactionEnergiePkColumn());
         $qty=(float)($d['quantite_delivree']??0); $tps=trim((string)($d['temps_charge']??''));
         $statut=trim((string)($d['statut']??''));
         $this->db->execute(
@@ -706,7 +955,7 @@ class Bdd
     public function deleteTransactionEnergie(int $id): void
     {
         $this->guardTransactionEnergie($id);
-        $pkQ = '`' . self::TE_PK . '`';
+        $pkQ = $this->quoteIdent($this->transactionEnergiePkColumn());
         $this->db->execute("DELETE FROM TransactionEnergie WHERE {$pkQ}=:id",[':id'=>$id]);
     }
 
@@ -718,8 +967,10 @@ class Bdd
         $where = '';
         $params = [];
         if ($year !== null) {
-            $where = ' WHERE YEAR(t.date_heure) = :year';
+            $where = ' WHERE YEAR(t.date_heure) = :year' . $this->archiveCutoffCondition('t.date_heure');
             $params[':year'] = $year;
+        } else {
+            $where = $this->archiveCutoffWhere('t.date_heure');
         }
         return $this->rows(
             "SELECT r.id_recu,r.id_transaction,r.num_carte,r.horodatage
@@ -758,18 +1009,7 @@ class Bdd
         if ($idTransaction <= 0) {
             throw new RuntimeException('Transaction du reçu introuvable');
         }
-        $tpCol = 'id_transaction';
-        try {
-            $columns = $this->db->query('SHOW COLUMNS FROM `TransactionProduit`')->fetchAll(PDO::FETCH_ASSOC) ?: [];
-            $names = array_map(static fn(array $c): string => (string)($c['Field'] ?? ''), $columns);
-            if (in_array(' id_transaction', $names, true)) {
-                $tpCol = ' id_transaction';
-            }
-        } catch (\Throwable $e) {
-            // no-op: fallback sur id_transaction
-        }
-
-        $tpColQ = '`' . $tpCol . '`';
+        $tpColQ = $this->quoteIdent($this->transactionProduitTransactionColumn());
 
         $txProduitsRows = $this->db->query(
             "SELECT tp.code_barres,
@@ -962,11 +1202,26 @@ class Bdd
     // ═══════════════════════════════════════════════════════
     //  Pompe — colonnes réelles : date_debut, id_transaction_energie
     // ═══════════════════════════════════════════════════════
-    public function getPompe(): array
+    public function getPompe(?int $year = null): array
     {
+        $where = '';
+        $params = [];
+        if ($year !== null) {
+            $where = " WHERE EXISTS (
+                        SELECT 1
+                        FROM TransactionEnergie te
+                        JOIN `Transaction` t ON t.id_transaction = te.id_transaction
+                        WHERE te.id_pompe = p.id_pompe
+                          AND YEAR(t.date_heure) = :year" . $this->archiveCutoffCondition('t.date_heure') . "
+                      )";
+            $params[':year'] = $year;
+        }
         return $this->rows(
-            "SELECT id_pompe,numero,type_pompe,sous_type,mode,statut,date_debut,id_transaction_energie
-             FROM Pompe ORDER BY type_pompe,numero"
+            "SELECT p.id_pompe,p.numero,p.type_pompe,p.sous_type,p.mode,p.statut,p.date_debut,p.id_transaction_energie
+             FROM Pompe p
+             {$where}
+             ORDER BY p.type_pompe,p.numero",
+            $params
         );
     }
     public function addPompe(array $d): array
@@ -1000,9 +1255,26 @@ class Bdd
     // ═══════════════════════════════════════════════════════
     //  Reapprovisionnement
     // ═══════════════════════════════════════════════════════
-    public function getReappro(): array
+    public function getReappro(?int $year = null): array
     {
-        return $this->rows("SELECT id_reappro,statut_reappro,date_reappro,date_souhaitee,est_auto FROM Reapprovisionnement ORDER BY id_reappro DESC LIMIT 500");
+        $where = '';
+        $params = [];
+        if ($year !== null) {
+            $where = " WHERE YEAR(r.date_reappro) = :year_reappro
+                       OR (r.date_reappro IS NULL AND YEAR(r.date_souhaitee) = :year_souhaitee)";
+            $params = [
+                ':year_reappro' => $year,
+                ':year_souhaitee' => $year,
+            ];
+        }
+        return $this->rows(
+            "SELECT r.id_reappro,r.statut_reappro,r.date_reappro,r.date_souhaitee,r.est_auto
+             FROM Reapprovisionnement r
+             {$where}
+             ORDER BY r.id_reappro DESC
+             LIMIT 500",
+            $params
+        );
     }
     public function addReappro(array $d): array
     {
@@ -1035,11 +1307,25 @@ class Bdd
     //  LigneReappro — PK COMPOSITE (id_reappro, id_article) — PAS d'id auto
     //  Pas d'edit/delete par id unique → on passe id_reappro:id_article
     // ═══════════════════════════════════════════════════════
-    public function getLigneReappro(): array
+    public function getLigneReappro(?int $year = null): array
     {
+        $where = '';
+        $params = [];
+        if ($year !== null) {
+            $where = " WHERE YEAR(r.date_reappro) = :year_reappro
+                       OR (r.date_reappro IS NULL AND YEAR(r.date_souhaitee) = :year_souhaitee)";
+            $params = [
+                ':year_reappro' => $year,
+                ':year_souhaitee' => $year,
+            ];
+        }
         return $this->rows(
-            "SELECT id_reappro, id_article, quantite, date_arrivee
-             FROM LigneReappro ORDER BY id_reappro DESC, id_article ASC"
+            "SELECT lr.id_reappro, lr.id_article, lr.quantite, lr.date_arrivee
+             FROM LigneReappro lr
+             JOIN Reapprovisionnement r ON r.id_reappro = lr.id_reappro
+             {$where}
+             ORDER BY lr.id_reappro DESC, lr.id_article ASC",
+            $params
         );
     }
     public function addLigneReappro(array $d): array
@@ -1076,9 +1362,33 @@ class Bdd
     // ═══════════════════════════════════════════════════════
     //  ValeursDefautReappro
     // ═══════════════════════════════════════════════════════
-    public function getValeursDefaut(): array
+    public function getValeursDefaut(?int $year = null): array
     {
-        return $this->rows("SELECT id_valeur_reappro_defaut,id_article,seuil_alerte,volume,frequence_valeur,frequence_unite FROM ValeursDefautReappro ORDER BY id_article ASC");
+        $where = '';
+        $params = [];
+        if ($year !== null) {
+            $where = " WHERE EXISTS (
+                        SELECT 1
+                        FROM LigneReappro lr
+                        JOIN Reapprovisionnement r ON r.id_reappro = lr.id_reappro
+                        WHERE lr.id_article = v.id_article
+                          AND (
+                            YEAR(r.date_reappro) = :year
+                            OR (r.date_reappro IS NULL AND YEAR(r.date_souhaitee) = :year_alt)
+                          )
+                      )";
+            $params = [
+                ':year' => $year,
+                ':year_alt' => $year,
+            ];
+        }
+        return $this->rows(
+            "SELECT v.id_valeur_reappro_defaut,v.id_article,v.seuil_alerte,v.volume,v.frequence_valeur,v.frequence_unite
+             FROM ValeursDefautReappro v
+             {$where}
+             ORDER BY v.id_article ASC",
+            $params
+        );
     }
     public function addValeursDefaut(array $d): array
     {
@@ -1104,9 +1414,21 @@ class Bdd
     // ═══════════════════════════════════════════════════════
     //  FicheIncident
     // ═══════════════════════════════════════════════════════
-    public function getFicheIncident(): array
+    public function getFicheIncident(?int $year = null): array
     {
-        return $this->rows("SELECT id_ref_unique,date_creation,TIME_FORMAT(heure_creation,'%H:%i:%s') AS heure_creation,type_incident,detail_tech,solution FROM FicheIncident ORDER BY id_ref_unique DESC");
+        $where = '';
+        $params = [];
+        if ($year !== null) {
+            $where = ' WHERE YEAR(date_creation) = :year';
+            $params[':year'] = $year;
+        }
+        return $this->rows(
+            "SELECT id_ref_unique,date_creation,TIME_FORMAT(heure_creation,'%H:%i:%s') AS heure_creation,type_incident,detail_tech,solution
+             FROM FicheIncident
+             {$where}
+             ORDER BY id_ref_unique DESC",
+            $params
+        );
     }
     public function addFicheIncident(array $d): array
     {
@@ -1135,12 +1457,20 @@ class Bdd
     // ═══════════════════════════════════════════════════════
     //  JourFermeture
     // ═══════════════════════════════════════════════════════
-    public function getJourFermeture(): array
+    public function getJourFermeture(?int $year = null): array
     {
+        $where = '';
+        $params = [];
+        if ($year !== null) {
+            $where = ' WHERE YEAR(date_fermeture) = :year';
+            $params[':year'] = $year;
+        }
         return $this->rows(
             "SELECT id_fermeture,date_fermeture,motif,recurrent
              FROM JourFermeture
-             ORDER BY date_fermeture ASC"
+             {$where}
+             ORDER BY date_fermeture ASC",
+            $params
         );
     }
     public function addJourFermeture(array $d): array
@@ -1176,8 +1506,9 @@ class Bdd
     // ═══════════════════════════════════════════════════════
     //  JourSemaine
     // ═══════════════════════════════════════════════════════
-    public function getJourSemaine(): array
+    public function getJourSemaine(?int $year = null): array
     {
+        unset($year);
         return $this->rows("SELECT id_jour,libelle FROM JourSemaine ORDER BY id_jour ASC");
     }
     public function addJourSemaine(array $d): array
@@ -1202,8 +1533,9 @@ class Bdd
     // ═══════════════════════════════════════════════════════
     //  Horaire
     // ═══════════════════════════════════════════════════════
-    public function getHoraire(): array
+    public function getHoraire(?int $year = null): array
     {
+        unset($year);
         return $this->rows("SELECT id_horaire,id_jour,heure_ouverture,heure_fermeture,est_ferme FROM Horaire ORDER BY id_jour ASC");
     }
     public function addHoraire(array $d): array
@@ -1230,9 +1562,46 @@ class Bdd
     // ═══════════════════════════════════════════════════════
     //  ParametresCCE
     // ═══════════════════════════════════════════════════════
-    public function getParamsCCE(): array
+    public function getParamsCCE(?int $year = null): array
     {
-        return $this->rows("SELECT id_parametre,montant_min FROM ParametresCCE ORDER BY id_parametre ASC");
+        if ($year === null) {
+            return $this->rows("SELECT id_parametre,montant_min FROM ParametresCCE ORDER BY id_parametre ASC");
+        }
+
+        $meta = $this->fetch("SELECT COUNT(*) AS c, COALESCE(MAX(id_parametre),0) AS max_id FROM ParametresCCE");
+        $count = (int)($meta[0]['c'] ?? 0);
+        $maxId = (int)($meta[0]['max_id'] ?? 0);
+        if ($count === 0 || $maxId === 0) {
+            return ['rows' => []];
+        }
+
+        // Archive: 6 lignes prévues (2021..2026), une ligne par année.
+        if ($count >= 6) {
+            if ($year <= 2021) {
+                $targetId = 1;
+            } elseif ($year === 2022) {
+                $targetId = 2;
+            } elseif ($year === 2023) {
+                $targetId = 3;
+            } elseif ($year === 2024) {
+                $targetId = 4;
+            } elseif ($year === 2025) {
+                $targetId = 5;
+            } else {
+                $targetId = 6;
+            }
+        } else {
+            // Base courante: garde le dernier paramètre disponible.
+            $targetId = $maxId;
+        }
+
+        return $this->rows(
+            "SELECT id_parametre,montant_min
+             FROM ParametresCCE
+             WHERE id_parametre=:id
+             ORDER BY id_parametre ASC",
+            [':id' => $targetId]
+        );
     }
     public function updateParamsCCE(int $id, array $d): array
     {
@@ -1245,9 +1614,51 @@ class Bdd
     // ═══════════════════════════════════════════════════════
     //  BonusCCE
     // ═══════════════════════════════════════════════════════
-    public function getBonusCCE(): array
+    public function getBonusCCE(?int $year = null): array
     {
-        return $this->rows("SELECT id_bonus,tranche,montant_bonus FROM BonusCCE ORDER BY tranche ASC");
+        if ($year === null) {
+            return $this->rows("SELECT id_bonus,tranche,montant_bonus FROM BonusCCE ORDER BY tranche ASC");
+        }
+
+        $meta = $this->fetch("SELECT COUNT(*) AS c, COALESCE(MAX(id_bonus),0) AS max_id FROM BonusCCE");
+        $count = (int)($meta[0]['c'] ?? 0);
+        $maxId = (int)($meta[0]['max_id'] ?? 0);
+        if ($count === 0 || $maxId === 0) {
+            return ['rows' => []];
+        }
+
+        // Archive: 12 lignes prévues (2 bonus x 6 années: 2021..2026).
+        if ($count >= 12) {
+            if ($year <= 2021) {
+                $startId = 1;
+            } elseif ($year === 2022) {
+                $startId = 3;
+            } elseif ($year === 2023) {
+                $startId = 5;
+            } elseif ($year === 2024) {
+                $startId = 7;
+            } elseif ($year === 2025) {
+                $startId = 9;
+            } else {
+                $startId = 11;
+            }
+            $endId = $startId + 1;
+        } elseif ($count >= 2) {
+            // Base courante: garde les 2 derniers bonus disponibles.
+            $startId = max(1, $maxId - 1);
+            $endId = $maxId;
+        } else {
+            $startId = $maxId;
+            $endId = $maxId;
+        }
+
+        return $this->rows(
+            "SELECT id_bonus,tranche,montant_bonus
+             FROM BonusCCE
+             WHERE id_bonus BETWEEN :start AND :end
+             ORDER BY tranche ASC",
+            [':start' => $startId, ':end' => $endId]
+        );
     }
     public function addBonusCCE(array $d): array
     {
@@ -1271,13 +1682,21 @@ class Bdd
     // ═══════════════════════════════════════════════════════
     //  ValidationTransactions
     // ═══════════════════════════════════════════════════════
-    public function getValidationTransactions(): array
+    public function getValidationTransactions(?int $year = null): array
     {
+        $where = '';
+        $params = [];
+        if ($year !== null) {
+            $where = ' WHERE YEAR(date_jour) = :year';
+            $params[':year'] = $year;
+        }
         return $this->rows(
             "SELECT id_validation_tx,date_jour,est_valide,date_validation
              FROM ValidationTransactions
+             {$where}
              ORDER BY date_jour DESC, id_validation_tx DESC
-             LIMIT 500"
+             LIMIT 500",
+            $params
         );
     }
     public function addValidationTransactions(array $d): array
@@ -1319,13 +1738,21 @@ class Bdd
     // ═══════════════════════════════════════════════════════
     //  ValidationIncidents
     // ═══════════════════════════════════════════════════════
-    public function getValidationIncidents(): array
+    public function getValidationIncidents(?int $year = null): array
     {
+        $where = '';
+        $params = [];
+        if ($year !== null) {
+            $where = ' WHERE YEAR(date_jour) = :year';
+            $params[':year'] = $year;
+        }
         return $this->rows(
             "SELECT id_validation_inc,date_jour,est_valide,date_validation
              FROM ValidationIncidents
+             {$where}
              ORDER BY date_jour DESC, id_validation_inc DESC
-             LIMIT 500"
+             LIMIT 500",
+            $params
         );
     }
     public function addValidationIncidents(array $d): array

@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Core\ArchiveTransactions;
 use App\Core\Database;
 use PDO;
 
@@ -112,6 +113,7 @@ class Transaction
             }
 
             $this->db->commit();
+            ArchiveTransactions::runIfNeeded();
             return $idTransaction;
         } catch (\Throwable $e) {
             $this->db->rollBack();

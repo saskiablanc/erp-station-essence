@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace App\Controllers;
 
+use App\Core\ArchiveTransactions;
 use App\Core\Controller;
 use App\Core\Database;
 use App\Models\Bdd;
@@ -81,12 +82,21 @@ class BddController extends Controller
 
     private function wrap(callable $fn): void
     {
-        try { $this->requireGerant(); $this->json($fn()); }
+        try {
+            $this->requireGerant();
+            ArchiveTransactions::runIfNeeded();
+            $this->json($fn());
+        }
         catch (Throwable $e) { $this->jsonError($e->getMessage()); }
     }
     private function wrapVoid(callable $fn): void
     {
-        try { $this->requireGerant(); $fn(); $this->json(['ok' => true]); }
+        try {
+            $this->requireGerant();
+            ArchiveTransactions::runIfNeeded();
+            $fn();
+            $this->json(['ok' => true]);
+        }
         catch (Throwable $e) { $this->jsonError($e->getMessage()); }
     }
 
@@ -127,20 +137,24 @@ class BddController extends Controller
         ];
     }
 
-    private function profileTableScopes(): array
+    private function tableDataKey(string $table): string
     {
-        return [
-            'archive' => [
-                'transaction',
-                'transaction_cce',
-                'transaction_produit',
-                'transaction_energie',
-                'recu',
-                'fiche_incident',
-                'validation_transactions',
-                'validation_incidents',
-            ],
-        ];
+        return match ($table) {
+            'produit' => 'produits',
+            'client'  => 'clients',
+            'cce'     => 'cartes',
+            default   => 'rows',
+        };
+    }
+
+    private function emptyTablePayload(string $table): array
+    {
+        return [$this->tableDataKey($table) => []];
+    }
+
+    private function isArchiveYearEligible(int $year): bool
+    {
+        return $year <= ((int) date('Y') - 1);
     }
 
     private function getPhysicalTables(string $profile): array
@@ -179,19 +193,6 @@ class BddController extends Controller
                 }
             }
 
-            $scopes = $this->profileTableScopes();
-            if (isset($scopes[$profile]) && is_array($scopes[$profile])) {
-                $allowed = array_values(array_unique(array_map(
-                    static fn($table) => trim((string) $table),
-                    $scopes[$profile]
-                )));
-                $allowedSet = array_flip(array_filter($allowed, static fn($table) => $table !== ''));
-                $available = array_values(array_filter(
-                    $available,
-                    static fn($table) => isset($allowedSet[$table])
-                ));
-            }
-
             return ['tables' => $available];
         });
     }
@@ -203,33 +204,36 @@ class BddController extends Controller
             $profile = $this->resolveProfile(false);
             $bdd = $this->bdd($profile);
             $year = $this->resolveYear();
+            if ($profile === 'archive' && $year !== null && !$this->isArchiveYearEligible($year)) {
+                return $this->emptyTablePayload($table);
+            }
             return match($table) {
-            'article'             => $bdd->getArticle(),
-            'produit'             => $bdd->getProduit(),
-            'energie'             => $bdd->getEnergie(),
-            'carburant'           => $bdd->getCarburant(),
-            'electricite'         => $bdd->getElectricite(),
-            'stock'               => $bdd->getStock(),
-            'client'              => $bdd->getClient(),
-            'cce'                 => $bdd->getCarteCCE(),
-            'connexion'           => $bdd->getConnexion(),
+            'article'             => $bdd->getArticle($year),
+            'produit'             => $bdd->getProduit($year),
+            'energie'             => $bdd->getEnergie($year),
+            'carburant'           => $bdd->getCarburant($year),
+            'electricite'         => $bdd->getElectricite($year),
+            'stock'               => $bdd->getStock($year),
+            'client'              => $bdd->getClient($year),
+            'cce'                 => $bdd->getCarteCCE($year),
+            'connexion'           => $bdd->getConnexion($year),
             'transaction'         => $bdd->getTransaction($year),
             'transaction_cce'     => $bdd->getTransactionCCE($year),
             'transaction_produit' => $bdd->getTransactionProduit($year),
             'transaction_energie' => $bdd->getTransactionEnergie($year),
             'recu'                => $bdd->getRecu($year),
-            'pompe'               => $bdd->getPompe(),
-            'reappro'             => $bdd->getReappro(),
-            'ligne_reappro'       => $bdd->getLigneReappro(),
-            'valeurs_defaut'      => $bdd->getValeursDefaut(),
-            'fiche_incident'      => $bdd->getFicheIncident(),
-            'jour_fermeture'      => $bdd->getJourFermeture(),
-            'jour_semaine'        => $bdd->getJourSemaine(),
-            'horaire'             => $bdd->getHoraire(),
-            'params_cce'          => $bdd->getParamsCCE(),
-            'bonus_cce'           => $bdd->getBonusCCE(),
-            'validation_transactions' => $bdd->getValidationTransactions(),
-            'validation_incidents'    => $bdd->getValidationIncidents(),
+            'pompe'               => $bdd->getPompe($year),
+            'reappro'             => $bdd->getReappro($year),
+            'ligne_reappro'       => $bdd->getLigneReappro($year),
+            'valeurs_defaut'      => $bdd->getValeursDefaut($year),
+            'fiche_incident'      => $bdd->getFicheIncident($year),
+            'jour_fermeture'      => $bdd->getJourFermeture($year),
+            'jour_semaine'        => $bdd->getJourSemaine($year),
+            'horaire'             => $bdd->getHoraire($year),
+            'params_cce'          => $bdd->getParamsCCE($year),
+            'bonus_cce'           => $bdd->getBonusCCE($year),
+            'validation_transactions' => $bdd->getValidationTransactions($year),
+            'validation_incidents'    => $bdd->getValidationIncidents($year),
             default               => throw new \RuntimeException("Table inconnue: $table"),
             };
         });

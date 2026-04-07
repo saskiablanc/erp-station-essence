@@ -154,7 +154,8 @@ CREATE TABLE `Transaction` (
   `id_transaction` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   `prix_total`     DECIMAL(10,3) NOT NULL,
   `date_heure`     DATETIME NOT NULL,
-  PRIMARY KEY (`id_transaction`)
+  PRIMARY KEY (`id_transaction`),
+  KEY `idx_transaction_date_heure` (`date_heure`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 CREATE TABLE `TransactionCCE` (
@@ -474,7 +475,8 @@ CREATE TABLE `Transaction` (
   `id_transaction` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   `prix_total`     DECIMAL(10,3) NOT NULL,
   `date_heure`     DATETIME NOT NULL,
-  PRIMARY KEY (`id_transaction`)
+  PRIMARY KEY (`id_transaction`),
+  KEY `idx_transaction_date_heure` (`date_heure`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 CREATE TABLE `TransactionCCE` (
@@ -642,3 +644,212 @@ ALTER TABLE `Horaire`
   ADD CONSTRAINT `fk_horaire_jour` FOREIGN KEY (`id_jour`) REFERENCES `JourSemaine` (`id_jour`);
 
 SET FOREIGN_KEY_CHECKS = 1;
+
+-- ============================================================
+--  ARCHIVAGE AUTOMATIQUE DES TRANSACTIONS (N-1 an)
+--  Règle: une transaction est archivée quand
+--         date_heure <= NOW() - INTERVAL 1 YEAR
+-- ============================================================
+
+DELIMITER $$
+
+DROP PROCEDURE IF EXISTS `sp_archive_old_transactions`$$
+CREATE PROCEDURE `sp_archive_old_transactions`(IN p_cutoff DATETIME)
+BEGIN
+  DECLARE v_cutoff DATETIME;
+  DECLARE EXIT HANDLER FOR SQLEXCEPTION
+  BEGIN
+    ROLLBACK;
+    DROP TEMPORARY TABLE IF EXISTS tmp_archive_tx_ids;
+    RESIGNAL;
+  END;
+
+  SET v_cutoff = IFNULL(p_cutoff, DATE_SUB(NOW(), INTERVAL 1 YEAR));
+
+  DROP TEMPORARY TABLE IF EXISTS tmp_archive_tx_ids;
+  CREATE TEMPORARY TABLE tmp_archive_tx_ids (
+    id_transaction BIGINT UNSIGNED NOT NULL PRIMARY KEY
+  ) ENGINE=MEMORY;
+
+  INSERT INTO tmp_archive_tx_ids(id_transaction)
+  SELECT t.id_transaction
+  FROM `unica_station`.`Transaction` t
+  WHERE t.date_heure <= v_cutoff;
+
+  IF EXISTS (SELECT 1 FROM tmp_archive_tx_ids LIMIT 1) THEN
+    START TRANSACTION;
+
+    -- ── Référentiels CCE (clients/cartes) ───────────────────
+    INSERT IGNORE INTO `unica_station_archives`.`Client`
+      (`id_client`,`nom`,`prenom`,`email`,`num_tel`)
+    SELECT DISTINCT c.id_client, c.nom, c.prenom, c.email, c.num_tel
+    FROM `unica_station`.`Client` c
+    JOIN `unica_station`.`CarteCE` cc ON cc.id_client = c.id_client
+    JOIN `unica_station`.`TransactionCCE` txc ON txc.id_carte_CE = cc.id_carte_CE
+    JOIN tmp_archive_tx_ids tx ON tx.id_transaction = txc.id_transaction;
+
+    INSERT IGNORE INTO `unica_station_archives`.`CarteCE`
+      (`id_carte_CE`,`id_client`,`code_secret`,`solde_client`,`date_dernier_apport`,`montant_dernier_apport`)
+    SELECT DISTINCT cc.id_carte_CE, cc.id_client, cc.code_secret, cc.solde_client, cc.date_dernier_apport, cc.montant_dernier_apport
+    FROM `unica_station`.`CarteCE` cc
+    JOIN `unica_station`.`TransactionCCE` txc ON txc.id_carte_CE = cc.id_carte_CE
+    JOIN tmp_archive_tx_ids tx ON tx.id_transaction = txc.id_transaction;
+
+    -- ── Référentiels Produits ───────────────────────────────
+    INSERT IGNORE INTO `unica_station_archives`.`Article` (`id_article`,`type_article`)
+    SELECT DISTINCT a.id_article, a.type_article
+    FROM `unica_station`.`Article` a
+    JOIN `unica_station`.`Produit` p ON p.id_article = a.id_article
+    JOIN `unica_station`.`TransactionProduit` tp ON tp.code_barres = p.code_barres
+    JOIN tmp_archive_tx_ids tx ON tx.id_transaction = tp.id_transaction;
+
+    INSERT IGNORE INTO `unica_station_archives`.`Produit`
+      (`code_barres`,`id_article`,`libelle_produit`,`prix`)
+    SELECT DISTINCT p.code_barres, p.id_article, p.libelle_produit, p.prix
+    FROM `unica_station`.`Produit` p
+    JOIN `unica_station`.`TransactionProduit` tp ON tp.code_barres = p.code_barres
+    JOIN tmp_archive_tx_ids tx ON tx.id_transaction = tp.id_transaction;
+
+    -- ── Référentiels Énergie ────────────────────────────────
+    INSERT IGNORE INTO `unica_station_archives`.`Article` (`id_article`,`type_article`)
+    SELECT DISTINCT a.id_article, a.type_article
+    FROM `unica_station`.`Article` a
+    JOIN `unica_station`.`Energie` e ON e.id_article = a.id_article
+    JOIN `unica_station`.`TransactionEnergie` te ON te.id_energie = e.id_energie
+    JOIN tmp_archive_tx_ids tx ON tx.id_transaction = te.id_transaction;
+
+    INSERT IGNORE INTO `unica_station_archives`.`Energie`
+      (`id_energie`,`id_article`,`type_energie`)
+    SELECT DISTINCT e.id_energie, e.id_article, e.type_energie
+    FROM `unica_station`.`Energie` e
+    JOIN `unica_station`.`TransactionEnergie` te ON te.id_energie = e.id_energie
+    JOIN tmp_archive_tx_ids tx ON tx.id_transaction = te.id_transaction;
+
+    INSERT IGNORE INTO `unica_station_archives`.`Carburant`
+      (`id_carburant`,`id_energie`,`prix_litre`,`livraison_min`,`libelle`)
+    SELECT DISTINCT c.id_carburant, c.id_energie, c.prix_litre, c.livraison_min, c.libelle
+    FROM `unica_station`.`Carburant` c
+    JOIN `unica_station`.`TransactionEnergie` te ON te.id_energie = c.id_energie
+    JOIN tmp_archive_tx_ids tx ON tx.id_transaction = te.id_transaction;
+
+    INSERT IGNORE INTO `unica_station_archives`.`Electricite`
+      (`id_electricite`,`id_energie`,`prix_kwh`,`type_charge`)
+    SELECT DISTINCT e.id_electricite, e.id_energie, e.prix_kwh, e.type_charge
+    FROM `unica_station`.`Electricite` e
+    JOIN `unica_station`.`TransactionEnergie` te ON te.id_energie = e.id_energie
+    JOIN tmp_archive_tx_ids tx ON tx.id_transaction = te.id_transaction;
+
+    INSERT INTO `unica_station_archives`.`Stock` (`id_article`,`quantite_stock`,`type_quantite`)
+    SELECT DISTINCT s.id_article, s.quantite_stock, s.type_quantite
+    FROM `unica_station`.`Stock` s
+    JOIN `unica_station_archives`.`Article` a ON a.id_article = s.id_article
+    WHERE NOT EXISTS (
+      SELECT 1
+      FROM `unica_station_archives`.`Stock` sa
+      WHERE sa.id_article = s.id_article
+        AND sa.type_quantite = s.type_quantite
+    );
+
+    INSERT IGNORE INTO `unica_station_archives`.`Pompe`
+      (`id_pompe`,`numero`,`type_pompe`,`sous_type`,`mode`,`statut`,`date_debut`,`id_transaction_energie`)
+    SELECT DISTINCT p.id_pompe, p.numero, p.type_pompe, p.sous_type, p.mode, p.statut, p.date_debut, NULL
+    FROM `unica_station`.`Pompe` p
+    JOIN `unica_station`.`TransactionEnergie` te ON te.id_pompe = p.id_pompe
+    JOIN tmp_archive_tx_ids tx ON tx.id_transaction = te.id_transaction;
+
+    -- ── Copie des transactions et dépendances ───────────────
+    INSERT IGNORE INTO `unica_station_archives`.`Transaction`
+      (`id_transaction`,`prix_total`,`date_heure`)
+    SELECT t.id_transaction, t.prix_total, t.date_heure
+    FROM `unica_station`.`Transaction` t
+    JOIN tmp_archive_tx_ids tx ON tx.id_transaction = t.id_transaction;
+
+    INSERT IGNORE INTO `unica_station_archives`.`TransactionCCE`
+      (`id_transaction`,`id_carte_CE`)
+    SELECT txc.id_transaction, txc.id_carte_CE
+    FROM `unica_station`.`TransactionCCE` txc
+    JOIN tmp_archive_tx_ids tx ON tx.id_transaction = txc.id_transaction;
+
+    INSERT INTO `unica_station_archives`.`TransactionProduit`
+      (`id_transaction`,`code_barres`,`quantite_produit_totale`)
+    SELECT tp.id_transaction, tp.code_barres, tp.quantite_produit_totale
+    FROM `unica_station`.`TransactionProduit` tp
+    JOIN tmp_archive_tx_ids tx ON tx.id_transaction = tp.id_transaction
+    LEFT JOIN `unica_station_archives`.`TransactionProduit` atp
+      ON atp.id_transaction = tp.id_transaction
+     AND atp.code_barres = tp.code_barres
+     AND atp.quantite_produit_totale = tp.quantite_produit_totale
+    WHERE atp.id_transaction_produit IS NULL;
+
+    INSERT INTO `unica_station_archives`.`TransactionEnergie`
+      (`id_transaction`,`id_energie`,`quantite_delivree`,`temps_charge`,`statut`,`id_pompe`)
+    SELECT te.id_transaction, te.id_energie, te.quantite_delivree, te.temps_charge, te.statut, te.id_pompe
+    FROM `unica_station`.`TransactionEnergie` te
+    JOIN tmp_archive_tx_ids tx ON tx.id_transaction = te.id_transaction
+    LEFT JOIN `unica_station_archives`.`TransactionEnergie` ate
+      ON ate.id_transaction = te.id_transaction
+     AND ate.id_energie = te.id_energie
+     AND ate.quantite_delivree = te.quantite_delivree
+     AND ate.temps_charge = te.temps_charge
+     AND ate.statut = te.statut
+     AND (
+          (ate.id_pompe IS NULL AND te.id_pompe IS NULL)
+          OR ate.id_pompe = te.id_pompe
+         )
+    WHERE ate.id_transaction_energie IS NULL;
+
+    INSERT INTO `unica_station_archives`.`Recu`
+      (`id_transaction`,`num_carte`,`horodatage`)
+    SELECT r.id_transaction, r.num_carte, r.horodatage
+    FROM `unica_station`.`Recu` r
+    JOIN tmp_archive_tx_ids tx ON tx.id_transaction = r.id_transaction
+    LEFT JOIN `unica_station_archives`.`Recu` ar
+      ON ar.id_transaction = r.id_transaction
+     AND ar.num_carte = r.num_carte
+     AND ar.horodatage = r.horodatage
+    WHERE ar.id_recu IS NULL;
+
+    -- ── Nettoyage côté base courante ───────────────────────
+    UPDATE `unica_station`.`Pompe` p
+    JOIN `unica_station`.`TransactionEnergie` te
+      ON te.id_transaction_energie = p.id_transaction_energie
+    JOIN tmp_archive_tx_ids tx
+      ON tx.id_transaction = te.id_transaction
+    SET p.id_transaction_energie = NULL;
+
+    DELETE r
+    FROM `unica_station`.`Recu` r
+    JOIN tmp_archive_tx_ids tx ON tx.id_transaction = r.id_transaction;
+
+    DELETE txc
+    FROM `unica_station`.`TransactionCCE` txc
+    JOIN tmp_archive_tx_ids tx ON tx.id_transaction = txc.id_transaction;
+
+    DELETE tp
+    FROM `unica_station`.`TransactionProduit` tp
+    JOIN tmp_archive_tx_ids tx ON tx.id_transaction = tp.id_transaction;
+
+    DELETE te
+    FROM `unica_station`.`TransactionEnergie` te
+    JOIN tmp_archive_tx_ids tx ON tx.id_transaction = te.id_transaction;
+
+    DELETE t
+    FROM `unica_station`.`Transaction` t
+    JOIN tmp_archive_tx_ids tx ON tx.id_transaction = t.id_transaction;
+
+    COMMIT;
+  END IF;
+
+  DROP TEMPORARY TABLE IF EXISTS tmp_archive_tx_ids;
+END$$
+
+DROP EVENT IF EXISTS `ev_archive_old_transactions_daily`$$
+CREATE EVENT `ev_archive_old_transactions_daily`
+ON SCHEDULE EVERY 1 DAY
+STARTS (CURRENT_DATE + INTERVAL 2 HOUR)
+DO
+BEGIN
+  CALL `unica_station_archives`.`sp_archive_old_transactions`(DATE_SUB(NOW(), INTERVAL 1 YEAR));
+END$$
+
+DELIMITER ;

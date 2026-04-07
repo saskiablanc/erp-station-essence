@@ -12,7 +12,7 @@ const Requetes = (() => {
   const BDD_PROFILE_STORAGE_KEY = "bdd_profile_v1";
   const BDD_DEFAULT_PROFILE = "courante";
   const BDD_YEAR_STORAGE_KEY = "bdd_archive_year_v1";
-  const BDD_DEFAULT_YEAR = "2025";
+  const BDD_DEFAULT_YEAR = "2026";
   let bddProfile = BDD_DEFAULT_PROFILE;
   let bddYear = BDD_DEFAULT_YEAR;
 

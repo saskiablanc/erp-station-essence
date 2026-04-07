@@ -15,19 +15,7 @@
     isPinnedTable,
     sortGroups,
   } = ns;
-const ARCHIVE_YEARS = ["2021", "2022", "2023", "2024", "2025"];
-const PROFILE_TABLE_SCOPES = {
-  archive: [
-    "transaction",
-    "transaction_cce",
-    "transaction_produit",
-    "transaction_energie",
-    "recu",
-    "fiche_incident",
-    "validation_transactions",
-    "validation_incidents",
-  ],
-};
+const ARCHIVE_YEARS = ["2021", "2022", "2023", "2024", "2025", "2026"];
 
 function getProfileForRoot(root) {
   return (
@@ -36,21 +24,6 @@ function getProfileForRoot(root) {
       ? Requetes.bddGetProfile()
       : "courante")
   );
-}
-
-function getScopedVisibleTables(profile, visibleTables = null) {
-  const scoped = PROFILE_TABLE_SCOPES[String(profile || "").trim()];
-  if (!Array.isArray(scoped) || !scoped.length) {
-    return Array.isArray(visibleTables) ? visibleTables : null;
-  }
-
-  const scopeSet = new Set(
-    scoped.map((id) => String(id || "").trim()).filter(Boolean),
-  );
-  if (!Array.isArray(visibleTables)) {
-    return Array.from(scopeSet);
-  }
-  return visibleTables.filter((id) => scopeSet.has(String(id || "").trim()));
 }
 
 function isReadOnlyProfile(root) {
@@ -93,15 +66,13 @@ function applyProfileMode(root) {
 }
 
 async function refreshVisibleTables(root) {
-  const profile = getProfileForRoot(root);
-  let visible = getScopedVisibleTables(profile);
+  let visible = null;
   try {
     const resp = await Requetes.bddTables();
     if (Array.isArray(resp?.tables)) {
-      const fromApi = resp.tables
+      visible = resp.tables
         .map((id) => String(id || "").trim())
         .filter(Boolean);
-      visible = getScopedVisibleTables(profile, fromApi);
     }
   } catch (_) {}
 
