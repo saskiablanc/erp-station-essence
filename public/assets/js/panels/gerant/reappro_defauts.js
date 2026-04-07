@@ -67,6 +67,9 @@ WM.register("gerant_reappro_defauts", {
       content.innerHTML = '<div class="ra-msg">Chargement...</div>';
       try {
         allData = await Requetes.getValeursDefaut();
+        allData = (Array.isArray(allData) ? allData : []).filter(function (row) {
+          return String(row?.type_article || "").toLowerCase() !== "electricite";
+        });
         modified = {};
         btnConfirm.disabled = true;
         afficher();

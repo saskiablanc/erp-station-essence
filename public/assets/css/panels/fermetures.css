@@ -210,6 +210,15 @@
   border-color: var(--accent-2);
 }
 
+/* Annuel: same date input UI, but hide year text in WebKit-based browsers. */
+.gf-field input.gf-annual-date::-webkit-datetime-edit-year-field {
+  display: none;
+}
+
+.gf-field input.gf-annual-date::-webkit-datetime-edit-text:last-of-type {
+  display: none;
+}
+
 .gf-submit-btn {
   margin-top: auto;
   align-self: stretch;

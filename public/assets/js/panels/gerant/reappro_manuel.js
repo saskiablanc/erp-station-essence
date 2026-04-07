@@ -4,6 +4,8 @@ WM.register("gerant_reappro_manuel", {
   icon: "RMA",
   sprint: 4,
   gerantOnly: true,
+  fullscreenMinWidth: 980,
+  fullscreenMinHeight: 620,
 
   buildHTML() {
     return `

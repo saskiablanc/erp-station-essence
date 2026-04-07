@@ -432,6 +432,12 @@ class Reappro
              LEFT JOIN Produit p ON a.id_article = p.id_article
              LEFT JOIN Energie e ON a.id_article = e.id_article
              LEFT JOIN Carburant c ON e.id_energie = c.id_energie
+             WHERE NOT EXISTS (
+               SELECT 1
+               FROM Energie ee
+               WHERE ee.id_article = vd.id_article
+                 AND LOWER(ee.type_energie) = 'electricite'
+             )
              ORDER BY a.type_article, vd.id_article"
         );
         $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -450,6 +456,10 @@ class Reappro
      */
     public function updateValeurDefaut(int $idArticle, array $data): bool
     {
+        if ($this->isElectriciteArticle($idArticle)) {
+            throw new \RuntimeException("L'électricité n'est pas gérée en stock pour le réapprovisionnement");
+        }
+
         $fields = [];
         $params = [':id_article' => $idArticle];
 
@@ -490,6 +500,11 @@ class Reappro
      */
     public function updateValeursDefautParType(string $typeArticle, array $data): int
     {
+        $normalizedType = strtolower(trim($typeArticle));
+        if ($normalizedType === 'electricite') {
+            return 0;
+        }
+
         $fields = [];
         $params = [':type' => $typeArticle];
 
@@ -521,7 +536,13 @@ class Reappro
         $sql = "UPDATE ValeursDefautReappro vd
                 JOIN Article a ON vd.id_article = a.id_article
                 SET " . implode(', ', $fields)
-             . " WHERE a.type_article = :type";
+             . " WHERE a.type_article = :type
+                 AND NOT EXISTS (
+                   SELECT 1
+                   FROM Energie ee
+                   WHERE ee.id_article = vd.id_article
+                     AND LOWER(ee.type_energie) = 'electricite'
+                 )";
 
         return $this->db->execute($sql, $params);
     }
@@ -554,6 +575,12 @@ class Reappro
                AND vd.volume > 0
                AND NOT EXISTS (
                  SELECT 1
+                 FROM Energie ee
+                 WHERE ee.id_article = vd.id_article
+                   AND LOWER(ee.type_energie) = 'electricite'
+               )
+               AND NOT EXISTS (
+                 SELECT 1
                  FROM LigneReappro lr
                  JOIN Reapprovisionnement r
                    ON r.id_reappro = lr.id_reappro
@@ -572,5 +599,21 @@ class Reappro
         }
 
         return $rows;
+    }
+
+    private function isElectriciteArticle(int $idArticle): bool
+    {
+        if ($idArticle <= 0) return false;
+
+        $exists = $this->db->query(
+            "SELECT 1
+             FROM Energie e
+             WHERE e.id_article = :id_article
+               AND LOWER(e.type_energie) = 'electricite'
+             LIMIT 1",
+            [':id_article' => $idArticle]
+        )->fetchColumn();
+
+        return (bool) $exists;
     }
 }
