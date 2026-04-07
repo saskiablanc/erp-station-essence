@@ -12,6 +12,7 @@ window.TicketPaymentService = (() => {
     getSelectedCceId,
     setSelectedCce,
     requestCceScanFromSimulator,
+    requestCcePinFromSimulator,
     formatMoney,
     toCents,
     fromCents,
@@ -37,6 +38,8 @@ window.TicketPaymentService = (() => {
     const overrideId = Number(cceOverride?.idCarte || 0);
     const overrideSolde = Number(cceOverride?.solde ?? NaN);
 
+    let authContext = null;
+
     if (overrideId > 0 && Number.isFinite(overrideSolde)) {
       if (overrideSolde < Number(amountToDebit || 0)) {
         await Swal.fire({
@@ -46,7 +49,28 @@ window.TicketPaymentService = (() => {
           html: `Solde courant : <strong>${formatMoney(overrideSolde)}</strong><br>Montant CCE : <strong>${formatMoney(amountToDebit)}</strong>`,
           confirmButtonText: 'Fermer',
         });
-        return null;
+        return { retry: true };
+      }
+      authContext = {
+        idCarte: overrideId,
+        nom: String(window.CCESelection?.nom || ''),
+        prenom: String(window.CCESelection?.prenom || ''),
+      };
+      const auth = await requestCcePinFromSimulator(authContext);
+      if (!auth?.ok) {
+        if (String(auth?.status || '') === 'cancel') {
+          return { cancelled: true };
+        }
+        if (String(auth?.status || '') === 'failed') {
+          await Swal.fire({
+            ...swalBase,
+            icon: 'error',
+            title: 'Paiement CCE annulé',
+            html: auth?.message || 'Code CCE incorrect après 3 tentatives.',
+            confirmButtonText: 'Fermer',
+          });
+        }
+        return { retry: true };
       }
       return { idCarte: overrideId };
     }
@@ -55,7 +79,7 @@ window.TicketPaymentService = (() => {
     if (idCarte <= 0) {
       const scanned = await requestCceScanFromSimulator();
       if (!scanned) {
-        return null;
+        return { cancelled: true };
       }
       setSelectedCce(scanned);
       idCarte = getSelectedCceId();
@@ -67,7 +91,7 @@ window.TicketPaymentService = (() => {
           html: 'Aucune carte CCE valide n’a été scannée.',
           confirmButtonText: 'Fermer',
         });
-        return null;
+        return { retry: true };
       }
     }
 
@@ -82,8 +106,14 @@ window.TicketPaymentService = (() => {
         html: error.message || 'Impossible de charger la carte CCE scannée.',
         confirmButtonText: 'Fermer',
       });
-      return null;
+      return { retry: true };
     }
+
+    authContext = {
+      idCarte,
+      nom: String(cce?.nom || ''),
+      prenom: String(cce?.prenom || ''),
+    };
 
     const solde = Number(cce?.solde_client ?? 0);
     if (!Number.isFinite(solde) || solde < Number(amountToDebit || 0)) {
@@ -94,7 +124,24 @@ window.TicketPaymentService = (() => {
         html: `Solde courant : <strong>${formatMoney(solde)}</strong><br>Montant CCE : <strong>${formatMoney(amountToDebit)}</strong>`,
         confirmButtonText: 'Fermer',
       });
-      return null;
+      return { retry: true };
+    }
+
+    const auth = await requestCcePinFromSimulator(authContext);
+    if (!auth?.ok) {
+      if (String(auth?.status || '') === 'cancel') {
+        return { cancelled: true };
+      }
+      if (String(auth?.status || '') === 'failed') {
+        await Swal.fire({
+          ...swalBase,
+          icon: 'error',
+          title: 'Paiement CCE annulé',
+          html: auth?.message || 'Code CCE incorrect après 3 tentatives.',
+          confirmButtonText: 'Fermer',
+        });
+      }
+      return { retry: true };
     }
 
     return { idCarte };
@@ -128,6 +175,12 @@ window.TicketPaymentService = (() => {
     const cceAmount = Number(amountByMethod.cce || 0);
     if (cceAmount > 0) {
       const cceContext = await ensureCcePaymentReady(cceAmount, cceInfoOverride);
+      if (cceContext?.cancelled) {
+        return { status: 'cancel' };
+      }
+      if (cceContext?.retry) {
+        return { status: 'retry' };
+      }
       if (!cceContext) {
         return { status: 'cancel' };
       }
@@ -294,14 +347,17 @@ window.TicketPaymentService = (() => {
     const scannedCce = await getScannedCceInfo();
     let cceCardId = Number(scannedCce?.idCarte || 0);
     let cceRemainingCents = scannedCce ? toCents(scannedCce.solde) : null;
-
     const runStep = async (stepItems) => {
       const cceInfoForStep =
         cceCardId > 0 && cceRemainingCents !== null
           ? { idCarte: cceCardId, solde: fromCents(cceRemainingCents) }
           : null;
 
-      const step = await runPaymentStep(stepItems, cceInfoForStep);
+      let step = null;
+      do {
+        step = await runPaymentStep(stepItems, cceInfoForStep);
+      } while (step?.status === 'retry');
+
       if (step.status !== 'success') {
         return step;
       }

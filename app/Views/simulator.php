@@ -131,6 +131,137 @@
     .sim-btn--danger:hover { opacity:.85; }
     .sim-btn:disabled { opacity:.4; cursor:not-allowed; }
 
+    /* ── TPE (style partagé avec le pavé code-barres du site) ── */
+    .swal2-popup.ticket-swal-popup.ticket-swal-popup-barcode {
+      width: min(460px, 92vw) !important;
+      border: 2px solid var(--border) !important;
+      border-radius: 18px !important;
+      background: linear-gradient(
+        160deg,
+        rgba(255, 255, 255, 0.96) 0%,
+        rgba(244, 242, 254, 0.95) 58%,
+        rgba(207, 227, 255, 0.78) 100%
+      ) !important;
+      box-shadow: 0 18px 45px rgba(99, 102, 241, 0.2) !important;
+      padding: 12px 12px 16px !important;
+    }
+    .swal2-html-container.ticket-swal-barcode-html {
+      margin: 0 !important;
+      padding: 0 !important;
+      overflow: hidden !important;
+    }
+    .ticket-barcode-modal {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      padding-top: 2px;
+    }
+    .ticket-barcode-close {
+      position: absolute;
+      top: 0;
+      right: 0;
+      width: 42px;
+      height: 42px;
+      padding: 0;
+      border: 2px solid var(--border);
+      border-radius: 12px;
+      background: #fff;
+      color: var(--danger);
+      font-family: var(--display);
+      font-size: 24px;
+      font-weight: 500;
+      line-height: 1.1;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      transition: transform 0.12s ease, border-color 0.12s ease;
+    }
+    .ticket-barcode-close:hover {
+      transform: translateY(-1px);
+      border-color: rgba(239, 68, 68, 0.45);
+    }
+    .ticket-barcode-display-wrap {
+      margin: 36px 32px 0;
+      height: 88px;
+      border: 2px solid var(--border);
+      border-radius: 14px;
+      background: rgba(255, 255, 255, 0.88);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.7);
+    }
+    .ticket-barcode-display-wrap.sim-cce-screen {
+      height: auto;
+      min-height: 126px;
+      padding: 10px 14px;
+      flex-direction: column;
+      justify-content: flex-start;
+      gap: 6px;
+    }
+    .ticket-barcode-display {
+      font-family: var(--mono);
+      font-size: 28px;
+      letter-spacing: 0.04em;
+      color: var(--text);
+      user-select: none;
+    }
+    .ticket-barcode-error {
+      min-height: 16px;
+      text-align: center;
+      color: #b00020;
+      font-size: 11px;
+      font-family: var(--mono);
+    }
+    .ticket-barcode-keypad {
+      margin: 8px 32px 2px;
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 9px 10px;
+    }
+    .ticket-barcode-keypad button {
+      height: 58px;
+      border: 2px solid var(--border);
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.94);
+      color: var(--text);
+      font-family: var(--display);
+      font-size: 36px;
+      font-weight: 500;
+      line-height: 1;
+      cursor: pointer;
+      box-shadow: 0 6px 12px rgba(99, 102, 241, 0.12);
+      transition: transform 0.12s ease, border-color 0.12s ease, background-color 0.12s ease;
+    }
+    .ticket-barcode-keypad button:hover {
+      transform: translateY(-1px);
+      border-color: var(--accent);
+    }
+    .ticket-barcode-keypad button:active {
+      transform: translateY(0);
+      background: rgba(255, 255, 255, 0.78);
+    }
+    .ticket-barcode-keypad [data-cce-code-action="ok"] {
+      background: linear-gradient(160deg, rgba(238, 242, 255, 0.95), rgba(224, 231, 255, 0.95));
+      color: var(--accent);
+    }
+    .sim-cce-code-meta {
+      margin: 0;
+      font-size: 11px;
+      color: var(--text-dim);
+      text-align: center;
+      width: 100%;
+    }
+    .sim-cce-code-instruction {
+      margin: 0;
+      font-size: 12px;
+      color: var(--text-mid);
+      text-align: center;
+      width: 100%;
+    }
+
     /* ── Log ── */
     .sim-log {
       background:rgba(0,0,0,0.03); border:1px solid var(--border); border-radius:8px;
@@ -885,14 +1016,19 @@ var Sim = (function() {
   var waitingForScan = false;
   var cceCodeSecrets = new Set();
   var cceCodeSecretsReady = false;
+  var CCE_CODE_MAX_LENGTH = 4;
   var codePopupOpen = false;
   var codeRequestState = {
     active: false,
+    kind: '',
     requestId: '',
     phase: 'entry',
     digits: '',
     firstCode: '',
+    expectedCode: '',
+    attemptsLeft: 0,
     customerLabel: '',
+    cardId: 0,
     error: ''
   };
   var pompesSse = null;
@@ -987,38 +1123,12 @@ var Sim = (function() {
     return full || 'client';
   }
 
-  function getCodeSecretValidationError(pin) {
-    var value = String(pin || '').trim();
-    if (!/^[1-9][0-9]{3}$/.test(value)) {
-      return 'Le code doit contenir 4 chiffres (1000 a 9999).';
-    }
-    if (/^(\d)\1{3}$/.test(value)) {
-      return 'Code trop faible : chiffres identiques interdits.';
-    }
-    if (['1234', '4321', '1212', '1000', '2000', '2020'].indexOf(value) >= 0) {
-      return 'Code trop faible : code trop previsible.';
-    }
-
-    var inc = true;
-    var dec = true;
-    for (var i = 1; i < value.length; i += 1) {
-      var prev = Number(value.charAt(i - 1));
-      var cur = Number(value.charAt(i));
-      if (cur !== prev + 1) inc = false;
-      if (cur !== prev - 1) dec = false;
-    }
-    if (inc || dec) {
-      return 'Code trop faible : suite numerique interdite.';
-    }
-    return '';
-  }
-
   function parseExistingCodeSecrets(payload) {
     var rows = Array.isArray(payload && payload.cartes) ? payload.cartes : [];
     var secrets = new Set();
     rows.forEach(function(row) {
       var raw = String(row && row.code_secret || '').trim();
-      if (/^[1-9][0-9]{3}$/.test(raw)) {
+      if (/^[0-9]+$/.test(raw)) {
         secrets.add(raw);
       }
     });
@@ -1071,11 +1181,15 @@ var Sim = (function() {
 
   function resetCodeRequestState() {
     codeRequestState.active = false;
+    codeRequestState.kind = '';
     codeRequestState.requestId = '';
     codeRequestState.phase = 'entry';
     codeRequestState.digits = '';
     codeRequestState.firstCode = '';
+    codeRequestState.expectedCode = '';
+    codeRequestState.attemptsLeft = 0;
     codeRequestState.customerLabel = '';
+    codeRequestState.cardId = 0;
     codeRequestState.error = '';
   }
 
@@ -1089,19 +1203,23 @@ var Sim = (function() {
     var error = popup.querySelector('[data-cce-code-error]');
     if (!requestId || !instruction || !display || !error) return;
 
-    requestId.textContent = 'Session ' + codeRequestState.requestId;
-    if (codeRequestState.phase === 'confirm') {
-      instruction.textContent = 'Ressaisissez le code pour ' + codeRequestState.customerLabel + '.';
+    requestId.textContent = '';
+    if (requestId.style) requestId.style.display = 'none';
+
+    if (codeRequestState.kind === 'auth') {
+      instruction.textContent = 'Entrez votre code CCE (4 chiffres) pour valider le paiement.';
+    } else if (codeRequestState.phase === 'confirm') {
+      instruction.textContent = 'Ressaisissez le code (4 chiffres) pour ' + codeRequestState.customerLabel + '.';
     } else {
-      instruction.textContent = 'Saisissez le nouveau code CCE pour ' + codeRequestState.customerLabel + '.';
+      instruction.textContent = 'Saisissez le nouveau code CCE (4 chiffres) pour ' + codeRequestState.customerLabel + '.';
     }
 
-    var entered = codeRequestState.digits.length;
-    var slots = [];
-    for (var i = 0; i < 4; i += 1) {
-      slots.push(i < entered ? '*' : '_');
+    var visible = '';
+    for (var i = 0; i < CCE_CODE_MAX_LENGTH; i += 1) {
+      visible += i < codeRequestState.digits.length ? '•' : '_';
+      if (i < CCE_CODE_MAX_LENGTH - 1) visible += ' ';
     }
-    display.textContent = slots.join(' ');
+    display.textContent = visible;
     error.textContent = codeRequestState.error || '';
   }
 
@@ -1112,29 +1230,28 @@ var Sim = (function() {
     Swal.fire({
       title: 'Terminal CCE',
       html: [
-        '<div style="text-align:left">',
-        '<div style="font-size:11px;color:var(--text-dim);margin-bottom:6px" data-cce-code-request-id></div>',
-        '<div style="font-size:12px;color:var(--text-mid);margin-bottom:10px" data-cce-code-instruction></div>',
-        '<div style="border:1.5px solid var(--border);border-radius:10px;background:#fff;min-height:52px;display:flex;align-items:center;justify-content:center;font-family:var(--display);font-size:24px;letter-spacing:8px;margin-bottom:8px" data-cce-code-display>* * * *</div>',
-        '<div style="min-height:16px;margin-bottom:8px;color:var(--danger);font-size:11px;text-align:center" data-cce-code-error></div>',
-        '<div style="display:grid;grid-template-columns:repeat(3,minmax(58px,1fr));gap:8px">',
-        '<button type="button" class="sim-cce-popup-key" data-cce-code-key="1">1</button>',
-        '<button type="button" class="sim-cce-popup-key" data-cce-code-key="2">2</button>',
-        '<button type="button" class="sim-cce-popup-key" data-cce-code-key="3">3</button>',
-        '<button type="button" class="sim-cce-popup-key" data-cce-code-key="4">4</button>',
-        '<button type="button" class="sim-cce-popup-key" data-cce-code-key="5">5</button>',
-        '<button type="button" class="sim-cce-popup-key" data-cce-code-key="6">6</button>',
-        '<button type="button" class="sim-cce-popup-key" data-cce-code-key="7">7</button>',
-        '<button type="button" class="sim-cce-popup-key" data-cce-code-key="8">8</button>',
-        '<button type="button" class="sim-cce-popup-key" data-cce-code-key="9">9</button>',
-        '<button type="button" class="sim-cce-popup-key" data-cce-code-action="back">&larr;</button>',
-        '<button type="button" class="sim-cce-popup-key" data-cce-code-key="0">0</button>',
-        '<button type="button" class="sim-cce-popup-key" data-cce-code-action="ok">OK</button>',
+        '<div class="ticket-barcode-modal">',
+        '<button type="button" class="ticket-barcode-close" data-cce-code-action="cancel" aria-label="Fermer">X</button>',
+        '<div class="ticket-barcode-display-wrap sim-cce-screen">',
+        '<div class="sim-cce-code-meta" data-cce-code-request-id></div>',
+        '<div class="sim-cce-code-instruction" data-cce-code-instruction></div>',
+        '<div class="ticket-barcode-display" data-cce-code-display>_ _ _ _</div>',
         '</div>',
-        '<div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;justify-content:center">',
-        '<button type="button" class="sim-btn sim-btn--primary" data-cce-code-action="clear">Effacer</button>',
+        '<div class="ticket-barcode-error" data-cce-code-error></div>',
+        '<div class="ticket-barcode-keypad">',
+        '<button type="button" data-cce-code-key="1">1</button>',
+        '<button type="button" data-cce-code-key="2">2</button>',
+        '<button type="button" data-cce-code-key="3">3</button>',
+        '<button type="button" data-cce-code-key="4">4</button>',
+        '<button type="button" data-cce-code-key="5">5</button>',
+        '<button type="button" data-cce-code-key="6">6</button>',
+        '<button type="button" data-cce-code-key="7">7</button>',
+        '<button type="button" data-cce-code-key="8">8</button>',
+        '<button type="button" data-cce-code-key="9">9</button>',
+        '<button type="button" data-cce-code-action="back">‹</button>',
+        '<button type="button" data-cce-code-key="0">0</button>',
+        '<button type="button" data-cce-code-action="ok">✓</button>',
         '</div>',
-        '<style>.sim-cce-popup-key{height:38px;border:1.5px solid var(--border);border-radius:8px;background:#fff;color:var(--text);font-family:var(--mono);font-size:12px;cursor:pointer;transition:all .12s}.sim-cce-popup-key:hover{border-color:var(--accent);color:var(--accent)}</style>',
         '</div>'
       ].join(''),
       showConfirmButton: false,
@@ -1143,8 +1260,9 @@ var Sim = (function() {
       allowOutsideClick: false,
       allowEscapeKey: false,
       customClass: {
-        popup: 'sim-recu-popup',
+        popup: 'ticket-swal-popup ticket-swal-popup-barcode',
         title: 'ticket-swal-title',
+        htmlContainer: 'ticket-swal-barcode-html',
         cancelButton: 'ticket-swal-btn ticket-swal-btn-secondary'
       },
       didOpen: function(popup) {
@@ -1154,28 +1272,60 @@ var Sim = (function() {
           });
         });
         popup.querySelector('[data-cce-code-action="back"]')?.addEventListener('click', cceTpeBackspace);
-        popup.querySelector('[data-cce-code-action="clear"]')?.addEventListener('click', cceTpeClear);
+        popup.querySelector('[data-cce-code-action="cancel"]')?.addEventListener('click', cceTpeCancel);
         popup.querySelector('[data-cce-code-action="ok"]')?.addEventListener('click', function() {
           void cceTpeValidate();
         });
+
+        var onKeyDown = function(event) {
+          if (event.key >= '0' && event.key <= '9') {
+            event.preventDefault();
+            cceTpeDigit(event.key);
+            return;
+          }
+          if (event.key === 'Backspace') {
+            event.preventDefault();
+            cceTpeBackspace();
+            return;
+          }
+          if (event.key === 'Enter') {
+            event.preventDefault();
+            void cceTpeValidate();
+            return;
+          }
+          if (event.key === 'Escape') {
+            event.preventDefault();
+            cceTpeCancel();
+          }
+        };
+        popup.addEventListener('keydown', onKeyDown);
+        popup._cceCodeKeyDownHandler = onKeyDown;
         renderCodePopupUI();
       },
-      willClose: function() {
+      willClose: function(popup) {
+        if (popup && popup._cceCodeKeyDownHandler) {
+          popup.removeEventListener('keydown', popup._cceCodeKeyDownHandler);
+          delete popup._cceCodeKeyDownHandler;
+        }
         codePopupOpen = false;
       }
     }).then(function() {
       if (!codeRequestState.active) return;
       log('cce-log', 'info', 'Saisie code CCE annulee sur le terminal.');
-      finishCodeRequest('cancel');
+      finishTerminalRequest('cancel');
     });
   }
 
   function startCodeRequest(payload) {
     codeRequestState.active = true;
+    codeRequestState.kind = 'create';
     codeRequestState.requestId = String(payload && payload.request_id || '');
     codeRequestState.phase = 'entry';
     codeRequestState.digits = '';
     codeRequestState.firstCode = '';
+    codeRequestState.expectedCode = '';
+    codeRequestState.attemptsLeft = 0;
+    codeRequestState.cardId = 0;
     codeRequestState.customerLabel = normalizeCodeCustomerLabel(payload && payload.customer);
     codeRequestState.error = '';
     waitingForScan = false;
@@ -1187,40 +1337,137 @@ var Sim = (function() {
     document.querySelectorAll('.sim-panel').forEach(function(p) { p.classList.remove('active'); });
     document.getElementById('panel-cce').classList.add('active');
 
-    refreshCceCodeSecrets().catch(function(error) {
-      log('cce-log', 'err', 'Analyse codes CCE impossible : ' + (error && error.message ? error.message : 'erreur inconnue'));
-    }).finally(function() {
-      if (!codeRequestState.active) return;
-      openCodeRequestPopup();
-    });
+    openCodeRequestPopup();
     log('cce-log', 'info', 'Creation CCE : saisie du code demandee pour ' + codeRequestState.customerLabel + '.');
   }
 
-  function finishCodeRequest(status, payload) {
-    if (!codeRequestState.active || !codeRequestState.requestId) return;
-    cceChan.postMessage({
-      type: 'cce-code-response',
-      request_id: codeRequestState.requestId,
-      status: status,
-      code_secret: payload && payload.code_secret ? String(payload.code_secret) : undefined,
-      message: payload && payload.message ? String(payload.message) : undefined
+  function startAuthRequest(payload) {
+    var requestId = String(payload && payload.request_id || '');
+    var cardId = Number(payload && payload.id_carte_CE || 0);
+    if (!requestId || cardId <= 0) {
+      cceChan.postMessage({
+        type: 'cce-auth-response',
+        request_id: requestId,
+        status: 'error',
+        message: 'Carte CCE invalide.'
+      });
+      return;
+    }
+
+    var normalizeExpectedCode = function(raw) {
+      var digits = String(raw == null ? '' : raw).replace(/\D+/g, '');
+      if (!digits) return '';
+      if (digits.length > CCE_CODE_MAX_LENGTH) return '';
+      return digits.padStart(CCE_CODE_MAX_LENGTH, '0');
+    };
+
+    var openAuthPopup = function(carte) {
+      var expected = normalizeExpectedCode(carte && carte.code_secret);
+      if (!expected) {
+        cceChan.postMessage({
+          type: 'cce-auth-response',
+          request_id: requestId,
+          status: 'error',
+          message: 'Code CCE indisponible pour cette carte.'
+        });
+        return;
+      }
+
+      codeRequestState.active = true;
+      codeRequestState.kind = 'auth';
+      codeRequestState.requestId = requestId;
+      codeRequestState.phase = 'entry';
+      codeRequestState.digits = '';
+      codeRequestState.firstCode = '';
+      codeRequestState.expectedCode = expected;
+      codeRequestState.attemptsLeft = 3;
+      codeRequestState.cardId = cardId;
+      codeRequestState.customerLabel = normalizeCodeCustomerLabel({
+        prenom: String(payload && payload.customer && payload.customer.prenom || carte && carte.prenom || ''),
+        nom: String(payload && payload.customer && payload.customer.nom || carte && carte.nom || '')
+      });
+      codeRequestState.error = '';
+
+      waitingForScan = false;
+      var waitingBanner = document.getElementById('cce-waiting');
+      if (waitingBanner) waitingBanner.classList.remove('visible');
+
+      document.querySelectorAll('.sim-nav-btn').forEach(function(b) { b.classList.remove('active'); });
+      document.querySelector('.sim-nav-btn[data-panel="cce"]').classList.add('active');
+      document.querySelectorAll('.sim-panel').forEach(function(p) { p.classList.remove('active'); });
+      document.getElementById('panel-cce').classList.add('active');
+
+      openCodeRequestPopup();
+      log('cce-log', 'info', 'Paiement CCE : saisie du code demandee pour la carte #' + cardId + '.');
+    };
+
+    var localCard = cces.find(function(c) { return Number(c && c.id_carte_CE || 0) === cardId; });
+    if (localCard && normalizeExpectedCode(localCard.code_secret)) {
+      openAuthPopup(localCard);
+      return;
+    }
+
+    if (selectedCceCard && Number(selectedCceCard.id_carte_CE || 0) === cardId && normalizeExpectedCode(selectedCceCard.code_secret)) {
+      openAuthPopup(selectedCceCard);
+      return;
+    }
+
+    api('GET', '/json/cce/' + cardId).then(function(carte) {
+      openAuthPopup(carte || null);
+    }).catch(function(error) {
+      cceChan.postMessage({
+        type: 'cce-auth-response',
+        request_id: requestId,
+        status: 'error',
+        message: error && error.message ? error.message : 'Carte CCE introuvable.'
+      });
     });
+  }
+
+  function finishTerminalRequest(status, payload) {
+    if (!codeRequestState.active || !codeRequestState.requestId) return;
+    var isCreate = codeRequestState.kind === 'create';
+    cceChan.postMessage(
+      isCreate
+        ? {
+            type: 'cce-code-response',
+            request_id: codeRequestState.requestId,
+            status: status,
+            code_secret: payload && payload.code_secret ? String(payload.code_secret) : undefined,
+            message: payload && payload.message ? String(payload.message) : undefined
+          }
+        : {
+            type: 'cce-auth-response',
+            request_id: codeRequestState.requestId,
+            status: status,
+            message: payload && payload.message ? String(payload.message) : undefined
+          }
+    );
     resetCodeRequestState();
     if (Swal.isVisible()) Swal.close();
   }
 
-  function cancelCodeRequestFromCaisse(requestId) {
+  function cancelTerminalRequestFromCaisse(requestId) {
     if (!codeRequestState.active) return;
     if (String(requestId || '') !== String(codeRequestState.requestId || '')) return;
+    var kind = codeRequestState.kind;
     resetCodeRequestState();
     if (Swal.isVisible()) Swal.close();
-    log('cce-log', 'info', 'Creation CCE annulee depuis la caisse.');
+    if (kind === 'create') {
+      log('cce-log', 'info', 'Creation CCE annulee depuis la caisse.');
+    } else {
+      log('cce-log', 'info', 'Saisie code CCE paiement annulee depuis la caisse.');
+    }
   }
 
   function cceTpeDigit(digit) {
     if (!codeRequestState.active) return;
     if (!/^[0-9]$/.test(String(digit || ''))) return;
-    if (codeRequestState.digits.length >= 4) return;
+    if (codeRequestState.digits.length >= CCE_CODE_MAX_LENGTH) {
+      codeRequestState.error = 'Le code doit contenir ' + CCE_CODE_MAX_LENGTH + ' chiffres.';
+      renderCodePopupUI();
+      return;
+    }
     codeRequestState.digits += String(digit);
     codeRequestState.error = '';
     renderCodePopupUI();
@@ -1243,42 +1490,42 @@ var Sim = (function() {
   function cceTpeCancel() {
     if (!codeRequestState.active) return;
     log('cce-log', 'info', 'Saisie code CCE annulee sur le terminal.');
-    finishCodeRequest('cancel');
+    finishTerminalRequest('cancel');
   }
 
   async function cceTpeValidate() {
     if (!codeRequestState.active) return;
-    if (codeRequestState.digits.length !== 4) {
-      codeRequestState.error = 'Le code doit contenir 4 chiffres.';
+    if (codeRequestState.digits.length !== CCE_CODE_MAX_LENGTH) {
+      codeRequestState.error = 'Le code doit contenir ' + CCE_CODE_MAX_LENGTH + ' chiffres.';
       renderCodePopupUI();
       return;
     }
 
     var current = String(codeRequestState.digits);
+    if (codeRequestState.kind === 'auth') {
+      var expected = String(codeRequestState.expectedCode || '');
+      if (current === expected) {
+        log('cce-log', 'ok', 'Paiement CCE : code valide pour la carte #' + codeRequestState.cardId + '.');
+        finishTerminalRequest('ok');
+        return;
+      }
+
+      codeRequestState.attemptsLeft = Math.max(0, Number(codeRequestState.attemptsLeft || 0) - 1);
+      if (codeRequestState.attemptsLeft > 0) {
+        codeRequestState.digits = '';
+        codeRequestState.error = 'Code incorrect. ' + codeRequestState.attemptsLeft + ' tentative(s) restante(s).';
+        renderCodePopupUI();
+        return;
+      }
+
+      log('cce-log', 'err', 'Paiement CCE : 3 tentatives incorrectes sur la carte #' + codeRequestState.cardId + '.');
+      finishTerminalRequest('failed', {
+        message: 'Code incorrect. Paiement annulé après 3 tentatives.'
+      });
+      return;
+    }
+
     if (codeRequestState.phase === 'entry') {
-      var validationError = getCodeSecretValidationError(current);
-      if (validationError) {
-        codeRequestState.error = validationError;
-        renderCodePopupUI();
-        return;
-      }
-
-      if (!cceCodeSecretsReady) {
-        try {
-          await refreshCceCodeSecrets();
-        } catch (_) {
-          codeRequestState.error = 'Analyse de la liste CCE indisponible. Reessayez.';
-          renderCodePopupUI();
-          return;
-        }
-      }
-
-      if (cceCodeSecrets.has(current)) {
-        codeRequestState.error = 'Ce code est deja utilise par une autre carte.';
-        renderCodePopupUI();
-        return;
-      }
-
       codeRequestState.firstCode = current;
       codeRequestState.digits = '';
       codeRequestState.phase = 'confirm';
@@ -1297,7 +1544,7 @@ var Sim = (function() {
     }
 
     log('cce-log', 'ok', 'Code CCE confirme pour ' + codeRequestState.customerLabel + '.');
-    finishCodeRequest('ok', { code_secret: current });
+    finishTerminalRequest('ok', { code_secret: current });
   }
 
   // ══════════════════════════════════════════════════════
@@ -1311,8 +1558,18 @@ var Sim = (function() {
       return;
     }
 
+    if (ev.data && ev.data.type === 'cce-auth-request') {
+      startAuthRequest(ev.data);
+      return;
+    }
+
     if (ev.data && ev.data.type === 'cce-code-cancel') {
-      cancelCodeRequestFromCaisse(ev.data.request_id);
+      cancelTerminalRequestFromCaisse(ev.data.request_id);
+      return;
+    }
+
+    if (ev.data && ev.data.type === 'cce-auth-cancel') {
+      cancelTerminalRequestFromCaisse(ev.data.request_id);
       return;
     }
 
@@ -1349,7 +1606,13 @@ var Sim = (function() {
   };
 
   function sendCCESelection(carte) {
-    cceChan.postMessage({ type: 'cce-scan-response', carte: carte });
+    var safeCarte = {
+      id_carte_CE: Number(carte && carte.id_carte_CE || 0),
+      nom: String(carte && carte.nom || ''),
+      prenom: String(carte && carte.prenom || ''),
+      solde_client: Number(carte && carte.solde_client || 0)
+    };
+    cceChan.postMessage({ type: 'cce-scan-response', carte: safeCarte });
     waitingForScan = false;
     document.getElementById('cce-waiting').classList.remove('visible');
   }

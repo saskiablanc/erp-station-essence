@@ -99,6 +99,95 @@ window.TicketPaymentShared = (() => {
     }
   }
 
+  async function requestCcePinFromSimulator(cceContext = null) {
+    if (typeof BroadcastChannel === 'undefined') {
+      await Swal.fire({
+        ...swalBase,
+        icon: 'error',
+        title: 'Saisie code CCE indisponible',
+        html: 'Ce navigateur ne supporte pas le canal de communication du code CCE.',
+        confirmButtonText: 'Fermer',
+      });
+      return { ok: false, status: 'error', message: 'Canal de communication indisponible.' };
+    }
+
+    const idCarte = Number(cceContext?.idCarte || cceContext?.id_carte_CE || 0);
+    if (idCarte <= 0) {
+      return { ok: false, status: 'error', message: 'Carte CCE invalide.' };
+    }
+
+    const requestId = `cce-auth-${Date.now()}-${Math.floor(Math.random() * 1e6)}`;
+    const channel = new BroadcastChannel('unica-cce-scan');
+    let onMessage = null;
+
+    try {
+      const responsePromise = new Promise((resolve) => {
+        onMessage = (event) => {
+          const data = event?.data || null;
+          if (!data || data.type !== 'cce-auth-response') return;
+          if (String(data.request_id || '') !== requestId) return;
+          resolve({ source: 'simulator', data });
+        };
+        channel.addEventListener('message', onMessage);
+      });
+
+      channel.postMessage({
+        type: 'cce-auth-request',
+        request_id: requestId,
+        id_carte_CE: idCarte,
+        customer: {
+          nom: String(cceContext?.nom || ''),
+          prenom: String(cceContext?.prenom || ''),
+        },
+      });
+
+      const popupPromise = Swal.fire({
+        ...swalBase,
+        title: 'Le client saisit son code CCE',
+        html: `
+          <div style="text-align:center;padding:10px 0;">
+            <div style="margin-bottom:14px;color:var(--text-mid,#4b5563);font-size:13px;">
+              Saisie en attente sur le terminal du simulateur...
+            </div>
+            <div style="display:inline-block;width:10px;height:10px;border-radius:50%;background:var(--accent,#6366f1);animation:ticket-wait-pulse 1.2s ease-in-out infinite;"></div>
+            <style>@keyframes ticket-wait-pulse{0%,100%{opacity:.3}50%{opacity:1}}</style>
+          </div>
+        `,
+        showConfirmButton: false,
+        showCancelButton: true,
+        cancelButtonText: 'Annuler',
+        allowOutsideClick: false,
+        allowEscapeKey: false,
+      }).then(() => ({ source: 'swal' }));
+
+      const raceResult = await Promise.race([responsePromise, popupPromise]);
+      if (raceResult?.source === 'swal') {
+        channel.postMessage({ type: 'cce-auth-cancel', request_id: requestId });
+        return { ok: false, status: 'cancel' };
+      }
+
+      Swal.close();
+
+      const status = String(raceResult?.data?.status || '').toLowerCase();
+      if (status === 'ok') {
+        return { ok: true, status: 'ok' };
+      }
+      if (status === 'cancel') {
+        return { ok: false, status: 'cancel' };
+      }
+      return {
+        ok: false,
+        status: status || 'error',
+        message: String(raceResult?.data?.message || '').trim(),
+      };
+    } finally {
+      if (onMessage) {
+        channel.removeEventListener('message', onMessage);
+      }
+      channel.close();
+    }
+  }
+
   function formatMoney(value) {
     return `${Number(value || 0).toFixed(2)} EUR`;
   }
@@ -229,6 +318,7 @@ window.TicketPaymentShared = (() => {
     getSelectedCceId,
     setSelectedCce,
     requestCceScanFromSimulator,
+    requestCcePinFromSimulator,
     formatMoney,
     formatMoneyEuro,
     parseEuroInput,

@@ -650,18 +650,19 @@ class Cce
         if ($raw === '') {
             throw new RuntimeException('Code secret requis');
         }
-        if (!preg_match('/^[1-9][0-9]{3}$/', $raw)) {
-            throw new RuntimeException('Le code secret doit contenir 4 chiffres (1000 à 9999).');
-        }
-        if ($this->isWeakCodeSecret($raw)) {
-            throw new RuntimeException('Code secret trop faible : choisissez 4 chiffres non séquentiels.');
+        if (!preg_match('/^\d+$/', $raw)) {
+            throw new RuntimeException('Le code secret doit contenir uniquement des chiffres.');
         }
 
-        $code = (int) $raw;
-        if ($this->isCodeSecretAlreadyUsed($code)) {
-            throw new RuntimeException('Ce code secret est déjà utilisé par une autre carte.');
+        $normalized = ltrim($raw, '0');
+        if ($normalized === '') {
+            $normalized = '0';
         }
-        return $code;
+        if (strlen($normalized) > 10 || (strlen($normalized) === 10 && strcmp($normalized, '2147483647') > 0)) {
+            throw new RuntimeException('Le code secret est trop grand.');
+        }
+
+        return (int) $normalized;
     }
 
     private function isWeakCodeSecret(string $pin): bool

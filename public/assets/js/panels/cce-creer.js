@@ -95,29 +95,8 @@ const CceCreatePanel = (() => {
 
   function validateCodeSecret(raw) {
     const value = String(raw || "").trim();
-    if (!/^[1-9][0-9]{3}$/.test(value)) {
-      throw new Error("Le code secret doit contenir 4 chiffres (de 1000 à 9999).");
-    }
-
-    if (/^(\d)\1{3}$/.test(value)) {
-      throw new Error("Code secret trop faible : évitez les chiffres identiques.");
-    }
-
-    const commonPins = new Set(["1234", "4321", "1212", "1000", "2000", "2020"]);
-    if (commonPins.has(value)) {
-      throw new Error("Code secret trop faible : choisissez un code moins prévisible.");
-    }
-
-    let inc = true;
-    let dec = true;
-    for (let i = 1; i < value.length; i += 1) {
-      const prev = Number(value[i - 1]);
-      const current = Number(value[i]);
-      if (current !== prev + 1) inc = false;
-      if (current !== prev - 1) dec = false;
-    }
-    if (inc || dec) {
-      throw new Error("Code secret trop faible : évitez les suites numériques.");
+    if (!value) {
+      throw new Error("Le code secret est requis.");
     }
 
     return value;
@@ -286,7 +265,7 @@ const CceCreatePanel = (() => {
 
       form.reset();
       setFeedback(form, "");
-      Toast.ok(`CCE créée - code ${cce.code_secret}`);
+      Toast.ok("CCE créée");
       await showSuccess(cce);
       window.dispatchEvent(
         new CustomEvent("cce:created", {
