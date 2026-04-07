@@ -1049,6 +1049,8 @@ var Sim = (function() {
         { id: 'achat-erreur', label: 'Erreur produit', kind: 'simple', opts: { icon: 'error', title: 'Erreur', text: 'Produit invalide.' } },
         { id: 'achat-ajoute', label: 'Article ajouté', kind: 'simple', opts: { icon: 'success', title: 'Article ajouté', text: 'L’article a été ajouté au panier.' } },
         { id: 'achat-liste', label: 'Liste articles', kind: 'simple', opts: { title: 'Liste articles', html: '<div style="text-align:left">• 3760123456789 — Eau 1L<br>• 3017620425035 — Chips</div>' } },
+        { id: 'achat-codebarres', label: 'Clavier code-barres', kind: 'simple', opts: { title: 'Saisie code-barres', html: '<div>Pavé numérique code-barres</div>' } },
+        { id: 'achat-liste-erreur', label: 'Erreur liste articles', kind: 'simple', opts: { icon: 'error', title: 'Erreur', text: 'Impossible de charger la liste des articles.' } },
         { id: 'achat-panier-vide', label: 'Panier vide', kind: 'simple', opts: { icon: 'warning', title: 'Panier vide', text: 'Ajoutez au moins un produit avant encaissement.' } },
         { id: 'achat-retirer', label: 'Retirer produit', kind: 'confirm', opts: { title: 'Retirer ce produit ?', text: 'La ligne sera supprimée du panier.' } },
         { id: 'achat-stock', label: 'Stock insuffisant', kind: 'simple', opts: { icon: 'warning', title: 'Stock insuffisant', text: 'Cet article n’est plus en stock.' } }
@@ -1065,6 +1067,9 @@ var Sim = (function() {
         { id: 'pay-solde-ko', label: 'Solde CCE insuffisant', kind: 'simple', opts: { icon: 'warning', title: 'Solde CCE insuffisant', html: 'Solde courant : <strong>5.00 EUR</strong><br>Montant CCE : <strong>18.20 EUR</strong>' } },
         { id: 'pay-cce-invalide', label: 'Carte CCE invalide', kind: 'simple', opts: { icon: 'error', title: 'Carte CCE invalide', text: 'Aucune carte CCE valide n’a été scannée.' } },
         { id: 'pay-cce-indispo', label: 'Carte CCE indisponible', kind: 'simple', opts: { icon: 'error', title: 'Carte CCE indisponible', text: 'Impossible de charger la carte CCE scannée.' } },
+        { id: 'pay-cce-pin-wait', label: 'Attente saisie code CCE', kind: 'simple', opts: { title: 'Le client saisit son code CCE', html: '<div>Saisie en attente sur le terminal du simulateur...</div>' } },
+        { id: 'pay-cce-pin-failed', label: 'Code CCE incorrect', kind: 'simple', opts: { icon: 'error', title: 'Paiement CCE annulé', text: 'Code CCE incorrect après 3 tentatives.' } },
+        { id: 'pay-cce-pin-indispo', label: 'Code CCE indisponible', kind: 'simple', opts: { icon: 'error', title: 'Saisie code CCE indisponible', text: 'Canal de communication indisponible.' } },
         { id: 'pay-cce-loading', label: 'Paiement CCE en cours', kind: 'loading', opts: { title: 'Paiement CCE en cours', html: 'Validation du paiement CCE...' } },
         { id: 'pay-cb-loading', label: 'Paiement CB en cours', kind: 'loading', opts: { title: 'Paiement carte bleue en cours', html: 'Connexion au terminal CB...' } },
         { id: 'pay-especes', label: 'Saisie espèces', kind: 'simple', opts: { title: 'Saisie espèces', html: '<div style="font-size:24px;letter-spacing:1px;margin-bottom:10px">0.00 EUR</div><div>Clavier numérique TPE</div>' } },
@@ -1083,28 +1088,48 @@ var Sim = (function() {
         { id: 'cce-tx', label: 'Transactions CCE', kind: 'simple', opts: { title: 'Transactions CCE', html: '<div style="text-align:left">12/03/2026 — Paiement — -18.40€<br>10/03/2026 — Rechargement — +50.00€</div>' } },
         { id: 'cce-recharge-ko', label: 'Rechargement impossible', kind: 'simple', opts: { icon: 'error', title: 'Rechargement impossible', text: 'Une erreur est survenue.' } },
         { id: 'cce-create-confirm', label: 'Confirmer création', kind: 'confirm', opts: { title: 'Confirmer la création de la carte CCE', text: 'Valider la création de cette carte ?' } },
-        { id: 'cce-code', label: 'Client choisit son code', kind: 'timer', opts: { title: 'Le client choisit son code', html: 'Veuillez patienter...', icon: 'info' } },
-        { id: 'cce-create-cancel', label: 'Création annulée', kind: 'simple', opts: { icon: 'info', title: 'Création CCE annulée', text: 'La création de la carte a été annulée.' } },
+        { id: 'cce-code', label: 'Attente code client (TPE)', kind: 'simple', opts: { title: 'Le client choisit son code', html: 'Saisie en attente sur le TPE du simulateur...' } },
+        { id: 'cce-create-cancel', label: 'Création annulée', kind: 'simple', opts: { icon: 'error', title: 'Création CCE annulée', text: 'La création de la carte a été annulée.' } },
         { id: 'cce-create-ok', label: 'Création terminée', kind: 'simple', opts: { icon: 'success', title: 'Création CCE terminée', text: 'La carte CCE a bien été créée.' } },
-        { id: 'cce-create-ko', label: 'Création impossible', kind: 'simple', opts: { icon: 'error', title: 'Création CCE impossible', text: 'Une erreur est survenue pendant la création.' } }
+        { id: 'cce-create-ko', label: 'Création impossible', kind: 'simple', opts: { icon: 'error', title: 'Création CCE impossible', text: 'Une erreur est survenue pendant la création.' } },
+        { id: 'cce-recharge-amount', label: 'Montant rechargement', kind: 'simple', opts: { title: 'Montant à ajouter', html: '<div>Clavier numérique TPE</div>' } },
+        { id: 'cce-recharge-ok', label: 'Rechargement réussi', kind: 'simple', opts: { icon: 'success', title: 'Paiement accepté', html: 'Rechargement CCE effectué avec succès.' } },
+        { id: 'cce-transactions', label: 'Transactions détaillées', kind: 'simple', opts: { title: 'Transactions CCE', html: 'Vue détaillée des transactions CCE.' } },
+        { id: 'cce-transactions-ko', label: 'Transactions erreur', kind: 'simple', opts: { icon: 'error', title: 'Transactions CCE', text: 'Chargement des transactions CCE impossible.' } }
       ]
     },
     {
       category: 'Gérant',
       items: [
-        { id: 'gerant-bdd-add-ko', label: 'Ajout non disponible', kind: 'simple', opts: { icon: 'warning', title: 'Ajout non disponible', text: 'Ajout indisponible sur cette table.' } },
+        { id: 'gerant-bdd-ok', label: 'BDD succès', kind: 'simple', opts: { icon: 'success', title: 'Modification enregistrée', text: 'La ligne a bien été mise à jour.' } },
+        { id: 'gerant-bdd-error', label: 'BDD erreur', kind: 'simple', opts: { icon: 'error', title: 'Erreur', text: 'Impossible de sauvegarder la ligne.' } },
+        { id: 'gerant-bdd-confirm', label: 'BDD confirmation', kind: 'confirm', opts: { title: 'Confirmation', text: 'Confirmer la modification ?' } },
+        { id: 'gerant-bdd-add-ko', label: 'Ajout non disponible', kind: 'simple', opts: { icon: 'info', title: 'Ajout non disponible', text: 'Cette table se gère via son panel dédié.' } },
         { id: 'gerant-bdd-add', label: 'Ajouter une ligne', kind: 'simple', opts: { title: 'Ajouter une ligne', html: '<div>Formulaire d’ajout (prévisualisation)</div>' } },
         { id: 'gerant-bdd-edit', label: 'Modifier la ligne', kind: 'simple', opts: { title: 'Modifier la ligne', html: '<div>Formulaire de modification (prévisualisation)</div>' } },
+        { id: 'gerant-bdd-delete', label: 'Supprimer ligne', kind: 'confirm', opts: { title: 'Supprimer la ligne ?', text: 'Cette action peut supprimer des dépendances.' } },
         { id: 'gerant-horaires-ko', label: 'Horaires erreur', kind: 'simple', opts: { icon: 'error', title: 'Erreur : Valeurs Incorrectes.', text: 'Format des horaires invalide.' } },
         { id: 'gerant-horaires-ok', label: 'Horaires succès', kind: 'simple', opts: { icon: 'success', title: 'Nouveaux horaires bien enregistrés !', text: 'Les horaires ont été mis à jour.' } },
         { id: 'gerant-horaires-copy', label: 'Appliquer aux jours', kind: 'simple', opts: { title: 'Appliquer pareil pour les jours suivants ?', html: 'Choix des jours à appliquer.' } },
-        { id: 'gerant-incident-cancel', label: 'Incident annulé', kind: 'simple', opts: { icon: 'info', title: 'Opération Annulée', text: 'Aucune fiche incident créée.' } },
+        { id: 'gerant-incident-form', label: 'Créer incident (formulaire)', kind: 'simple', opts: { title: 'Créer un incident', html: '<div>Formulaire incident</div>' } },
+        { id: 'gerant-incident-cancel', label: 'Incident annulé', kind: 'simple', opts: { icon: 'error', title: 'Opération Annulée', text: 'Aucune fiche incident créée.' } },
         { id: 'gerant-incident-ok', label: 'Incident créé', kind: 'simple', opts: { icon: 'success', title: 'Fiche incident #INC-2026-001 a été créée', text: 'L’incident a bien été enregistré.' } },
         { id: 'gerant-incident-ko', label: 'Incident erreur', kind: 'simple', opts: { icon: 'error', title: 'Création impossible', text: 'Erreur pendant la création de la fiche incident.' } },
+        { id: 'gerant-fermeture-add', label: 'Ajouter jour fermeture', kind: 'confirm', opts: { title: 'Ajouter un jour annuel ?', text: 'Ce jour de fermeture sera répété chaque année.' } },
+        { id: 'gerant-fermeture-add-exception', label: 'Ajouter fermeture exceptionnelle', kind: 'confirm', opts: { title: 'Ajouter un jour exceptionnel ?', text: 'Ce jour de fermeture sera ajouté une seule fois.' } },
+        { id: 'gerant-fermeture-delete', label: 'Supprimer jour fermeture', kind: 'confirm', opts: { title: 'Supprimer ce jour de fermeture ?', text: 'Cette action est irréversible.' } },
         { id: 'gerant-cce-bonus-delete', label: 'Supprimer tranche bonus CCE', kind: 'confirm', opts: { title: 'Supprimer la tranche bonus ?', text: 'Cette tranche bonus sera supprimée définitivement.' } },
+        { id: 'gerant-cce-bonus-delete-new', label: 'Supprimer bonus non enregistré', kind: 'confirm', opts: { title: 'Supprimer la tranche bonus ?', text: 'Cette tranche bonus non enregistrée sera retirée.' } },
+        { id: 'gerant-cce-popup-info', label: 'Popup paramètres CCE', kind: 'simple', opts: { icon: 'success', title: 'Valeurs modifiées', text: 'Le montant minimum a bien été mis à jour.' } },
+        { id: 'gerant-prix-popup-info', label: 'Popup prix carburant', kind: 'simple', opts: { icon: 'success', title: 'Prix modifiés', text: 'Seuls les prix carburant ont été mis à jour.' } },
+        { id: 'gerant-reappro-defauts-popup', label: 'Popup valeurs défaut', kind: 'simple', opts: { icon: 'success', title: 'Valeurs enregistrées', text: '3 articles ont été mis à jour.' } },
+        { id: 'gerant-reappro-defauts-confirm', label: 'Confirmer valeurs défaut', kind: 'confirm', opts: { title: 'Confirmer les nouvelles valeurs ?', text: 'Les paramètres de réapprovisionnement seront mis à jour.' } },
         { id: 'gerant-reappro-arrivee', label: 'Réappro arrivée', kind: 'confirm', opts: { title: 'Réapprovisionnement #42', text: 'Confirmer la réception de la livraison ?' } },
         { id: 'gerant-reappro-annuler', label: 'Annuler réappro', kind: 'confirm', opts: { title: 'Annuler le réapprovisionnement #42', text: 'Cette action est irréversible.' } },
         { id: 'gerant-reappro-ok', label: 'Commande envoyée', kind: 'simple', opts: { icon: 'success', title: 'Commande envoyée', text: 'Le réapprovisionnement manuel a été créé.' } },
+        { id: 'gerant-reappro-auto-review', label: 'Réappro auto (review)', kind: 'confirm', opts: { title: 'Réappro auto #42', text: 'Le seuil d\'alerte a déclenché un réapprovisionnement automatique.' } },
+        { id: 'gerant-reappro-auto-employe', label: 'Réappro auto (employé)', kind: 'simple', opts: { icon: 'warning', title: 'Seuil d’alerte atteint', text: 'Prévenez le gérant pour ajuster la commande.' } },
+        { id: 'gerant-reappro-auto-fallback', label: 'Réappro auto (fallback)', kind: 'simple', opts: { icon: 'warning', title: 'Seuil d’alerte atteint', text: 'Le détail du réappro n’a pas pu être chargé.' } },
         { id: 'gerant-validation', label: 'Validation journée', kind: 'confirm', opts: { title: 'Confirmer la validation ?', text: 'Les tables du jour seront verrouillées.' } }
       ]
     },
@@ -1112,6 +1137,15 @@ var Sim = (function() {
       category: 'Système',
       items: [
         { id: 'sys-seuil', label: 'Seuil d’alerte', kind: 'simple', opts: { icon: 'warning', title: 'Seuil d’alerte atteint', text: 'Un produit est passé sous le seuil d’alerte.' } }
+      ]
+    },
+    {
+      category: 'Pompes / Bornes',
+      items: [
+        { id: 'carb-info-none', label: 'Pompe sans transaction', kind: 'simple', opts: { icon: 'info', title: 'Pompe n°2', text: 'Aucune transaction en cours ou passée.' } },
+        { id: 'carb-info-detail', label: 'Détails pompe carburant', kind: 'simple', opts: { title: 'Informations pompe n°2', html: 'Détail transaction carburant.' } },
+        { id: 'elec-info-none', label: 'Borne sans transaction', kind: 'simple', opts: { icon: 'info', title: 'Borne n°7', text: 'Aucune transaction en cours ou passée.' } },
+        { id: 'elec-info-detail', label: 'Détails borne électrique', kind: 'simple', opts: { title: 'Informations borne n°7', html: 'Détail transaction électrique.' } }
       ]
     }
   ];
@@ -1958,9 +1992,7 @@ var Sim = (function() {
     var message = {
       type: 'popup-trigger',
       payload: {
-        id: item.id,
-        kind: item.kind,
-        opts: item.opts || {}
+        id: item.id
       }
     };
 
