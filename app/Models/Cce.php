@@ -24,6 +24,9 @@ class Cce
         $prenom = $this->normalizeName((string) ($data['prenom'] ?? ''), 'prenom');
         $email = $this->normalizeEmail((string) ($data['email'] ?? ''));
         $telephone = $this->normalizeTelephone((string) ($data['telephone'] ?? ''));
+        $providedCodeSecret = array_key_exists('code_secret', $data)
+            ? $this->normalizeProvidedCodeSecret($data['code_secret'])
+            : null;
         $duplicate = $this->findDuplicateByContact($email, $telephone);
         if ($duplicate) {
             $duplicateEmail = (bool) ($duplicate['duplicate_email'] ?? false);
@@ -64,7 +67,7 @@ class Cce
                 throw new RuntimeException('Création du client impossible');
             }
 
-            $codeSecret = $this->generateUniqueCodeSecret();
+            $codeSecret = $providedCodeSecret ?? $this->generateUniqueCodeSecret();
 
             $this->db->execute(
                 'INSERT INTO `CarteCE`
@@ -641,16 +644,70 @@ class Cce
         return $cce;
     }
 
+    private function normalizeProvidedCodeSecret(mixed $value): int
+    {
+        $raw = trim((string) $value);
+        if ($raw === '') {
+            throw new RuntimeException('Code secret requis');
+        }
+        if (!preg_match('/^[1-9][0-9]{3}$/', $raw)) {
+            throw new RuntimeException('Le code secret doit contenir 4 chiffres (1000 à 9999).');
+        }
+        if ($this->isWeakCodeSecret($raw)) {
+            throw new RuntimeException('Code secret trop faible : choisissez 4 chiffres non séquentiels.');
+        }
+
+        $code = (int) $raw;
+        if ($this->isCodeSecretAlreadyUsed($code)) {
+            throw new RuntimeException('Ce code secret est déjà utilisé par une autre carte.');
+        }
+        return $code;
+    }
+
+    private function isWeakCodeSecret(string $pin): bool
+    {
+        if (preg_match('/^(\d)\1{3}$/', $pin) === 1) {
+            return true;
+        }
+
+        $commonPins = ['1234', '4321', '1212', '1000', '2000', '2020'];
+        if (in_array($pin, $commonPins, true)) {
+            return true;
+        }
+
+        $inc = true;
+        $dec = true;
+        $digits = str_split($pin);
+        for ($i = 1; $i < count($digits); $i++) {
+            $prev = (int) $digits[$i - 1];
+            $cur = (int) $digits[$i];
+            if ($cur !== $prev + 1) {
+                $inc = false;
+            }
+            if ($cur !== $prev - 1) {
+                $dec = false;
+            }
+        }
+
+        return $inc || $dec;
+    }
+
+    private function isCodeSecretAlreadyUsed(int $code): bool
+    {
+        return (bool) $this->db->query(
+            'SELECT 1 FROM `CarteCE` WHERE code_secret = :code LIMIT 1',
+            ['code' => $code]
+        )->fetchColumn();
+    }
+
     private function generateUniqueCodeSecret(): int
     {
         for ($attempt = 0; $attempt < 25; $attempt++) {
             $code = random_int(1000, 9999);
-            $stmt = $this->db->query(
-                'SELECT 1 FROM `CarteCE` WHERE code_secret = :code LIMIT 1',
-                ['code' => $code]
-            );
-
-            if (!$stmt->fetchColumn()) {
+            if ($this->isWeakCodeSecret((string) $code)) {
+                continue;
+            }
+            if (!$this->isCodeSecretAlreadyUsed($code)) {
                 return $code;
             }
         }

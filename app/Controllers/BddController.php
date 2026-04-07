@@ -127,6 +127,22 @@ class BddController extends Controller
         ];
     }
 
+    private function profileTableScopes(): array
+    {
+        return [
+            'archive' => [
+                'transaction',
+                'transaction_cce',
+                'transaction_produit',
+                'transaction_energie',
+                'recu',
+                'fiche_incident',
+                'validation_transactions',
+                'validation_incidents',
+            ],
+        ];
+    }
+
     private function getPhysicalTables(string $profile): array
     {
         $rows = Database::getInstance($profile)
@@ -161,6 +177,19 @@ class BddController extends Controller
                 if ($ok) {
                     $available[] = $schema;
                 }
+            }
+
+            $scopes = $this->profileTableScopes();
+            if (isset($scopes[$profile]) && is_array($scopes[$profile])) {
+                $allowed = array_values(array_unique(array_map(
+                    static fn($table) => trim((string) $table),
+                    $scopes[$profile]
+                )));
+                $allowedSet = array_flip(array_filter($allowed, static fn($table) => $table !== ''));
+                $available = array_values(array_filter(
+                    $available,
+                    static fn($table) => isset($allowedSet[$table])
+                ));
             }
 
             return ['tables' => $available];

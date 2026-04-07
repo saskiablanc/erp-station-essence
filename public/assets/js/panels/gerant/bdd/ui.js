@@ -16,13 +16,45 @@
     sortGroups,
   } = ns;
 const ARCHIVE_YEARS = ["2021", "2022", "2023", "2024", "2025"];
+const PROFILE_TABLE_SCOPES = {
+  archive: [
+    "transaction",
+    "transaction_cce",
+    "transaction_produit",
+    "transaction_energie",
+    "recu",
+    "fiche_incident",
+    "validation_transactions",
+    "validation_incidents",
+  ],
+};
 
-function isReadOnlyProfile(root) {
-  const profile =
+function getProfileForRoot(root) {
+  return (
     root?._bddProfile ||
     (typeof Requetes !== "undefined" && Requetes.bddGetProfile
       ? Requetes.bddGetProfile()
-      : "courante");
+      : "courante")
+  );
+}
+
+function getScopedVisibleTables(profile, visibleTables = null) {
+  const scoped = PROFILE_TABLE_SCOPES[String(profile || "").trim()];
+  if (!Array.isArray(scoped) || !scoped.length) {
+    return Array.isArray(visibleTables) ? visibleTables : null;
+  }
+
+  const scopeSet = new Set(
+    scoped.map((id) => String(id || "").trim()).filter(Boolean),
+  );
+  if (!Array.isArray(visibleTables)) {
+    return Array.from(scopeSet);
+  }
+  return visibleTables.filter((id) => scopeSet.has(String(id || "").trim()));
+}
+
+function isReadOnlyProfile(root) {
+  const profile = getProfileForRoot(root);
   return profile !== "courante";
 }
 
@@ -31,7 +63,7 @@ function getGroupsForRoot(root) {
     ? root._bddVisibleTables
     : null;
   const groups = sortGroups(GROUPS);
-  if (!visible || visible.length === 0) return groups;
+  if (visible === null) return groups;
   const visibleSet = new Set(visible.map((id) => String(id || "").trim()));
   return groups.filter((group) => visibleSet.has(group.id));
 }
@@ -45,13 +77,14 @@ function profileLabel(profile) {
 }
 
 function applyProfileMode(root) {
-  const schema = SCHEMAS[root._bddTable || "produit"] || {};
+  const tableId = String(root?._bddTable || "").trim();
+  const schema = SCHEMAS[tableId] || null;
   const addBtn = root.querySelector(".bdd-add-btn");
   const readOnly = isReadOnlyProfile(root);
   const yearWrap = root.querySelector(".bdd-year-wrap");
 
   if (addBtn) {
-    addBtn.style.display = schema.canAdd && !readOnly ? "" : "none";
+    addBtn.style.display = schema?.canAdd && !readOnly ? "" : "none";
   }
   if (yearWrap) {
     yearWrap.style.display = readOnly ? "inline-flex" : "none";
@@ -60,21 +93,23 @@ function applyProfileMode(root) {
 }
 
 async function refreshVisibleTables(root) {
-  let visible = null;
+  const profile = getProfileForRoot(root);
+  let visible = getScopedVisibleTables(profile);
   try {
     const resp = await Requetes.bddTables();
     if (Array.isArray(resp?.tables)) {
-      visible = resp.tables
+      const fromApi = resp.tables
         .map((id) => String(id || "").trim())
         .filter(Boolean);
+      visible = getScopedVisibleTables(profile, fromApi);
     }
   } catch (_) {}
 
-  root._bddVisibleTables = visible;
+  root._bddVisibleTables = Array.isArray(visible) ? visible : null;
 
   const groups = getGroupsForRoot(root);
   if (!groups.some((g) => g.id === root._bddTable)) {
-    root._bddTable = groups[0]?.id || getDefaultTableId();
+    root._bddTable = groups[0]?.id || "";
   }
   renderNav(root);
 }
@@ -180,6 +215,11 @@ function renderNav(root) {
   const nav = root.querySelector(".bdd-nav");
   if (!nav) return;
   const groups = getGroupsForRoot(root);
+  if (groups.length === 0) {
+    root._bddTable = "";
+    nav.innerHTML = "";
+    return;
+  }
 
   const activeTable =
     root._bddTable && SCHEMAS[root._bddTable] && groups.some((g) => g.id === root._bddTable)
@@ -222,7 +262,7 @@ function buildHTML() {
 //  Rendu tableau
 // ════════════════════════════════════════════════════════
 function renderTable(root, schema, rows, lockedDates) {
-  const tableId = root._bddTable || "produit";
+  const tableId = String(root?._bddTable || "").trim();
   const thead = root.querySelector(".bdd-thead-row");
   const tbody = root.querySelector(".bdd-tbody");
   if (!thead || !tbody) return;
@@ -287,8 +327,8 @@ function setLoading(root, on) {
 }
 
 async function loadTable(root) {
-  const schema = SCHEMAS[root._bddTable || "produit"];
-  const tableId = root._bddTable || "produit";
+  const tableId = String(root?._bddTable || "").trim();
+  const schema = SCHEMAS[tableId];
   const tbody = root.querySelector(".bdd-tbody");
   if (tbody)
     tbody.innerHTML = `<tr><td class="bdd-empty" colspan="10">Chargement…</td></tr>`;

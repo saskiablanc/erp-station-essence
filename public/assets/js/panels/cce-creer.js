@@ -93,17 +93,114 @@ const CceCreatePanel = (() => {
     return result.isConfirmed;
   }
 
-  async function showCodeChoiceStep() {
-    await Swal.fire({
-      ...swalBase,
-      icon: "info",
-      title: "Le client choisit son code",
-      timer: 3000,
-      timerProgressBar: true,
-      showConfirmButton: false,
-      allowOutsideClick: false,
-      allowEscapeKey: false,
-    });
+  function validateCodeSecret(raw) {
+    const value = String(raw || "").trim();
+    if (!/^[1-9][0-9]{3}$/.test(value)) {
+      throw new Error("Le code secret doit contenir 4 chiffres (de 1000 à 9999).");
+    }
+
+    if (/^(\d)\1{3}$/.test(value)) {
+      throw new Error("Code secret trop faible : évitez les chiffres identiques.");
+    }
+
+    const commonPins = new Set(["1234", "4321", "1212", "1000", "2000", "2020"]);
+    if (commonPins.has(value)) {
+      throw new Error("Code secret trop faible : choisissez un code moins prévisible.");
+    }
+
+    let inc = true;
+    let dec = true;
+    for (let i = 1; i < value.length; i += 1) {
+      const prev = Number(value[i - 1]);
+      const current = Number(value[i]);
+      if (current !== prev + 1) inc = false;
+      if (current !== prev - 1) dec = false;
+    }
+    if (inc || dec) {
+      throw new Error("Code secret trop faible : évitez les suites numériques.");
+    }
+
+    return value;
+  }
+
+  async function requestCodeFromSimulator(customer) {
+    if (typeof BroadcastChannel === "undefined") {
+      throw new Error("Le navigateur ne supporte pas la communication avec le simulateur.");
+    }
+
+    const requestId = `cce-code-${Date.now()}-${Math.floor(Math.random() * 1e6)}`;
+    const channel = new BroadcastChannel("unica-cce-scan");
+    let cleanup = null;
+
+    try {
+      const responsePromise = new Promise((resolve) => {
+        function onMessage(event) {
+          const data = event?.data || null;
+          if (!data || data.type !== "cce-code-response") return;
+          if (String(data.request_id || "") !== requestId) return;
+          channel.removeEventListener("message", onMessage);
+          resolve(data);
+        }
+
+        cleanup = () => channel.removeEventListener("message", onMessage);
+        channel.addEventListener("message", onMessage);
+      });
+
+      channel.postMessage({
+        type: "cce-code-request",
+        request_id: requestId,
+        customer: {
+          nom: String(customer?.nom || ""),
+          prenom: String(customer?.prenom || ""),
+        },
+      });
+
+      const swalPromise = Swal.fire({
+        ...swalBase,
+        icon: "info",
+        title: "Le client choisit son code",
+        html: `
+          <div style="text-align:center;padding:8px 0;">
+            <div style="margin-bottom:12px;">Saisie en attente sur le TPE du simulateur...</div>
+            <div style="display:inline-block;width:10px;height:10px;border-radius:50%;background:var(--accent,#6366f1);animation:cce-create-wait 1.2s ease-in-out infinite;"></div>
+            <style>@keyframes cce-create-wait{0%,100%{opacity:.3}50%{opacity:1}}</style>
+          </div>
+        `,
+        showConfirmButton: false,
+        showCancelButton: true,
+        cancelButtonText: "Annuler",
+        allowOutsideClick: false,
+        allowEscapeKey: false,
+      });
+
+      const winner = await Promise.race([
+        responsePromise.then((data) => ({ source: "simulator", data })),
+        swalPromise.then(() => ({ source: "swal" })),
+      ]);
+
+      if (winner.source === "swal") {
+        channel.postMessage({ type: "cce-code-cancel", request_id: requestId });
+        return null;
+      }
+
+      Swal.close();
+
+      const status = String(winner.data?.status || "").toLowerCase();
+      if (status === "cancel") {
+        return null;
+      }
+      if (status !== "ok") {
+        const message =
+          String(winner.data?.message || "").trim() ||
+          "Saisie du code impossible depuis le simulateur.";
+        throw new Error(message);
+      }
+
+      return validateCodeSecret(String(winner.data?.code_secret || ""));
+    } finally {
+      if (typeof cleanup === "function") cleanup();
+      channel.close();
+    }
   }
 
   async function showCancelled() {
@@ -165,7 +262,11 @@ const CceCreatePanel = (() => {
 
     try {
       await Requetes.checkCCEDuplicate({ nom, prenom, email, telephone });
-      await showCodeChoiceStep();
+      const codeSecret = await requestCodeFromSimulator({ nom, prenom });
+      if (!codeSecret) {
+        await showCancelled();
+        return;
+      }
 
       const confirmed = await askConfirmation();
       if (!confirmed) {
@@ -173,7 +274,13 @@ const CceCreatePanel = (() => {
         return;
       }
 
-      const result = await createCce({ nom, prenom, email, telephone });
+      const result = await createCce({
+        nom,
+        prenom,
+        email,
+        telephone,
+        code_secret: codeSecret,
+      });
 
       const cce = result.cce || result;
 
