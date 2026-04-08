@@ -1,0 +1,151 @@
+/* Stock panel */
+.stock-panel {
+  height: calc(100% + 24px);
+  margin: -12px;
+  display: flex;
+  flex-direction: column;
+  background: rgba(255, 255, 255, 0.72);
+  border: 2px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.stock-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 8px 10px 6px;
+  border-bottom: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.78);
+}
+
+.stock-switch {
+  display: inline-flex;
+  gap: 6px;
+}
+
+.stock-switch-btn {
+  height: 26px;
+  padding: 0 12px;
+  border-radius: 999px;
+  border: 2px solid var(--border);
+  background: rgba(255, 255, 255, 0.86);
+  color: var(--text-mid);
+  font-size: 11px;
+  box-shadow: var(--shadow-soft);
+}
+
+.stock-switch-btn.active {
+  background: var(--btn-grad);
+  color: var(--accent);
+  border-color: var(--border-active);
+}
+
+.stock-toolbar .stock-search-input {
+  flex: 0 0 116px !important;
+  width: 116px !important;
+  min-width: 116px !important;
+  max-width: 116px !important;
+  margin-left: auto;
+  height: 26px !important;
+  padding: 0 12px !important;
+  border-radius: 999px;
+  border: 2px solid var(--border);
+  background: rgba(255, 255, 255, 0.86);
+  color: var(--text-mid);
+  font-size: 11px;
+  box-shadow: var(--shadow-soft);
+  outline: none;
+}
+
+.stock-toolbar .stock-search-input:focus {
+  border-color: var(--border-active);
+}
+
+.stock-toolbar .stock-search-input::placeholder {
+  font-size: 11px;
+  color: #9ca3af;
+}
+
+.stock-table-wrap {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+}
+
+.stock-table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+.stock-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: rgba(255, 255, 255, 0.9);
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 600;
+  text-align: left;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--border);
+}
+
+.stock-table thead th:last-child {
+  text-align: right;
+}
+
+.stock-table thead th:not(:last-child),
+.stock-table tbody td:not(:last-child) {
+  border-right: 1px solid var(--border);
+}
+
+.stock-head-qty,
+.stock-head-threshold {
+  text-align: right !important;
+}
+
+.stock-table tbody td {
+  padding: 7px 10px;
+  border-bottom: 1px solid var(--border);
+  color: var(--text-mid);
+  font-size: 12px;
+}
+
+.stock-table tbody tr.stock-row-alert td {
+  background: rgba(245, 158, 11, 0.16);
+  border-bottom-color: rgba(245, 158, 11, 0.35);
+}
+
+.stock-table tbody tr.stock-row-alert td:not(:last-child) {
+  border-right-color: rgba(245, 158, 11, 0.35);
+}
+
+.stock-col-name {
+  width: auto;
+}
+
+.stock-col-qty {
+  width: 24%;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.stock-col-threshold {
+  width: 22%;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.stock-state {
+  text-align: center;
+  color: var(--text-dim);
+  padding: 16px 10px !important;
+}
+
+.stock-state--error {
+  color: var(--danger);
+}

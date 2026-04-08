@@ -1,0 +1,43 @@
+/* ── PANEL : TRANSACTIONS ─────────────────────────────────── */
+.trans-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.trans-item {
+  padding: 10px 12px;
+  background: rgba(255, 255, 255, 0.8);
+  border: 2px solid var(--border);
+  border-radius: 10px;
+  transition: border-color 0.12s;
+  cursor: pointer;
+}
+.trans-item:hover {
+  border-color: var(--border-active);
+}
+.trans-header {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 3px;
+}
+.trans-id {
+  font-size: 10px;
+  color: var(--text-dim);
+}
+.trans-total {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+}
+.trans-meta {
+  display: flex;
+  gap: 12px;
+  font-size: 10px;
+  color: var(--text-dim);
+}
+.trans-mode {
+  padding: 1px 7px;
+  border-radius: 3px;
+  border: 1px solid var(--border);
+}
+

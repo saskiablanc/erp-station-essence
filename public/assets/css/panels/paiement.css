@@ -1,0 +1,118 @@
+/* ── PANEL : PAIEMENT ─────────────────────────────────────── */
+.pay-modes {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+.pay-btn {
+  padding: 14px 10px;
+  background: rgba(255, 255, 255, 0.8);
+  border: 2px solid var(--border);
+  border-radius: 14px;
+  color: var(--text-mid);
+  font-size: 11px;
+  text-align: center;
+  transition: all 0.15s;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+}
+.pay-btn:hover {
+  border-color: var(--border-active);
+  color: var(--text);
+}
+.pay-btn:active {
+  transform: scale(0.97);
+}
+.pay-btn .pi {
+  font-size: 20px;
+}
+.pay-btn.cta {
+  grid-column: span 2;
+  background: var(--btn-grad);
+  border-color: var(--border);
+  color: var(--accent);
+  box-shadow: var(--shadow-soft);
+  font-family: var(--display);
+  font-size: 14px;
+  font-weight: 600;
+  padding: 16px;
+}
+.pay-btn.cancel {
+  border-color: rgba(239, 68, 68, 0.2);
+  color: var(--danger);
+}
+.pay-btn.cancel:hover {
+  background: var(--danger-dim);
+  border-color: var(--danger);
+}
+
+.pay-montant-zone {
+  margin-top: 8px;
+  padding: 10px;
+  background: rgba(255, 255, 255, 0.75);
+  border-radius: 12px;
+  border: 2px solid var(--border);
+  display: none;
+}
+.pay-montant-zone.visible {
+  display: block;
+}
+.pay-montant-label {
+  font-size: 10px;
+  color: var(--text-dim);
+  margin-bottom: 6px;
+}
+.pay-montant-row {
+  display: flex;
+  gap: 8px;
+}
+.pay-montant-input {
+  flex: 1;
+  height: var(--pill-compact-h);
+  padding: 0 var(--pill-compact-px);
+  background: #fff;
+  border: 2px solid var(--border);
+  border-radius: var(--pill-compact-radius);
+  box-shadow: var(--shadow-soft);
+  color: var(--text);
+  font-size: var(--pill-compact-font);
+  font-weight: 600;
+  text-align: center;
+  outline: none;
+  transition: border-color 0.15s;
+}
+.pay-montant-input:focus {
+  border-color: var(--accent-2);
+}
+.pay-montant-valider {
+  height: var(--pill-compact-h);
+  padding: 0 var(--pill-compact-px);
+  background: var(--btn-grad);
+  border: 2px solid var(--border);
+  border-radius: var(--pill-compact-radius);
+  color: var(--accent);
+  box-shadow: var(--shadow-soft);
+  font-size: var(--pill-compact-font);
+}
+.pay-monnaie {
+  margin-top: 8px;
+  padding: 8px 12px;
+  background: rgba(255, 255, 255, 0.8);
+  border-radius: 10px;
+  border: 2px solid var(--border);
+  font-size: 12px;
+  color: var(--accent);
+  display: none;
+}
+.pay-monnaie.visible {
+  display: block;
+}
+.pay-monnaie span {
+  font-family: var(--display);
+  font-size: 20px;
+  font-weight: 700;
+}
+

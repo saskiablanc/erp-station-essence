@@ -1,0 +1,430 @@
+/* PANEL GÉRANT — Jours de fermetures */
+.gf-panel {
+  height: 100%;
+  margin: 0;
+  padding: 2px;
+  background: var(--surface);
+  overflow: hidden;
+  container-type: size;
+}
+
+.gf-layout {
+  height: 100%;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(220px, 55%) minmax(160px, 45%);
+  gap: 6px;
+}
+
+.gf-table-card,
+.gf-form-card {
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.7);
+  box-shadow: 0 8px 20px rgba(99, 102, 241, 0.1);
+  min-width: 0;
+  min-height: 0;
+}
+
+.gf-table-card {
+  border: none;
+}
+
+.gf-form-card {
+  border: 1px solid var(--border);
+}
+
+.gf-table-card {
+  padding: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  overflow: hidden;
+}
+
+.gf-side-title {
+  margin: 0;
+  font-family: var(--display);
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.gf-table-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.75);
+}
+
+.gf-table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+  font-family: var(--mono);
+}
+
+.gf-table th,
+.gf-table td {
+  border-bottom: 1px solid var(--border);
+  border-right: 1px solid var(--border);
+  padding: 6px 8px;
+  color: var(--text);
+  line-height: 1.15;
+  vertical-align: middle;
+}
+
+.gf-table th:last-child,
+.gf-table td:last-child {
+  border-right: none;
+}
+
+.gf-table th {
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  background: #eef0ff;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-mid);
+  text-align: left;
+}
+
+.gf-table th:nth-child(1),
+.gf-table td:nth-child(1) {
+  width: 28%;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.gf-table th:nth-child(2),
+.gf-table td:nth-child(2) {
+  width: 36%;
+  overflow-wrap: anywhere;
+}
+
+.gf-table th:nth-child(3),
+.gf-table td:nth-child(3) {
+  width: 24%;
+  text-align: center;
+}
+
+.gf-table th:nth-child(4),
+.gf-table td:nth-child(4) {
+  width: 12%;
+}
+
+.gf-table tbody tr:nth-child(even) td {
+  background: rgba(129, 140, 248, 0.04);
+}
+
+.gf-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.gf-cell-action {
+  text-align: center;
+}
+
+.gf-cell-motif {
+  white-space: normal;
+  word-break: break-word;
+}
+
+.gf-delete-btn {
+  width: 22px;
+  height: 22px;
+  border: none;
+  border-radius: 5px;
+  background: transparent;
+  color: var(--danger);
+  font-size: 22px;
+  font-weight: 400;
+  line-height: 1;
+}
+
+.gf-delete-btn:hover {
+  background: rgba(239, 68, 68, 0.1);
+}
+
+.gf-empty {
+  text-align: center;
+  color: var(--text-dim);
+  font-style: italic;
+}
+
+.gf-form-card {
+  padding: 4px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.gf-form-title {
+  margin: 0 0 8px;
+  font-family: var(--display);
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.gf-form {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  height: 100%;
+  gap: 7px;
+}
+
+.gf-field {
+  display: grid;
+  grid-template-columns: 54px minmax(0, 1fr);
+  align-items: center;
+  gap: 6px;
+}
+
+.gf-field span {
+  font-size: 12px;
+  color: var(--text-mid);
+  white-space: nowrap;
+}
+
+.gf-field input {
+  width: 100%;
+  height: 34px;
+  border-radius: 11px;
+  border: 2px solid var(--border);
+  background: #fff;
+  box-shadow: var(--shadow-soft);
+  padding: 0 12px;
+  font-family: var(--mono);
+  color: var(--text);
+}
+
+.gf-field input:focus {
+  outline: none;
+  border-color: var(--accent-2);
+}
+
+/* Annuel: same date input UI, but hide year text in WebKit-based browsers. */
+.gf-field input.gf-annual-date::-webkit-datetime-edit-year-field {
+  display: none;
+}
+
+.gf-field input.gf-annual-date::-webkit-datetime-edit-text:last-of-type {
+  display: none;
+}
+
+.gf-submit-btn {
+  margin-top: auto;
+  align-self: stretch;
+  height: 36px;
+  border-radius: 12px;
+  border: 2px solid var(--border);
+  background: var(--btn-grad);
+  color: var(--accent);
+  font-size: 13px;
+  font-weight: 600;
+  box-shadow: var(--shadow-soft);
+  padding: 0 10px;
+}
+
+/* Type badges */
+.gf-type-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-size: 10px;
+  font-family: var(--mono);
+  font-weight: 600;
+  letter-spacing: 0.3px;
+}
+
+.gf-type-badge--rec {
+  background: rgba(99, 102, 241, 0.1);
+  border: 1px solid rgba(99, 102, 241, 0.25);
+  color: var(--accent);
+}
+
+.gf-type-badge--exc {
+  background: rgba(245, 158, 11, 0.1);
+  border: 1px solid rgba(245, 158, 11, 0.25);
+  color: #b45309;
+}
+
+.gf-cell-type {
+  text-align: center;
+}
+
+/* Toggle récurrent / exceptionnel */
+.gf-toggle-wrap {
+  display: flex;
+  gap: 0;
+  border: 2px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+  background: #fff;
+  box-shadow: var(--shadow-soft);
+}
+
+.gf-toggle-btn {
+  flex: 1;
+  height: 36px;
+  border: none;
+  background: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-mid);
+  font-family: var(--mono);
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1;
+  text-align: center;
+  padding: 0 10px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.gf-toggle-btn.active {
+  background: var(--accent);
+  color: #fff;
+  font-weight: 700;
+}
+
+.gf-toggle-btn:not(.active):hover {
+  background: rgba(99, 102, 241, 0.06);
+  color: var(--text);
+}
+
+#win-gerant_fermetures .win-body {
+  padding: 6px;
+}
+
+.gf-submit-btn:hover {
+  filter: brightness(0.98);
+}
+
+@container (max-width: 700px) {
+  .gf-layout {
+    grid-template-columns: minmax(150px, 55%) minmax(0, 45%);
+    gap: 6px;
+  }
+
+  .gf-table-card,
+  .gf-form-card {
+    padding: 8px;
+  }
+
+  .gf-side-title,
+  .gf-form-title {
+    font-size: 13px;
+    margin-bottom: 6px;
+  }
+
+  .gf-table th,
+  .gf-table td {
+    padding: 5px 6px;
+    font-size: 11px;
+  }
+
+  .gf-field {
+    grid-template-columns: 42px minmax(0, 1fr);
+    gap: 4px;
+  }
+
+  .gf-field span {
+    font-size: 11px;
+  }
+
+  .gf-field input {
+    height: 30px;
+    padding: 0 10px;
+  }
+
+  .gf-submit-btn {
+    height: 30px;
+    font-size: 13px;
+  }
+}
+
+@container (max-height: 300px) {
+  .gf-panel {
+    padding: 4px;
+  }
+
+  .gf-layout {
+    gap: 6px;
+  }
+
+  .gf-table-card,
+  .gf-form-card {
+    padding: 6px;
+  }
+
+  .gf-side-title,
+  .gf-form-title {
+    font-size: 13px;
+    margin-bottom: 4px;
+  }
+
+  .gf-table th,
+  .gf-table td {
+    padding: 4px 5px;
+    font-size: 10px;
+  }
+
+  .gf-table th:nth-child(1),
+  .gf-table td:nth-child(1) {
+    width: 26%;
+  }
+
+  .gf-table th:nth-child(2),
+  .gf-table td:nth-child(2) {
+    width: 34%;
+  }
+
+  .gf-table th:nth-child(3),
+  .gf-table td:nth-child(3) {
+    width: 28%;
+  }
+
+  .gf-table th:nth-child(4),
+  .gf-table td:nth-child(4) {
+    width: 12%;
+  }
+
+  .gf-delete-btn {
+    width: 18px;
+    height: 18px;
+    font-size: 18px;
+  }
+
+  .gf-form {
+    gap: 6px;
+  }
+
+  .gf-field {
+    grid-template-columns: 44px minmax(0, 1fr);
+    gap: 4px;
+  }
+
+  .gf-field span {
+    font-size: 11px;
+  }
+
+  .gf-field input {
+    height: 28px;
+    padding: 0 8px;
+  }
+
+  .gf-submit-btn {
+    height: 28px;
+    margin-top: 0;
+    font-size: 12px;
+  }
+}

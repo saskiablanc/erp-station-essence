@@ -1,0 +1,155 @@
+/* ═══════════════════════════════════════════════════════════
+   PANEL PRIX CARBURANT — Sprint 6 / US12 + US13
+   ═══════════════════════════════════════════════════════════ */
+
+.pc-panel {
+  display: flex;
+  flex-direction: column;
+  height: calc(100% + 24px);
+  margin: -12px;
+  overflow: hidden;
+  font-family: var(--mono);
+  background: var(--surface);
+}
+
+/* Zone scrollable */
+.pc-scroll {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── En-têtes colonnes ────────────────────────────────────── */
+/* US12 critère 2 : colonnes Carburants / Prix / Livraison minimale */
+.pc-thead {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  padding: 6px 12px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg2, rgba(0, 0, 0, 0.05));
+  flex-shrink: 0;
+}
+.pc-thead span {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-mid);
+  text-align: center;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+.pc-thead span:first-child {
+  text-align: left;
+}
+
+/* ── Lignes carburant ─────────────────────────────────────── */
+/* US12+US13 critère 3 : une ligne par carburant avec inputs éditables */
+.pc-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  align-items: center;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border);
+  gap: 8px;
+}
+.pc-row:last-child {
+  border-bottom: none;
+}
+
+.pc-libelle {
+  font-size: 12px;
+  color: var(--text);
+  font-weight: 500;
+}
+
+/* ── Groupe input + unité ─────────────────────────────────── */
+.pc-field-group {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.pc-center {
+  justify-content: center;
+}
+
+/* ── Inputs ───────────────────────────────────────────────── */
+/* US12+US13 critère 3 : inputs lisibles et bien dimensionnés */
+.pc-input {
+  width: 90px;
+  padding: 5px 8px;
+  font-family: var(--mono);
+  font-size: 13px;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  background: var(--surface);
+  color: var(--text);
+  text-align: center;
+  appearance: textfield;
+  -moz-appearance: textfield;
+  transition: border-color 0.15s;
+}
+.pc-input::-webkit-outer-spin-button,
+.pc-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+.pc-input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+.pc-input.pc-invalid {
+  border-color: var(--danger);
+  background: rgba(239, 68, 68, 0.08);
+}
+
+.pc-unit {
+  font-size: 11px;
+  color: var(--text-dim);
+  flex-shrink: 0;
+}
+
+/* ── Messages ─────────────────────────────────────────────── */
+.pc-msg {
+  text-align: center;
+  font-size: 11px;
+  color: var(--text-dim);
+  padding: 16px;
+}
+.pc-msg--err {
+  color: var(--danger);
+}
+
+/* ── Footer fixe ──────────────────────────────────────────── */
+/* US12 critère 2 / US13 critère 2 : bouton Modifier valeurs fixe en bas */
+.pc-footer {
+  padding: 8px 12px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  justify-content: center;
+  flex-shrink: 0;
+  background: var(--surface);
+}
+
+.pc-btn-modifier {
+  font-family: var(--mono);
+  font-size: 11px;
+  padding: 6px 24px;
+  border-radius: 5px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  cursor: pointer;
+  transition:
+    background 0.15s,
+    border-color 0.15s;
+}
+.pc-btn-modifier:hover:not(:disabled) {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+.pc-btn-modifier:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}

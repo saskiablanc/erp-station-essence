@@ -1,0 +1,70 @@
+/* ── TASKBAR ──────────────────────────────────────────────── */
+#taskbar {
+  display: none;
+}
+.taskbar-label {
+  font-size: 9px;
+  color: var(--text-dim);
+  letter-spacing: 1px;
+  flex-shrink: 0;
+}
+#taskbar-chips {
+  display: flex;
+  gap: 5px;
+  flex-wrap: nowrap;
+  overflow: hidden;
+}
+.task-chip {
+  height: 26px;
+  padding: 0 11px;
+  border-radius: 5px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-dim);
+  font-size: 10px;
+  white-space: nowrap;
+  transition: all 0.15s;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.task-chip:hover {
+  border-color: var(--border-active);
+  color: var(--text);
+}
+.task-chip.open {
+  border-color: rgba(59, 130, 246, 0.3);
+  color: var(--accent);
+  background: var(--accent-dim);
+}
+.task-chip.minimized {
+  opacity: 0.5;
+}
+.task-chip.coming {
+  opacity: 0.35;
+}
+.taskbar-right {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+#btn-reset-layout {
+  width: 26px;
+  height: 26px;
+  border-radius: 5px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-dim);
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.18s;
+}
+#btn-reset-layout:hover {
+  color: var(--text);
+  border-color: var(--border-active);
+  transform: rotate(90deg);
+}
+

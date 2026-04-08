@@ -1,0 +1,60 @@
+/* ── PANEL : CLAVIER ──────────────────────────────────────── */
+.numpad-display {
+  background: rgba(255, 255, 255, 0.85);
+  border: 2px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-family: var(--display);
+  font-size: 30px;
+  font-weight: 700;
+  text-align: right;
+  color: var(--accent);
+  letter-spacing: -1px;
+  margin-bottom: 10px;
+  min-height: 54px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+}
+.numpad-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+}
+.num-k {
+  padding: 13px;
+  background: rgba(255, 255, 255, 0.8);
+  border: 2px solid var(--border);
+  border-radius: 10px;
+  color: var(--text);
+  font-family: var(--display);
+  font-size: 17px;
+  font-weight: 600;
+  transition: all 0.1s;
+  text-align: center;
+}
+.num-k:hover {
+  background: var(--surface);
+  border-color: var(--border-active);
+}
+.num-k:active {
+  transform: scale(0.93);
+}
+.num-k.wide {
+  grid-column: span 2;
+}
+.num-k.del {
+  color: var(--danger);
+}
+.num-k.del:hover {
+  background: var(--danger-dim);
+  border-color: var(--danger);
+}
+.num-k.ok {
+  grid-column: span 3;
+  color: var(--accent);
+  background: var(--btn-grad);
+  border-color: var(--border);
+  box-shadow: var(--shadow-soft);
+}
+

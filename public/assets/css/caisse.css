@@ -1,0 +1,102 @@
+/* caisse.css - agrégateur par logique métier */
+@import url("./core/caisse_base.css");
+@import url("./core/caisse_topbar.css");
+@import url("./core/caisse_canvas.css");
+@import url("./core/caisse_windows.css");
+@import url("./core/caisse_placeholders.css");
+@import url("./core/caisse_taskbar.css");
+@import url("./core/caisse_overlay.css");
+@import url("./core/caisse_toasts.css");
+@import url("./core/caisse_utils.css");
+@import url("./core/caisse_ph_blocks.css");
+@import url("./panels/clavier.css");
+@import url("./panels/paiement.css");
+@import url("./panels/transactions.css");
+@import url("./panels/pompes.css");
+@import url("./panels/stock.css");
+@import url("./panels/cce.css");
+@import url("./panels/reappro.css");
+@import url("./panels/validation.css");
+@import url("./panels/cce_params.css");
+@import url("./panels/prix.css");
+@import url("./panels/fermetures.css");
+@import url("./panels/horaires.css");
+@import url("./panels/incidents.css");
+@import url("./panels/bdd.css");
+@import url("./panels/gerant_buttons.css");
+
+/* Controls compacts : réduit la hauteur des capsules/bulles partout */
+.bdd-form-input,
+.cce-create-input,
+.cce-create-submit,
+.cce-consult-refresh,
+.cce-consult-scan-btn,
+.cce-consult-action-btn,
+.cce-actions-btn,
+.cce-consult-select-btn,
+.cce-transactions-recharge,
+.hb-input,
+.hb-submit,
+.pc-input,
+.rm-date-input,
+.rm-sel,
+.rm-qty-input,
+.rm-qty-inline,
+.stock-switch-btn,
+.ticket-pay-choice-btn,
+.ticket-pay-choice-btn-cancel,
+.gv-footer-btn,
+.gv-date-input,
+.gv-nav-btn,
+.btn-secondary,
+.btn-danger {
+  height: var(--pill-compact-h);
+  min-height: var(--pill-compact-h);
+  font-size: var(--pill-compact-font);
+}
+
+.bdd-form-input,
+.cce-create-input,
+.hb-input,
+.pc-input,
+.rm-date-input,
+.rm-sel,
+.rm-qty-input,
+.rm-qty-inline,
+.gv-date-input {
+  padding-top: 0;
+  padding-bottom: 0;
+}
+
+.cce-create-submit,
+.cce-consult-refresh,
+.cce-consult-scan-btn,
+.cce-consult-action-btn,
+.cce-actions-btn,
+.cce-consult-select-btn,
+.cce-transactions-recharge,
+.hb-submit,
+.stock-switch-btn,
+.ticket-pay-choice-btn,
+.ticket-pay-choice-btn-cancel,
+.gv-footer-btn,
+.gv-nav-btn,
+.btn-secondary,
+.btn-danger {
+  padding-top: 0;
+  padding-bottom: 0;
+}
+
+.stock-toolbar .stock-search-input {
+  height: var(--pill-compact-h) !important;
+  padding: 0 var(--pill-compact-px) !important;
+  font-size: var(--pill-compact-font) !important;
+}
+
+/* Exception : formulaire Créer CCE un peu plus grand */
+.cce-create-input {
+  height: 34px;
+  min-height: 34px;
+  padding: 0 12px;
+  font-size: 12px;
+}

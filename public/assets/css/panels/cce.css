@@ -1,0 +1,697 @@
+/* CCE - Creation */
+.cce-create-panel {
+  height: calc(100% + 24px);
+  margin: -12px;
+  display: flex;
+  flex-direction: column;
+  background: rgba(255, 255, 255, 0.72);
+  border: 2px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.cce-create-header {
+  padding: 12px 14px 10px;
+  border-bottom: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.8);
+  color: var(--text);
+  font-family: var(--display);
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: -0.4px;
+  text-align: center;
+}
+
+.cce-create-form {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 10px 14px 10px;
+  overflow: auto;
+}
+
+.cce-create-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.cce-create-label {
+  color: var(--text-mid);
+  font-size: 1.1em;
+}
+
+.cce-create-input {
+  width: 100%;
+  height: 38px;
+  padding: 0 14px;
+  border: 2px solid var(--border);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: var(--shadow-soft);
+  color: var(--text);
+  font-size: 12px;
+  outline: none;
+  transition:
+    border-color 0.15s,
+    box-shadow 0.15s,
+    transform 0.15s;
+}
+
+.cce-create-input::placeholder {
+  color: #9ca3af;
+}
+
+.cce-create-input:focus {
+  border-color: var(--border-active);
+  box-shadow:
+    var(--shadow-soft),
+    0 0 0 3px rgba(129, 140, 248, 0.14);
+  transform: translateY(-1px);
+}
+
+.cce-create-submit {
+  margin-top: auto;
+  min-height: 36px;
+  padding: 0 18px;
+  border: 2px solid var(--border);
+  border-radius: 14px;
+  background: var(--btn-grad);
+  box-shadow: var(--shadow-soft);
+  color: var(--accent);
+  font-family: var(--display);
+  font-size: 14px;
+  font-weight: 600;
+  transition:
+    border-color 0.15s,
+    color 0.15s,
+    transform 0.12s;
+}
+
+.cce-create-submit:hover {
+  border-color: var(--border-active);
+  color: var(--text);
+}
+
+.cce-create-submit:active {
+  transform: scale(0.98);
+}
+
+.cce-create-submit:disabled {
+  cursor: wait;
+  opacity: 0.75;
+}
+
+.cce-create-feedback {
+  display: none;
+  padding: 8px 10px;
+  border: 2px solid var(--border);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.82);
+  color: var(--text-mid);
+  font-size: 11px;
+  line-height: 1.35;
+}
+
+.cce-create-feedback.visible {
+  display: block;
+}
+
+.cce-create-feedback.error {
+  border-color: rgba(239, 68, 68, 0.28);
+  background: rgba(239, 68, 68, 0.08);
+  color: var(--danger);
+}
+
+/* CCE - Consultation */
+.cce-consult-panel {
+  height: calc(100% + 24px);
+  margin: -12px;
+  display: flex;
+  flex-direction: column;
+  background: rgba(255, 255, 255, 0.72);
+  border: 2px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.cce-consult-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.8);
+}
+
+.cce-consult-toolbar-label {
+  color: var(--text);
+  font-family: var(--display);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: -0.2px;
+}
+
+.cce-consult-refresh {
+  min-height: 26px;
+  padding: 0 12px;
+  border: 2px solid var(--border);
+  border-radius: 999px;
+  background: var(--btn-grad);
+  box-shadow: var(--shadow-soft);
+  color: var(--accent);
+  font-size: 11px;
+}
+
+.cce-consult-body {
+  flex: 1;
+  min-height: 0;
+  padding: 12px;
+}
+
+.cce-consult-state {
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px;
+  border: 2px dashed var(--border);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.66);
+  color: var(--text-dim);
+  font-size: 12px;
+  text-align: center;
+}
+
+.cce-consult-state.error {
+  border-color: rgba(239, 68, 68, 0.25);
+  color: var(--danger);
+}
+
+.cce-consult-state--scanner {
+  flex-direction: column;
+  gap: 12px;
+}
+
+.cce-consult-state-text {
+  max-width: 220px;
+}
+
+.cce-consult-scan-btn {
+  height: 30px;
+  padding: 0 14px;
+  border: 2px solid var(--border);
+  border-radius: 999px;
+  background: var(--btn-grad);
+  color: var(--accent);
+  box-shadow: var(--shadow-soft);
+  font-size: 11px;
+}
+
+.cce-consult-card {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.cce-consult-card-top {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  padding: 10px 12px;
+  border: 2px solid var(--border);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.84);
+  box-shadow: var(--shadow-soft);
+}
+
+.cce-consult-card-id {
+  color: var(--accent);
+  font-family: var(--display);
+  font-size: 17px;
+  font-weight: 700;
+  line-height: 1.05;
+}
+
+.cce-consult-card-client {
+  color: var(--text-mid);
+  font-size: 12px;
+}
+
+.cce-consult-stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.cce-consult-stat {
+  padding: 9px 10px;
+  border: 2px solid var(--border);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.8);
+}
+
+.cce-consult-stat--solde {
+  background: rgba(209, 250, 229, 0.26);
+}
+
+.cce-consult-stat-label {
+  color: var(--text-dim);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.cce-consult-stat-value {
+  margin-top: 4px;
+  color: var(--text);
+  font-family: var(--display);
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.1;
+}
+
+.cce-consult-history {
+  margin-top: auto;
+  padding: 10px;
+  border: 2px solid var(--border);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.84);
+}
+
+.cce-consult-history-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.cce-consult-history-title {
+  color: var(--text-mid);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.cce-consult-expand {
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid var(--border);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: var(--shadow-soft);
+}
+
+.cce-consult-expand-icon {
+  width: 16px;
+  height: 16px;
+  object-fit: contain;
+}
+
+.cce-consult-history-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 9px 10px;
+  border-radius: 12px;
+  background: rgba(244, 242, 254, 0.9);
+  color: var(--text-mid);
+  font-size: 11px;
+}
+
+.cce-consult-history-date,
+.cce-consult-history-amount {
+  font-variant-numeric: tabular-nums;
+}
+
+.cce-consult-history-amount {
+  color: var(--text);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.cce-consult-history-empty {
+  padding: 10px;
+  border-radius: 12px;
+  background: rgba(244, 242, 254, 0.78);
+  color: var(--text-dim);
+  font-size: 11px;
+  text-align: center;
+}
+
+.cce-consult-actions {
+  margin-top: auto;
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.cce-consult-action-btn {
+  min-height: 30px;
+  padding: 0 16px;
+  border: 2px solid var(--border);
+  border-radius: 999px;
+  background: var(--btn-grad);
+  color: var(--accent);
+  box-shadow: var(--shadow-soft);
+  font-size: 11px;
+}
+
+/* SweetAlert2 - consultation CCE */
+.swal2-popup.cce-swal-popup {
+  width: min(42rem, 94vw);
+  border-radius: 22px;
+  border: 2px solid var(--border);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.96) 0%, rgba(245, 247, 255, 0.96) 100%);
+  box-shadow: 0 24px 60px rgba(99, 102, 241, 0.25);
+  padding: 1.35rem 1.35rem 1.2rem;
+}
+
+.swal2-title.cce-swal-title {
+  color: var(--text);
+  font-family: var(--display);
+  font-size: 1.7rem;
+  font-weight: 700;
+  margin-bottom: 0.35rem;
+}
+
+.swal2-popup.cce-swal-popup.cce-swal-popup-actions {
+  width: min(40rem, 94vw);
+}
+
+.cce-actions-card {
+  margin-bottom: 12px;
+  color: var(--text-mid);
+}
+
+.cce-actions-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.cce-actions-btn {
+  min-height: 40px;
+  border-radius: 999px;
+  border: 2px solid var(--border);
+  background: var(--btn-grad);
+  color: var(--accent);
+  font-family: var(--mono);
+  font-size: 0.95rem;
+  box-shadow: var(--shadow-soft);
+}
+
+.cce-bonus-line {
+  margin: 6px 0;
+}
+
+.swal2-popup.cce-swal-popup.cce-swal-popup-recharge-choice .swal2-html-container {
+  text-align: center;
+}
+
+.swal2-popup.cce-swal-popup.cce-swal-popup-recharge-choice .ticket-pay-choice-total {
+  margin-bottom: 14px;
+}
+
+.swal2-popup.cce-swal-popup.cce-swal-popup-recharge-choice .ticket-pay-choice-grid--two {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(140px, 190px));
+  justify-content: center;
+  gap: 12px;
+  width: min(392px, 100%);
+  margin: 0 auto;
+}
+
+.swal2-popup.cce-swal-popup.cce-swal-popup-recharge-choice .ticket-pay-choice-btn-cancel {
+  display: block;
+  width: min(190px, 100%);
+  margin: 14px auto 0;
+}
+
+.swal2-html-container.cce-swal-text {
+  color: var(--text-mid);
+  font-size: 1rem;
+}
+
+.swal2-confirm.cce-swal-btn,
+.swal2-deny.cce-swal-btn,
+.swal2-cancel.cce-swal-btn {
+  border-radius: 999px;
+  border: 2px solid var(--border);
+  padding: 0.6rem 1.25rem;
+  background: var(--btn-grad);
+  color: var(--accent);
+  font-family: var(--mono);
+  box-shadow: var(--shadow-soft);
+}
+
+.cce-swal-actions-two {
+  display: grid !important;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.cce-swal-actions-two .swal2-styled {
+  white-space: nowrap;
+}
+
+.ticket-pay-choice-grid--two {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.cce-recharge-title {
+  margin: 50px 32px 0;
+  text-align: center;
+  color: var(--text-mid);
+  font-size: 12px;
+}
+
+.cce-recharge-title + .ticket-barcode-display-wrap {
+  margin-top: 8px;
+}
+
+.cce-consult-popup-wrap {
+  max-height: min(56vh, 520px);
+  overflow: auto;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.86);
+}
+
+.cce-consult-popup-wrap--scan {
+  max-height: min(60vh, 560px);
+}
+
+.cce-consult-popup-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+
+.cce-consult-popup-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  padding: 9px 10px;
+  background: rgba(255, 255, 255, 0.96);
+  border-bottom: 1px solid var(--border);
+  color: var(--text);
+  text-align: left;
+}
+
+.cce-consult-popup-table tbody td {
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--border);
+  color: var(--text-mid);
+}
+
+.cce-consult-popup-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.cce-consult-select-btn {
+  height: 28px;
+  padding: 0 10px;
+  border: 2px solid var(--border);
+  border-radius: 999px;
+  background: var(--btn-grad);
+  color: var(--accent);
+  box-shadow: var(--shadow-soft);
+  font-size: 11px;
+}
+
+.cce-consult-popup-empty {
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.86);
+}
+
+.swal2-popup.cce-swal-popup.cce-swal-popup-transactions {
+  width: min(74rem, 96vw);
+}
+
+.cce-transactions-view {
+  border: 2px solid var(--border);
+  border-radius: 16px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.9);
+}
+
+.cce-transactions-meta {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  border-bottom: 1px solid var(--border);
+}
+
+.cce-transactions-meta-cell {
+  min-height: 60px;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 4px;
+  border-right: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.84);
+  text-align: center;
+}
+
+.cce-transactions-meta-cell:last-child {
+  border-right: 0;
+}
+
+.cce-transactions-meta-cell--solde {
+  background: rgba(209, 250, 229, 0.22);
+}
+
+.cce-transactions-meta-label {
+  color: var(--text-dim);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+}
+
+.cce-transactions-meta-value {
+  color: var(--text);
+  font-family: var(--display);
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.cce-transactions-subhead {
+  min-height: 56px;
+  padding: 0 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border-bottom: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.78);
+}
+
+.cce-transactions-last {
+  color: var(--text);
+  font-size: 13px;
+}
+
+.cce-transactions-recharge {
+  min-height: 36px;
+  padding: 0 16px;
+  border: 2px solid var(--border);
+  border-radius: 12px;
+  background: var(--btn-grad);
+  color: var(--accent);
+  box-shadow: var(--shadow-soft);
+  font-family: var(--display);
+  font-size: 13px;
+}
+
+.cce-transactions-title {
+  padding: 8px 14px;
+  border-bottom: 1px solid var(--border);
+  background: rgba(244, 242, 254, 0.55);
+  color: var(--text);
+  font-family: var(--display);
+  font-size: 16px;
+  font-weight: 600;
+  text-align: center;
+}
+
+.cce-transactions-table-wrap {
+  max-height: min(54vh, 520px);
+  overflow: auto;
+}
+
+.cce-transactions-table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+  background: rgba(255, 255, 255, 0.92);
+}
+
+.cce-transactions-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  padding: 10px 8px;
+  border-right: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.97);
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 600;
+  text-align: center;
+}
+
+.cce-transactions-table thead th:last-child {
+  border-right: 0;
+}
+
+.cce-transactions-table tbody td {
+  height: 58px;
+  padding: 12px 8px;
+  border-right: 1px solid var(--border);
+  border-bottom: 1px dashed rgba(123, 97, 255, 0.28);
+  color: var(--text-mid);
+  font-size: 12px;
+  text-align: center;
+  vertical-align: middle;
+}
+
+.cce-transactions-table tbody td:last-child {
+  border-right: 0;
+}
+
+.cce-transactions-empty {
+  color: var(--text-dim);
+  font-style: italic;
+}
+
+@media (max-width: 900px) {
+  .swal2-popup.cce-swal-popup.cce-swal-popup-transactions {
+    width: min(96vw, 96vw);
+    padding: 1rem;
+  }
+
+  .cce-transactions-meta {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .cce-transactions-meta-cell--solde {
+    grid-column: 1 / -1;
+  }
+
+  .cce-transactions-subhead {
+    flex-direction: column;
+    align-items: stretch;
+    padding: 10px 12px;
+  }
+}

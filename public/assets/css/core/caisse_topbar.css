@@ -1,0 +1,260 @@
+/* ══════════════════════════════════════════════════════════
+   TOPBAR
+   ══════════════════════════════════════════════════════════ */
+#topbar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: var(--topbar-h);
+  background: var(--bg2);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: stretch;
+  padding: 0;
+  gap: 0;
+  z-index: 9000;
+  box-shadow: 0 2px 12px rgba(99, 102, 241, 0.1);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+/* Brand */
+.tb-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 16px;
+  border-right: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.tb-logo-img {
+  height: 24px;
+  width: auto;
+}
+.tb-name {
+  font-family: var(--display);
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text);
+  white-space: nowrap;
+}
+
+/* Session */
+.tb-session {
+  display: flex;
+  align-items: center;
+  padding: 0 16px;
+  border-right: 1px solid var(--border);
+  font-size: 12px;
+  color: var(--text-dim);
+  font-family: var(--mono);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.tb-session strong {
+  color: var(--text);
+  font-weight: 600;
+  margin-left: 4px;
+}
+
+/* Spacers symétriques */
+.tb-spacer {
+  flex: 1;
+}
+
+/* Horloge */
+#clock.tb-clock {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  font-family: var(--display);
+  font-size: 26px;
+  font-weight: 700;
+  letter-spacing: -1.5px;
+  color: var(--text);
+  padding: 0 24px;
+}
+
+/* Contrôles */
+.tb-controls {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 20px;
+  border-left: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+/* Label "Layout :" — espace généreux, pas de barre après */
+.tb-label {
+  font-size: 11px;
+  color: var(--text-dim);
+  font-family: var(--mono);
+  padding-right: 16px;
+  white-space: nowrap;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* Séparateur vertical — uniquement entre groupes de boutons */
+.tb-vsep {
+  display: inline-block;
+  width: 1px;
+  height: 20px;
+  background: var(--border);
+  margin: 0 8px;
+  flex-shrink: 0;
+}
+
+/* Boutons icône */
+.tb-icon-btn {
+  width: 34px;
+  height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 7px;
+  border: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.6);
+  cursor: pointer;
+  transition:
+    background 0.12s,
+    border-color 0.12s,
+    box-shadow 0.12s;
+  padding: 0;
+  flex-shrink: 0;
+}
+.tb-icon-btn img {
+  width: 15px;
+  height: 15px;
+  object-fit: contain;
+  display: block;
+  opacity: 0.6;
+  transition: opacity 0.12s;
+}
+.tb-icon-btn:hover {
+  background: rgba(255, 255, 255, 0.95);
+  border-color: var(--border-active);
+  box-shadow: 0 2px 6px rgba(99, 102, 241, 0.12);
+}
+.tb-icon-btn:hover img {
+  opacity: 1;
+}
+
+/* Main active */
+.tb-icon-btn.hand-btn.active {
+  background: var(--accent-dim);
+  border-color: rgba(99, 102, 241, 0.4);
+  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.15);
+}
+.tb-icon-btn.hand-btn.active img {
+  opacity: 1;
+  mix-blend-mode: multiply;
+  filter: sepia(1) saturate(4) hue-rotate(215deg);
+}
+
+/* Danger */
+.tb-icon-btn--danger {
+  border-color: rgba(239, 68, 68, 0.2);
+}
+.tb-icon-btn--danger img {
+  opacity: 0.5;
+}
+.tb-icon-btn--danger:hover {
+  background: var(--danger-dim);
+  border-color: rgba(239, 68, 68, 0.45);
+  box-shadow: 0 2px 6px rgba(239, 68, 68, 0.15);
+}
+.tb-icon-btn--danger:hover img {
+  opacity: 1;
+  filter: sepia(1) saturate(5) hue-rotate(310deg);
+}
+
+/* ── Bouton switch caisse employé ↔ gérant ─────────────── */
+.tb-switch-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 34px;
+  padding: 0 14px;
+  border-radius: 7px;
+  border: 1px solid rgba(99, 102, 241, 0.3);
+  background: var(--accent-dim);
+  cursor: pointer;
+  transition:
+    background 0.15s,
+    border-color 0.15s,
+    box-shadow 0.15s;
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--accent);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.tb-switch-btn .tb-switch-icon {
+  width: 14px;
+  height: 14px;
+  object-fit: contain;
+  opacity: 0.7;
+  filter: sepia(1) saturate(4) hue-rotate(215deg);
+}
+.tb-switch-btn:hover {
+  background: rgba(99, 102, 241, 0.18);
+  border-color: rgba(99, 102, 241, 0.5);
+  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.15);
+}
+.tb-switch-btn:hover .tb-switch-icon {
+  opacity: 1;
+}
+
+.tb-layout-mode-btn {
+  height: 34px;
+  min-width: 88px;
+  padding: 0 12px;
+  border-radius: 7px;
+  border: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.62);
+  color: var(--text-mid);
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 500;
+  cursor: pointer;
+  transition:
+    background 0.12s,
+    border-color 0.12s,
+    box-shadow 0.12s,
+    color 0.12s;
+}
+
+.tb-layout-mode-btn:hover {
+  background: rgba(255, 255, 255, 0.95);
+  border-color: var(--border-active);
+  box-shadow: 0 2px 6px rgba(99, 102, 241, 0.12);
+}
+
+.tb-layout-mode-btn.active {
+  background: var(--accent-dim);
+  border-color: rgba(99, 102, 241, 0.4);
+  color: var(--accent);
+  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.15);
+}
+
+/* ── Badge GÉRANT dans la session ──────────────────────── */
+.tb-session--gerant {
+  gap: 8px;
+}
+.tb-badge-gerant {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 4px;
+  background: var(--accent);
+  color: #fff;
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  line-height: 1;
+}

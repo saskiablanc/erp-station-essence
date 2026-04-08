@@ -1,0 +1,452 @@
+/** panels/gerant/horaires.js — Modification Horaires Boutique (US15) */
+const HorairesBoutiquePanel = (() => {
+  const swalBase = {
+    customClass: {
+      popup: "hb-swal-popup",
+      title: "hb-swal-title",
+      htmlContainer: "hb-swal-text",
+      confirmButton: "hb-swal-btn",
+      cancelButton: "hb-swal-btn hb-swal-btn--secondary",
+    },
+    buttonsStyling: false,
+    reverseButtons: false,
+    backdrop: "rgba(26, 26, 46, 0.45)",
+  };
+
+  function escapeHtml(value) {
+    return String(value ?? "")
+      .replaceAll("&", "&amp;")
+      .replaceAll("<", "&lt;")
+      .replaceAll(">", "&gt;")
+      .replaceAll('"', "&quot;")
+      .replaceAll("'", "&#39;");
+  }
+
+  function formatDisplayTime(value) {
+    const time = String(value ?? "").trim();
+    const match = time.match(/^([01]\d|2[0-3]):([0-5]\d)(?::[0-5]\d)?$/);
+    if (!match) return time;
+    return `${match[1]}h${match[2]}`;
+  }
+
+  function normalizeDisplayTime(value) {
+    const time = String(value ?? "").trim();
+    if (/^([01]\d|2[0-3])h([0-5]\d)$/.test(time)) return time;
+
+    const match = time.match(/^([01]\d|2[0-3]):([0-5]\d)(?::[0-5]\d)?$/);
+    if (!match) return null;
+    return `${match[1]}h${match[2]}`;
+  }
+
+  function dayCardHtml(day) {
+    return `
+      <div class="hb-day" data-jour-id="${escapeHtml(day.id_jour)}" data-libelle="${escapeHtml(day.libelle)}">
+        <div class="hb-day-title">${escapeHtml(day.libelle)}</div>
+
+        <label class="hb-field">
+          <span class="hb-field-label">Ouverture :</span>
+          <input
+            type="text"
+            class="hb-input hb-input-ouverture"
+            value="${escapeHtml(formatDisplayTime(day.heure_ouverture))}"
+            inputmode="numeric"
+          />
+        </label>
+
+        <label class="hb-field">
+          <span class="hb-field-label">Fermeture :</span>
+          <input
+            type="text"
+            class="hb-input hb-input-fermeture"
+            value="${escapeHtml(formatDisplayTime(day.heure_fermeture))}"
+            inputmode="numeric"
+          />
+        </label>
+
+        <label class="hb-closed-toggle">
+          <span>Jour fermé</span>
+          <input type="checkbox" class="hb-checkbox" ${day.est_ferme ? "checked" : ""} />
+        </label>
+      </div>
+    `;
+  }
+
+  function buildHTML() {
+    return `
+      <div class="hb-panel">
+        <div class="hb-grid-wrap">
+          <div class="hb-grid"></div>
+        </div>
+        <div class="hb-footer">
+          <button type="button" class="hb-submit">Valider</button>
+        </div>
+      </div>
+    `;
+  }
+
+  function render(root, horaires) {
+    const grid = root.querySelector(".hb-grid");
+    if (!grid) return;
+
+    root._hbInitialByDay = {};
+    horaires.forEach((day) => {
+      root._hbInitialByDay[String(day.id_jour)] = {
+        ouverture: formatDisplayTime(day.heure_ouverture),
+        fermeture: formatDisplayTime(day.heure_fermeture),
+        est_ferme: !!day.est_ferme,
+        libelle: day.libelle,
+      };
+    });
+
+    grid.innerHTML = horaires.map(dayCardHtml).join("");
+    root.querySelectorAll(".hb-day").forEach((card) => syncClosedState(card));
+    setLoading(root, false);
+  }
+
+  function setLoading(root, loading) {
+    const submit = root.querySelector(".hb-submit");
+    if (!submit) return;
+    submit.disabled = loading;
+    submit.textContent = loading ? "..." : "Valider";
+  }
+
+  function syncClosedState(card) {
+    const checkbox = card.querySelector(".hb-checkbox");
+    const ouverture = card.querySelector(".hb-input-ouverture");
+    const fermeture = card.querySelector(".hb-input-fermeture");
+    if (!checkbox || !ouverture || !fermeture) return;
+
+    const isClosed = checkbox.checked;
+    card.classList.toggle("is-closed", isClosed);
+    ouverture.disabled = isClosed;
+    fermeture.disabled = isClosed;
+  }
+
+  async function refresh(root) {
+    setLoading(root, true);
+    try {
+      const horaires = await Requetes.getHorairesBoutique();
+      render(root, Array.isArray(horaires) ? horaires : []);
+    } catch (error) {
+      const grid = root.querySelector(".hb-grid");
+      if (grid) {
+        grid.innerHTML = `<div class="hb-state hb-state--error">${escapeHtml(error.message || "Chargement impossible")}</div>`;
+      }
+      setLoading(root, false);
+    }
+  }
+
+  function collectPayload(root) {
+    const payload = [];
+
+    root.querySelectorAll(".hb-day").forEach((card) => {
+      const idJour = Number(card.dataset.jourId || 0);
+      const libelle = String(card.dataset.libelle || "");
+      const ouvertureInput = card.querySelector(".hb-input-ouverture");
+      const fermetureInput = card.querySelector(".hb-input-fermeture");
+      const checkbox = card.querySelector(".hb-checkbox");
+
+      const ouverture = normalizeDisplayTime(ouvertureInput?.value ?? "");
+      const fermeture = normalizeDisplayTime(fermetureInput?.value ?? "");
+
+      payload.push({
+        id_jour: idJour,
+        libelle,
+        heure_ouverture: ouverture,
+        heure_fermeture: fermeture,
+        est_ferme: !!checkbox?.checked,
+      });
+    });
+
+    return payload;
+  }
+
+  function getModifiedDays(root, payload) {
+    return payload.filter((day) => {
+      const initial = root._hbInitialByDay?.[String(day.id_jour)];
+      if (!initial) return true;
+      return (
+        day.heure_ouverture !== initial.ouverture ||
+        day.heure_fermeture !== initial.fermeture ||
+        day.est_ferme !== initial.est_ferme
+      );
+    });
+  }
+
+  function resolveBaseDay(root, modifiedDays) {
+    const activeDayId = Number(root._hbActiveDayId || 0);
+    const activeDay = modifiedDays.find((day) => day.id_jour === activeDayId);
+    return activeDay || modifiedDays[0];
+  }
+
+  async function showInvalidError() {
+    await Swal.fire({
+      ...swalBase,
+      icon: "error",
+      title: "Erreur : Valeurs Incorrectes.",
+      html: "Les nouveaux horaires n’ont pas pu être enregistrés !",
+      confirmButtonText: "Fermer",
+    });
+  }
+
+  function formatDaysLabel(days) {
+    const labels = [
+      ...new Set(
+        days
+          .filter((day) => !day.est_ferme)
+          .map((day) => String(day.libelle || "").trim())
+          .filter(Boolean),
+      ),
+    ];
+
+    if (labels.length === 0) return "les jours concernés";
+    if (labels.length === 7) return "tous les jours";
+    if (labels.length === 1) return `le ${labels[0]}`;
+    if (labels.length === 2) return `${labels[0]} et ${labels[1]}`;
+
+    return `${labels.slice(0, -1).join(", ")} et ${labels[labels.length - 1]}`;
+  }
+
+  async function showSuccess(days) {
+    await Swal.fire({
+      ...swalBase,
+      icon: "success",
+      title: `Nouveaux horaires bien enregistrés pour ${formatDaysLabel(days)} !`,
+      confirmButtonText: "Fermer",
+    });
+  }
+
+  async function chooseApplyDays(baseDay, allDays) {
+    const hasSameHoraires = (left, right) =>
+      String(left?.heure_ouverture ?? "") === String(right?.heure_ouverture ?? "") &&
+      String(left?.heure_fermeture ?? "") === String(right?.heure_fermeture ?? "") &&
+      !!left?.est_ferme === !!right?.est_ferme;
+
+    const forceApplyPopupSize = (popup) => {
+      if (!popup) return;
+      popup.classList.add("hb-swal-popup--apply-days");
+      popup.style.setProperty("width", "min(74rem, 96vw)", "important");
+      popup.style.setProperty("max-width", "min(74rem, 96vw)", "important");
+    };
+
+    const rows = allDays
+      .map((day) => {
+        const isBaseDay = Number(day.id_jour) === Number(baseDay.id_jour);
+        const sameHoraires = !isBaseDay && hasSameHoraires(day, baseDay);
+        const checked = isBaseDay ? "checked" : "";
+        const disabled = isBaseDay || sameHoraires ? "disabled" : "";
+        const disabledClass = sameHoraires ? " hb-apply-item--disabled" : "";
+        const hint = sameHoraires ? 'title="Horaires déjà identiques"' : "";
+        return `
+          <label class="hb-apply-item${disabledClass}" ${hint}>
+            <span>${escapeHtml(day.libelle)}</span>
+            <input
+              type="checkbox"
+              class="hb-apply-check"
+              value="${escapeHtml(day.id_jour)}"
+              ${checked}
+              ${disabled}
+            />
+          </label>
+        `;
+      })
+      .join("");
+
+    const result = await Swal.fire({
+      ...swalBase,
+      width: "74rem",
+      customClass: {
+        ...swalBase.customClass,
+        popup: `${swalBase.customClass.popup} hb-swal-popup--apply-days`,
+      },
+      title: "Appliquer pareil pour les jours suivants ?",
+      html: `
+        <div class="hb-apply-grid">
+          ${rows}
+          <label class="hb-apply-item hb-apply-item--all">
+            <span>Tout</span>
+            <input type="checkbox" id="hb-apply-all" />
+          </label>
+        </div>
+      `,
+      showCloseButton: true,
+      confirmButtonText: "Appliquer",
+      allowOutsideClick: false,
+      focusConfirm: false,
+      preConfirm: () => {
+        const popup = Swal.getPopup();
+        const selected = [baseDay.id_jour];
+
+        popup.querySelectorAll(".hb-apply-check").forEach((input) => {
+          if (!input.disabled && input.checked) {
+            selected.push(Number(input.value));
+          }
+        });
+
+        return [...new Set(selected)];
+      },
+      willOpen: (popup) => {
+        forceApplyPopupSize(popup);
+      },
+      didOpen: (popup) => {
+        forceApplyPopupSize(popup);
+        setTimeout(() => forceApplyPopupSize(popup), 0);
+        const allToggle = popup.querySelector("#hb-apply-all");
+        const checks = [...popup.querySelectorAll(".hb-apply-check")].filter(
+          (input) => !input.disabled,
+        );
+
+        if (allToggle && checks.length === 0) {
+          allToggle.disabled = true;
+          allToggle
+            .closest(".hb-apply-item")
+            ?.classList.add("hb-apply-item--disabled");
+        }
+
+        if (allToggle && checks.length > 0) {
+          allToggle.checked = checks.every((item) => item.checked);
+        }
+
+        allToggle?.addEventListener("change", () => {
+          checks.forEach((input) => {
+            input.checked = allToggle.checked;
+          });
+        });
+
+        checks.forEach((input) => {
+          input.addEventListener("change", () => {
+            if (!allToggle) return;
+            allToggle.checked =
+              checks.length > 0 && checks.every((item) => item.checked);
+          });
+        });
+      },
+    });
+
+    if (!result.isConfirmed) return null;
+    return Array.isArray(result.value) ? result.value : [baseDay.id_jour];
+  }
+
+  function applySelection(root, payload, baseDay, selectedIds) {
+    const selected = new Set(selectedIds.map((id) => Number(id)));
+    const baseOpen = baseDay.heure_ouverture;
+    const baseClose = baseDay.heure_fermeture;
+    const baseClosed = !!baseDay.est_ferme;
+
+    const finalPayload = payload.map((day) =>
+      selected.has(Number(day.id_jour))
+        ? {
+            ...day,
+            heure_ouverture: baseOpen,
+            heure_fermeture: baseClose,
+            est_ferme: baseClosed,
+          }
+        : day,
+    );
+
+    root.querySelectorAll(".hb-day").forEach((card) => {
+      const idJour = Number(card.dataset.jourId || 0);
+      if (!selected.has(idJour)) return;
+
+      const openInput = card.querySelector(".hb-input-ouverture");
+      const closeInput = card.querySelector(".hb-input-fermeture");
+      const checkbox = card.querySelector(".hb-checkbox");
+      if (!openInput || !closeInput || !checkbox) return;
+
+      openInput.value = baseOpen;
+      closeInput.value = baseClose;
+      checkbox.checked = baseClosed;
+      syncClosedState(card);
+    });
+
+    return finalPayload;
+  }
+
+  async function onValidate(root) {
+    const payload = collectPayload(root);
+    const modifiedDays = getModifiedDays(root, payload);
+
+    if (modifiedDays.length === 0) {
+      Toast.warn("Aucune modification détectée");
+      return;
+    }
+
+    const invalidDay = payload.find(
+      (day) => !day.heure_ouverture || !day.heure_fermeture,
+    );
+    if (invalidDay) {
+      await showInvalidError();
+      return;
+    }
+
+    const baseDay = resolveBaseDay(root, modifiedDays);
+    const selectedIds = await chooseApplyDays(baseDay, payload);
+    if (!selectedIds) return;
+
+    const finalPayload = applySelection(root, payload, baseDay, selectedIds);
+    const savedDays = getModifiedDays(root, finalPayload);
+
+    const hasInvalidAfterApply = finalPayload.find(
+      (day) => !day.heure_ouverture || !day.heure_fermeture,
+    );
+    if (hasInvalidAfterApply) {
+      await showInvalidError();
+      return;
+    }
+
+    setLoading(root, true);
+    try {
+      const response = await Requetes.updateHorairesBoutique(finalPayload);
+      render(root, response.horaires || []);
+      await showSuccess(savedDays);
+    } catch (error) {
+      setLoading(root, false);
+      await showInvalidError();
+    }
+  }
+
+  function onMount(id) {
+    const root = document.getElementById("win-" + id);
+    if (!root) return;
+
+    root._hbInitialByDay = {};
+    root._hbActiveDayId = 0;
+
+    root.addEventListener("input", (event) => {
+      const card = event.target.closest(".hb-day");
+      if (!card) return;
+      root._hbActiveDayId = Number(card.dataset.jourId || 0);
+    });
+
+    root.addEventListener("change", (event) => {
+      const card = event.target.closest(".hb-day");
+      if (card) {
+        root._hbActiveDayId = Number(card.dataset.jourId || 0);
+      }
+      const checkbox = event.target.closest(".hb-checkbox");
+      if (!checkbox) return;
+      if (card) syncClosedState(card);
+    });
+
+    root.querySelector(".hb-submit")?.addEventListener("click", () => {
+      void onValidate(root);
+    });
+
+    void refresh(root);
+  }
+
+  return { buildHTML, onMount };
+})();
+
+WM.register("gerant_horaires", {
+  label: "Horaires Boutique",
+  icon: "HBT",
+  sprint: 6,
+  gerantOnly: true,
+  buildHTML() {
+    return HorairesBoutiquePanel.buildHTML();
+  },
+  onMount(id) {
+    HorairesBoutiquePanel.onMount(id);
+  },
+});

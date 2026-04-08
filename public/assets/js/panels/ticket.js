@@ -1,0 +1,348 @@
+/* panels/ticket.js - orchestration panel achats */
+const AchatsBridge = (() => {
+  const queue = [];
+  let consumer = null;
+
+  function push(article) {
+    if (typeof consumer === 'function') {
+      try {
+        const consumed = consumer(article);
+        if (consumed !== false) {
+          return;
+        }
+      } catch (_) {
+        // fallback queue
+      }
+    }
+    queue.push(article);
+  }
+
+  function consumeWith(fn) {
+    consumer = fn;
+    while (queue.length > 0) {
+      const next = queue.shift();
+      const consumed = fn(next);
+      if (consumed === false) {
+        queue.unshift(next);
+        break;
+      }
+    }
+  }
+
+  return { push, consumeWith };
+})();
+
+function getSharedTicketCart() {
+  if (!window.__ticketCartShared) {
+    window.__ticketCartShared = TicketCart.create();
+  }
+  return window.__ticketCartShared;
+}
+
+window.Achats = window.Achats || {};
+window.Achats.ajouterArticle = (article) => {
+  AchatsBridge.push(article);
+  WM.open('ticket');
+};
+
+WM.register('ticket', {
+  label: 'Achats',
+  icon: 'ACH',
+  sprint: 2,
+  buildHTML() {
+    return TicketView.buildHTML();
+  },
+  onMount(id) {
+    const root = document.getElementById('win-' + id);
+    if (!root) return;
+
+    const panel = root.querySelector('.ticket-panel');
+    const cart = getSharedTicketCart();
+
+    const escapeHtml = (value) =>
+      String(value ?? '')
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#39;');
+
+    const render = () => TicketView.renderRows(panel, cart);
+    const addToCart = async (article, successMessage = null) => {
+      const result = cart.addArticle(article);
+      if (!result.ok) {
+        await Swal.fire({
+          icon: 'error',
+          title: 'Erreur',
+          text: result.error,
+          customClass: {
+            popup: 'ticket-swal-popup',
+            title: 'ticket-swal-title',
+            htmlContainer: 'ticket-swal-text',
+            confirmButton: 'ticket-swal-btn',
+          },
+          buttonsStyling: false,
+        });
+        return false;
+      }
+      render();
+      if (successMessage) {
+        await Swal.fire({
+          icon: 'success',
+          title: 'Article ajouté',
+          text: successMessage,
+          timer: 1200,
+          showConfirmButton: false,
+          customClass: {
+            popup: 'ticket-swal-popup',
+            title: 'ticket-swal-title',
+            htmlContainer: 'ticket-swal-text',
+          },
+        });
+      }
+      return true;
+    };
+
+    AchatsBridge.consumeWith((article) => {
+      if (!document.body.contains(panel)) {
+        return false;
+      }
+      const result = cart.addArticle(article);
+      if (!result.ok) {
+        Toast.err(result.error);
+        return true;
+      }
+      render();
+      return true;
+    });
+
+    panel.querySelector('[data-action="random"]').addEventListener('click', async () => {
+      try {
+        const article = await Requetes.randomArticle();
+        await addToCart(article);
+      } catch (err) {
+        const message = err.message || 'Impossible de charger un produit';
+        const stockWarning = /stock/i.test(message);
+        await Swal.fire({
+          icon: stockWarning ? 'warning' : 'error',
+          title: stockWarning ? 'Stock insuffisant' : 'Erreur produit',
+          text: message,
+          customClass: {
+            popup: 'ticket-swal-popup',
+            title: 'ticket-swal-title',
+            htmlContainer: 'ticket-swal-text',
+            confirmButton: 'ticket-swal-btn',
+          },
+          buttonsStyling: false,
+        });
+      }
+    });
+
+    panel.querySelector('[data-action="barcode"]').addEventListener('click', async () => {
+      const code = window.TicketBarcode && typeof window.TicketBarcode.prompt === 'function'
+        ? await window.TicketBarcode.prompt()
+        : null;
+      if (!code) return;
+
+      try {
+        const article = await Requetes.getArticle(code);
+        const ok = await addToCart(article);
+        if (!ok) return;
+      } catch (err) {
+        const message = err.message || 'Produit introuvable';
+        const stockWarning = /stock insuffisant/i.test(message);
+        await Swal.fire({
+          icon: stockWarning ? 'warning' : 'error',
+          title: stockWarning ? 'Stock insuffisant' : 'Code-barres invalide',
+          text: stockWarning
+            ? 'Cet article n’est plus en stock.'
+            : message,
+          customClass: {
+            popup: 'ticket-swal-popup',
+            title: 'ticket-swal-title',
+            htmlContainer: 'ticket-swal-text',
+            confirmButton: 'ticket-swal-btn',
+          },
+          buttonsStyling: false,
+        });
+      }
+    });
+
+    panel.querySelector('[data-action="list"]').addEventListener('click', async () => {
+      try {
+        const articles = await Requetes.getArticles();
+        const rows = (articles || [])
+          .map(
+            (article) => `
+              <tr>
+                <td>${escapeHtml(article.code_barres)}</td>
+                <td>${escapeHtml(article.libelle)}</td>
+                <td class="ticket-list-cell-action">
+                  <button
+                    type="button"
+                    class="ticket-list-add-btn"
+                    data-ticket-list-add="${escapeHtml(article.code_barres)}"
+                  >
+                    Ajouter aux achats
+                  </button>
+                </td>
+              </tr>
+            `,
+          )
+          .join('');
+
+        await Swal.fire({
+          title: 'Liste articles',
+          html: rows
+            ? `
+              <div class="ticket-list-wrap">
+                <table class="ticket-list-table">
+                  <thead>
+                    <tr><th>Code-barres</th><th>Article</th><th>Action</th></tr>
+                  </thead>
+                  <tbody>${rows}</tbody>
+                </table>
+              </div>
+            `
+            : '<div class="ticket-list-empty">Aucun article trouvé.</div>',
+          customClass: {
+            popup: 'ticket-swal-popup ticket-swal-popup-list',
+            title: 'ticket-swal-title',
+            htmlContainer: 'ticket-swal-text',
+            confirmButton: 'ticket-swal-btn',
+          },
+          buttonsStyling: false,
+          confirmButtonText: 'Fermer',
+          didOpen: (popup) => {
+            popup.addEventListener('click', async (event) => {
+              const btn = event.target.closest('[data-ticket-list-add]');
+              if (!btn) return;
+              const code = String(btn.dataset.ticketListAdd || '').trim();
+              if (!code) return;
+
+              btn.disabled = true;
+              try {
+                const article = await Requetes.getArticle(code);
+                const ok = await addToCart(article);
+                if (ok) {
+                  Toast.ok('Article ajouté aux achats');
+                }
+              } catch (error) {
+                const message = error?.message || "Impossible d'ajouter cet article";
+                const stockWarning = /stock/i.test(message);
+                if (stockWarning) {
+                  Toast.warn('Stock insuffisant pour cet article');
+                } else {
+                  Toast.err(message);
+                }
+              } finally {
+                btn.disabled = false;
+              }
+            });
+          },
+        });
+      } catch (err) {
+        await Swal.fire({
+          icon: 'error',
+          title: 'Erreur',
+          text: err.message || 'Impossible de charger la liste des articles',
+          customClass: {
+            popup: 'ticket-swal-popup',
+            title: 'ticket-swal-title',
+            htmlContainer: 'ticket-swal-text',
+            confirmButton: 'ticket-swal-btn',
+          },
+          buttonsStyling: false,
+        });
+      }
+    });
+
+    panel.querySelector('.ticket-encaisser').addEventListener('click', async () => {
+      if (cart.getItems().length === 0) {
+        await Swal.fire({
+          icon: 'warning',
+          title: 'Panier vide',
+          text: 'Ajoute au moins un produit avant encaissement.',
+          customClass: {
+            popup: 'ticket-swal-popup',
+            title: 'ticket-swal-title',
+            htmlContainer: 'ticket-swal-text',
+            confirmButton: 'ticket-swal-btn',
+          },
+          buttonsStyling: false,
+        });
+        return;
+      }
+      const paymentResult = await TicketPayment.process(cart.getItems(), cart.getTotal());
+      if (paymentResult.status === 'success') {
+        cart.clear();
+        render();
+      }
+    });
+
+    const rowsEl = panel.querySelector('.ticket-rows');
+
+    rowsEl?.addEventListener('click', async (event) => {
+      const qtyBtn = event.target.closest('[data-qty-action]');
+      if (qtyBtn) {
+        const index = Number(qtyBtn.dataset.qtyIndex);
+        const action = String(qtyBtn.dataset.qtyAction || '');
+        const currentQty = Number(cart.getItems()?.[index]?.qty ?? 1);
+        const nextQty = action === 'dec' ? currentQty - 1 : currentQty + 1;
+        const result = cart.setQtyAt(index, nextQty);
+        if (!result.ok) {
+          if (action === 'dec' && currentQty <= 1) {
+            Toast.warn('Quantité minimale : 1');
+          } else {
+            Toast.warn(result.error || 'Quantité invalide');
+          }
+          return;
+        }
+        render();
+        return;
+      }
+
+      const btn = event.target.closest('.ticket-del');
+      if (!btn) return;
+
+      const confirmDelete = await Swal.fire({
+        title: 'Retirer ce produit ?',
+        text: 'La ligne sera supprimée du panier.',
+        showCancelButton: true,
+        confirmButtonText: 'Supprimer',
+        cancelButtonText: 'Annuler',
+        customClass: {
+          popup: 'ticket-swal-popup',
+          title: 'ticket-swal-title',
+          htmlContainer: 'ticket-swal-text',
+          confirmButton: 'ticket-swal-btn',
+          cancelButton: 'ticket-swal-btn ticket-swal-btn-secondary',
+        },
+        buttonsStyling: false,
+      });
+      if (!confirmDelete.isConfirmed) return;
+
+      const row = btn.closest('.ticket-row');
+      if (!row) return;
+      const index = Number(row.dataset.index);
+      const removedItem = cart.getItems()?.[index] || null;
+      cart.removeAt(index);
+      render();
+      if (String(removedItem?.source || '').toLowerCase() === 'energie') {
+        if (typeof PompesPanelRefresh === 'function') {
+          PompesPanelRefresh();
+        }
+      }
+    });
+
+    if (typeof ResizeObserver !== 'undefined') {
+      const ticketBody = panel.querySelector('.ticket-body');
+      const observer = new ResizeObserver(() => render());
+      if (ticketBody) {
+        observer.observe(ticketBody);
+      }
+    }
+
+    render();
+  },
+});

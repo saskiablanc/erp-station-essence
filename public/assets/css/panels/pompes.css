@@ -1,0 +1,769 @@
+/* ═══════════════════════════════════════════════════════════
+   pompes.css — Panel Pompes & Bornes électriques
+   Utilisé par : pompes.js / carburant.js / electricite.js
+═══════════════════════════════════════════════════════════ */
+
+/* ══════════════════════════════════════════════════════
+   POMPES PANEL — conteneur principal
+══════════════════════════════════════════════════════ */
+
+.pompes-panel {
+  --pompe-card-gap: 5px;
+  --pompe-card-radius: 8px;
+  height: calc(100% + 24px);
+  margin: -12px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* Corps : carburants | séparateur | electricité — tout horizontal */
+.pompes-body {
+  flex: 1;
+  display: flex;
+  flex-direction: row;
+  overflow: hidden;
+  min-height: 0;
+}
+
+/* Barre de statut en bas */
+.pompes-statusbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 3px 10px;
+  background: rgba(255, 255, 255, 0.6);
+  border-top: 1px solid var(--border);
+  flex-shrink: 0;
+  font-size: 11px;
+  color: var(--text-dim);
+}
+.pompes-statusbar-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--green);
+  flex-shrink: 0;
+  transition: background 0.2s;
+}
+.pompes-statusbar-dot.loading {
+  background: var(--warn);
+  animation: pulse 1s infinite;
+}
+.pompes-statusbar-dot.error {
+  background: var(--danger);
+  animation: none;
+}
+.pompes-statusbar-refresh {
+  margin-left: auto;
+  height: 18px;
+  padding: 0 8px;
+  border-radius: 4px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-dim);
+  font-size: 11px;
+  cursor: pointer;
+  transition: all 0.12s;
+}
+.pompes-statusbar-refresh:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+/* Badge désactivées dans les titres de section */
+.pompes-desact-badge {
+  font-size: 9px;
+  padding: 1px 6px;
+  border-radius: 8px;
+  background: var(--danger);
+  color: #fff;
+  font-family: var(--mono);
+  font-weight: 700;
+  display: none;
+}
+.pompes-desact-badge.visible {
+  display: inline-flex;
+}
+
+/* ══════════════════════════════════════════════════════
+   SECTION CARBURANTS — colonne gauche (plus compacte)
+══════════════════════════════════════════════════════ */
+
+.pompes-col-carburant {
+  flex: 0 0 32%;
+  display: flex;
+  flex-direction: column;
+  padding: 6px;
+  border-right: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.3);
+  min-width: 0;
+  overflow: hidden;
+}
+
+.pompes-section-label {
+  font-family: var(--display);
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-mid);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 4px;
+  padding-bottom: 3px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+/* 4 pompes en 2x2 : manuelles en haut, autos en bas */
+.pc-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-rows: repeat(2, minmax(0, 1fr));
+  gap: var(--pompe-card-gap);
+  flex: 1;
+  min-height: 0;
+  align-content: start;
+}
+
+/* Carte pompe carburant */
+.pc-card {
+  background: rgba(255, 255, 255, 0.82);
+  border: 1.5px solid var(--border);
+  border-radius: var(--pompe-card-radius);
+  padding: 4px 5px 30px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  transition: border-color 0.15s;
+  position: relative;
+}
+.pc-card:hover {
+  border-color: var(--border-active);
+}
+
+/* En-tête : num + mode + LED sur une seule ligne */
+.pc-card-top {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding-bottom: 3px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 1px;
+}
+.pc-card-num-wrap {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  flex: 1;
+  min-width: 0;
+}
+.pc-card-type-icon {
+  width: 13px;
+  height: 13px;
+  object-fit: contain;
+  opacity: 0.65;
+  flex-shrink: 0;
+  transform: translateY(0.5px);
+}
+.pc-card-num {
+  font-family: var(--display);
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--text);
+  line-height: 1;
+  flex-shrink: 0;
+}
+.pc-card-mode-label {
+  font-size: 9px;
+  font-weight: 700;
+  color: var(--text-dim);
+  letter-spacing: 0.2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.pc-card-mode-label.auto {
+  color: var(--accent);
+}
+
+.pc-card-status-wrap {
+  display: none;
+}
+
+.pc-top-actions {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.pc-led {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.pc-toggle-btn {
+  width: 16px;
+  min-width: 16px;
+  height: 16px;
+  border-radius: 5px;
+  border: 1px solid var(--border);
+  background: var(--surface2);
+  color: var(--text-dim);
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.15s;
+  padding: 0;
+}
+.pc-toggle-btn:hover:not(:disabled) {
+  border-color: var(--border-active);
+  color: var(--accent);
+}
+.pc-toggle-btn.is-on {
+  color: var(--green);
+}
+.pc-toggle-btn.is-off {
+  color: var(--text-dim);
+}
+.pc-toggle-btn.is-disabled,
+.pc-toggle-btn:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.pc-info-btn {
+  width: 16px;
+  min-width: 16px;
+  height: 16px;
+  border-radius: 5px;
+  border: 1px solid var(--border);
+  background: var(--surface2);
+  color: var(--accent);
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.15s;
+  padding: 0;
+}
+.pc-info-btn:hover {
+  border-color: var(--border-active);
+  color: var(--accent);
+}
+
+/* Date */
+.pc-card-date {
+  font-size: 8px;
+  color: var(--text-dim);
+  font-family: var(--mono);
+  min-height: 10px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Lignes de données */
+.pc-card-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  column-gap: 8px;
+  min-height: 16px;
+  padding: 1px 4px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  min-width: 0;
+}
+.pc-row-label {
+  font-size: 9px;
+  color: var(--text-dim);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.pc-row-val {
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text-mid);
+  min-width: 30px;
+  display: inline-flex;
+  justify-content: flex-end;
+  align-items: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-align: right;
+}
+.pc-row-val--total {
+  color: var(--text);
+  font-weight: 700;
+}
+
+/* Badge carburant coloré */
+.pc-carb-badge {
+  font-size: 9px;
+  padding: 1px 4px;
+  border-radius: 3px;
+  border: 1px solid;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.pc-carb-badge--vide {
+  width: 30px;
+  min-width: 30px;
+  box-sizing: border-box;
+  padding: 0 4px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  background: rgba(107, 114, 128, 0.08);
+  border-color: rgba(107, 114, 128, 0.2);
+  color: var(--text-dim);
+}
+
+/* Boutons d'action */
+.pc-card-action {
+  position: absolute;
+  left: 5px;
+  right: 5px;
+  bottom: 5px;
+  margin-top: 0;
+}
+.pc-btn {
+  width: 100%;
+  height: 19px;
+  border-radius: 5px;
+  border: 1.5px solid var(--border);
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+}
+.pc-btn--encaisser {
+  background: var(--btn-grad);
+  border-color: var(--border-active);
+  color: var(--accent);
+  box-shadow: var(--shadow-soft);
+}
+.pc-btn--encaisser:hover:not(:disabled) {
+  opacity: 0.85;
+}
+.pc-btn--demarrer {
+  background: rgba(16, 185, 129, 0.15);
+  border-color: rgba(16, 185, 129, 0.35);
+  color: #047857;
+}
+.pc-btn--demarrer:hover:not(:disabled) {
+  background: rgba(16, 185, 129, 0.25);
+}
+.pc-btn--terminer {
+  background: rgba(245, 158, 11, 0.15);
+  border-color: rgba(245, 158, 11, 0.35);
+  color: #b45309;
+}
+.pc-btn--terminer:hover:not(:disabled) {
+  background: rgba(245, 158, 11, 0.25);
+}
+.pc-btn--activer {
+  background: rgba(245, 158, 11, 0.12);
+  border-color: rgba(245, 158, 11, 0.35);
+  color: var(--warn);
+}
+.pc-btn--activer:hover:not(:disabled) {
+  background: rgba(245, 158, 11, 0.22);
+}
+.pc-btn--disabled,
+.pc-btn:disabled {
+  background: transparent;
+  color: var(--text-dim);
+  cursor: default;
+  opacity: 0.45;
+}
+
+/* Badge CARTES (pompes auto) */
+.pc-mode-badge {
+  width: 100%;
+  height: 19px;
+  border-radius: 5px;
+  border: 1px solid var(--border);
+  background: var(--surface2);
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--text-dim);
+  letter-spacing: 0.5px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ══════════════════════════════════════════════════════
+   SECTION ELECTRICITE — colonne droite (plus large)
+══════════════════════════════════════════════════════ */
+
+.pompes-col-electricite {
+  flex: 1 1 68%;
+  display: flex;
+  flex-direction: column;
+  padding: 6px;
+  min-width: 0;
+  overflow: hidden;
+}
+
+/* Sous-sections rapides + lents côte à côte */
+.pe-wrap {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 4fr 1px 1fr;
+  gap: var(--pompe-card-gap);
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* Super-chargeurs — prend la majorité */
+.pe-col-rapides {
+  grid-column: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+/* Séparateur vertical */
+.pe-col-sep {
+  width: 100%;
+  background: var(--border);
+  min-height: 0;
+}
+
+/* Chargeurs lents */
+.pe-col-lents {
+  grid-column: 3;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+/* Labels sous-section */
+.pe-subsection-label {
+  font-family: var(--display);
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  margin-bottom: 4px;
+  white-space: nowrap;
+}
+
+/* Grille 4 colonnes pour les rapides */
+.pe-grid-rapides {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-rows: repeat(2, minmax(0, 1fr));
+  gap: var(--pompe-card-gap);
+  flex: 1;
+  min-height: 0;
+  align-content: start;
+}
+
+/* Grille 1 colonne pour les lents */
+.pe-grid-lents {
+  display: grid;
+  grid-template-columns: 1fr;
+  grid-template-rows: repeat(2, minmax(0, 1fr));
+  gap: var(--pompe-card-gap);
+  flex: 1;
+  min-height: 0;
+  align-content: start;
+}
+
+/* Carte borne électrique */
+.pe-card {
+  background: rgba(255, 255, 255, 0.82);
+  border: 1.5px solid var(--border);
+  border-radius: var(--pompe-card-radius);
+  padding: 4px 5px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  transition: border-color 0.15s;
+}
+.pe-card:hover {
+  border-color: var(--border-active);
+}
+.pe-card--active {
+  border-color: var(--warn);
+}
+.pe-card--desact {
+  border-color: var(--danger);
+}
+
+/* En-tête borne */
+.pe-card-top {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  padding-bottom: 2px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 1px;
+}
+.pe-card-type-icon {
+  width: 12px;
+  height: 12px;
+  object-fit: contain;
+  opacity: 0.62;
+  flex-shrink: 0;
+  transform: translateY(0.5px);
+}
+.pe-card-num {
+  font-family: var(--display);
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--text);
+  line-height: 1;
+  flex-shrink: 0;
+}
+.pe-card-type {
+  font-size: 9px;
+  color: var(--text-dim);
+  font-weight: 600;
+  flex: 1;
+  white-space: nowrap;
+}
+.pe-led {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.pe-top-actions {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.pe-toggle-btn {
+  width: 16px;
+  min-width: 16px;
+  height: 16px;
+  border-radius: 5px;
+  border: 1px solid var(--border);
+  background: var(--surface2);
+  color: var(--text-dim);
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.15s;
+  padding: 0;
+}
+.pe-toggle-btn:hover:not(:disabled) {
+  border-color: var(--border-active);
+  color: var(--accent);
+}
+.pe-toggle-btn.is-on {
+  color: var(--green);
+}
+.pe-toggle-btn.is-off {
+  color: var(--text-dim);
+}
+.pe-toggle-btn.is-disabled,
+.pe-toggle-btn:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.pe-info-btn {
+  width: 16px;
+  min-width: 16px;
+  height: 16px;
+  border-radius: 5px;
+  border: 1px solid var(--border);
+  background: var(--surface2);
+  color: var(--accent);
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.15s;
+  padding: 0;
+}
+.pe-info-btn:hover {
+  border-color: var(--border-active);
+  color: var(--accent);
+}
+
+/* Date */
+.pe-card-date {
+  font-size: 8px;
+  color: var(--text-dim);
+  font-family: var(--mono);
+  min-height: 12px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Lignes de données */
+.pe-card-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  column-gap: 8px;
+  min-height: 18px;
+  padding: 1px 4px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  min-width: 0;
+}
+.pe-row-label {
+  font-size: 8px;
+  color: var(--text-dim);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.pe-row-val {
+  font-family: var(--mono);
+  font-size: 9px;
+  font-weight: 600;
+  color: var(--text-mid);
+  min-width: 24px;
+  display: inline-flex;
+  justify-content: flex-end;
+  align-items: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-align: right;
+}
+.pe-row-val--total {
+  color: var(--text);
+  font-weight: 700;
+}
+
+/* Action */
+.pe-card-action {
+  margin-top: auto;
+}
+.pe-btn {
+  width: 100%;
+  height: 20px;
+  border-radius: 5px;
+  border: 1px solid rgba(245, 158, 11, 0.35);
+  background: rgba(245, 158, 11, 0.1);
+  color: var(--warn);
+  font-family: var(--mono);
+  font-size: 9px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.12s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.pe-btn:hover:not(:disabled) {
+  background: rgba(245, 158, 11, 0.22);
+}
+.pe-btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.pe-carte-label {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 20px;
+  border-radius: 5px;
+  border: 1px solid var(--border);
+  background: var(--surface2);
+  font-family: var(--mono);
+  font-size: 9px;
+  font-weight: 700;
+  color: var(--text-dim);
+  letter-spacing: 0.5px;
+}
+
+.pompe-info-grid {
+  display: grid;
+  gap: 7px;
+  margin-top: 6px;
+}
+.pompe-info-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.65);
+}
+.pompe-info-label {
+  font-family: var(--display);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-mid);
+}
+.pompe-info-value {
+  font-family: var(--mono);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text);
+  text-align: right;
+}
+
+@media (max-width: 1500px) {
+  .pompes-panel {
+    --pompe-card-gap: 4px;
+  }
+}
+
+@media (max-width: 1300px) {
+  .pompes-panel {
+    --pompe-card-gap: 3px;
+  }
+}
