@@ -1128,7 +1128,7 @@ var Sim = (function() {
         { id: 'gerant-reappro-annuler', label: 'Annuler réappro', kind: 'confirm', opts: { title: 'Annuler le réapprovisionnement #42', text: 'Cette action est irréversible.' } },
         { id: 'gerant-reappro-ok', label: 'Commande envoyée', kind: 'simple', opts: { icon: 'success', title: 'Commande envoyée', text: 'Le réapprovisionnement manuel a été créé.' } },
         { id: 'gerant-reappro-auto-review', label: 'Réappro auto (review)', kind: 'confirm', opts: { title: 'Réappro auto #42', text: 'Le seuil d\'alerte a déclenché un réapprovisionnement automatique.' } },
-        { id: 'gerant-reappro-auto-validated', label: 'Réappro auto validé', kind: 'simple', opts: { icon: 'success', title: 'Réapprovisionnement validé', text: 'Le réapprovisionnement automatique #42 a bien été validé.' } },
+        { id: 'gerant-reappro-auto-validated', label: 'Réappro validé (après seuil)', kind: 'simple', opts: { icon: 'success', title: 'Réapprovisionnement validé', html: '<div style="text-align:left;font-size:13px;"><b>N° Ordre :</b> #14<br><b>Statut :</b> En cours<br><b>Validation :</b> validé sans modification</div>' } },
         { id: 'gerant-reappro-auto-employe', label: 'Réappro auto (employé)', kind: 'simple', opts: { icon: 'warning', title: 'Seuil d’alerte atteint', text: 'Prévenez le gérant pour ajuster la commande.' } },
         { id: 'gerant-reappro-auto-fallback', label: 'Réappro auto (fallback)', kind: 'simple', opts: { icon: 'warning', title: 'Seuil d’alerte atteint', text: 'Le détail du réappro n’a pas pu être chargé.' } },
         { id: 'gerant-validation', label: 'Validation journée', kind: 'confirm', opts: { title: 'Confirmer la validation ?', text: 'Les tables du jour seront verrouillées.' } }
@@ -1137,7 +1137,8 @@ var Sim = (function() {
     {
       category: 'Système',
       items: [
-        { id: 'sys-seuil', label: 'Seuil d’alerte', kind: 'simple', opts: { icon: 'warning', title: 'Seuil d’alerte atteint', text: 'Un produit est passé sous le seuil d’alerte.' } }
+        { id: 'sys-seuil', label: 'Seuil d’alerte', kind: 'simple', opts: { icon: 'warning', title: 'Seuil d’alerte atteint', text: 'Un produit est passé sous le seuil d’alerte.' } },
+        { id: 'sys-reappro-validated', label: 'Réappro validé', kind: 'simple', opts: { icon: 'success', title: 'Réapprovisionnement validé', html: '<div style="text-align:left;font-size:13px;"><b>N° Ordre :</b> #14<br><b>Statut :</b> En cours<br><b>Validation :</b> validé sans modification</div>' } }
       ]
     },
     {
@@ -1987,10 +1988,15 @@ var Sim = (function() {
 
   function triggerOfficialPopup(item) {
     if (!item) return;
+    var safeOpts = item && item.opts && typeof item.opts === 'object'
+      ? JSON.parse(JSON.stringify(item.opts))
+      : {};
     var message = {
       type: 'popup-trigger',
       payload: {
-        id: item.id
+        id: item.id,
+        kind: item.kind || 'simple',
+        opts: safeOpts
       }
     };
 

@@ -589,9 +589,9 @@
           title: "Réapprovisionnement validé",
           html:
             '<div style="text-align:left;font-size:13px;">' +
-            "<b>N° Ordre :</b> #42<br>" +
+            "<b>N° Ordre :</b> #14<br>" +
             "<b>Statut :</b> En cours<br>" +
-            "<b>Validation :</b> validé après modification (1 ligne ajustée)</div>",
+            "<b>Validation :</b> validé sans modification</div>",
           confirmButtonText: "Fermer",
           allowOutsideClick: false,
         },
@@ -707,6 +707,20 @@
           confirmButtonText: "Valider le réappro",
           denyButtonText: "Modifier le réappro",
           cancelButtonText: "Annuler le réappro",
+        },
+      },
+      "sys-reappro-validated": {
+        kind: "simple",
+        options: {
+          icon: "success",
+          title: "Réapprovisionnement validé",
+          html:
+            '<div style="text-align:left;font-size:13px;">' +
+            "<b>N° Ordre :</b> #14<br>" +
+            "<b>Statut :</b> En cours<br>" +
+            "<b>Validation :</b> validé sans modification</div>",
+          confirmButtonText: "Fermer",
+          allowOutsideClick: false,
         },
       },
       "pay-cce-pin-wait": { kind: "simple", options: { ...ticketPayBase(), title: "Le client saisit son code CCE", html: '<div style="text-align:center;padding:10px 0;"><div style="margin-bottom:14px;color:var(--text-mid,#4b5563);font-size:13px;">Saisie en attente sur le terminal du simulateur...</div><div style="display:inline-block;width:10px;height:10px;border-radius:50%;background:var(--accent,#6366f1);animation:ticket-wait-pulse 1.2s ease-in-out infinite;"></div><style>@keyframes ticket-wait-pulse{0%,100%{opacity:.3}50%{opacity:1}}</style></div>', showConfirmButton: false, showCancelButton: true, cancelButtonText: "Annuler", allowOutsideClick: false, allowEscapeKey: false } },
