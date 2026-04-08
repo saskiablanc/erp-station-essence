@@ -15,33 +15,57 @@ class BddController extends Controller
 
     private function availableProfiles(): array
     {
+        static $cachedProfiles = null;
+        if (is_array($cachedProfiles)) {
+            return $cachedProfiles;
+        }
+
         if (!defined('CONFIG_PATH')) {
-            return ['courante'];
+            $cachedProfiles = ['courante'];
+            return $cachedProfiles;
         }
 
         $configFile = rtrim((string) CONFIG_PATH, '/\\') . '/database.php';
         if (!is_file($configFile)) {
-            return ['courante'];
+            $cachedProfiles = ['courante'];
+            return $cachedProfiles;
         }
 
         $configs = require $configFile;
         if (!is_array($configs)) {
-            return ['courante'];
+            $cachedProfiles = ['courante'];
+            return $cachedProfiles;
         }
 
-        $profiles = [];
+        $declaredProfiles = [];
         foreach ($configs as $name => $cfg) {
             if (!is_string($name) || !is_array($cfg)) continue;
             if (isset($cfg['driver']) && isset($cfg['dbname'])) {
-                $profiles[] = $name;
+                $declaredProfiles[] = $name;
+            }
+        }
+
+        if (empty($declaredProfiles)) {
+            $cachedProfiles = ['courante'];
+            return $cachedProfiles;
+        }
+
+        $profiles = [];
+        foreach (array_values(array_unique($declaredProfiles)) as $profileName) {
+            try {
+                Database::getInstance($profileName)->query('SELECT 1');
+                $profiles[] = $profileName;
+            } catch (Throwable) {
+                // Profil ignoré si la connexion n'est pas possible (droits, DB absente, etc.)
             }
         }
 
         if (empty($profiles)) {
-            return ['courante'];
+            $profiles = ['courante'];
         }
 
-        return array_values(array_unique($profiles));
+        $cachedProfiles = $profiles;
+        return $cachedProfiles;
     }
 
     private function resolveProfile(bool $write = false): string

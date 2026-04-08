@@ -133,6 +133,14 @@ final class Database
             $this->connection = new PDO($dsn, $username, $password, $options);
         } catch (PDOException $e) {
             $this->logError('Database connection error: ' . $e->getMessage());
+            $isDev = defined('APP_ENV') && APP_ENV === 'development';
+            if ($isDev) {
+                throw new RuntimeException(
+                    'Database connection failed: ' . $e->getMessage() . ' | DSN=' . $dsn . ' | user=' . $username,
+                    0,
+                    $e
+                );
+            }
             throw new RuntimeException('Database connection failed.');
         }
     }
