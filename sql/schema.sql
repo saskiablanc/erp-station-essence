@@ -116,7 +116,7 @@ CREATE TABLE `Client` (
 CREATE TABLE `CarteCE` (
   `id_carte_CE`            BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   `id_client`              BIGINT UNSIGNED NOT NULL,
-  `code_secret`            INT NOT NULL,
+  `code_secret`            VARCHAR(255) NOT NULL,
   `solde_client`           DECIMAL(10,3) NOT NULL,
   `date_dernier_apport`    DATE NOT NULL,
   `montant_dernier_apport` INT NOT NULL,
@@ -437,7 +437,7 @@ CREATE TABLE `Client` (
 CREATE TABLE `CarteCE` (
   `id_carte_CE`            BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   `id_client`              BIGINT UNSIGNED NOT NULL,
-  `code_secret`            INT NOT NULL,
+  `code_secret`            VARCHAR(255) NOT NULL,
   `solde_client`           DECIMAL(10,3) NOT NULL,
   `date_dernier_apport`    DATE NOT NULL,
   `montant_dernier_apport` INT NOT NULL,

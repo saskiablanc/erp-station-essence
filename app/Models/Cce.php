@@ -9,6 +9,8 @@ use RuntimeException;
 
 class Cce
 {
+    private const CODE_SECRET_LENGTH = 4;
+
     private Database $db;
     private ?bool $hasTransactionCardLink = null;
     private ?array $cachedSettings = null;
@@ -67,7 +69,8 @@ class Cce
                 throw new RuntimeException('Création du client impossible');
             }
 
-            $codeSecret = $providedCodeSecret ?? $this->generateUniqueCodeSecret();
+            $codeSecret = $providedCodeSecret ?? $this->generateDefaultCodeSecret();
+            $codeSecretHash = $this->hashCodeSecret($codeSecret);
 
             $this->db->execute(
                 'INSERT INTO `CarteCE`
@@ -76,7 +79,7 @@ class Cce
                     (:id_client, :code_secret, :solde_client, :date_dernier_apport, :montant_dernier_apport)',
                 [
                     'id_client' => $idClient,
-                    'code_secret' => $codeSecret,
+                    'code_secret' => $codeSecretHash,
                     'solde_client' => $soldeClient,
                     'date_dernier_apport' => $dateApport,
                     'montant_dernier_apport' => $montantApport,
@@ -97,7 +100,7 @@ class Cce
                 'prenom' => $prenom,
                 'email' => $email,
                 'num_tel' => $telephone,
-                'code_secret' => $codeSecret,
+                'code_secret_masked' => str_repeat('*', self::CODE_SECRET_LENGTH),
                 'solde_client' => number_format($soldeClient, 3, '.', ''),
                 'date_dernier_apport' => $dateApport,
                 'montant_dernier_apport' => $montantApport,
@@ -130,7 +133,6 @@ class Cce
                 c.prenom,
                 c.email,
                 c.num_tel,
-                cc.code_secret,
                 cc.solde_client,
                 cc.date_dernier_apport,
                 cc.montant_dernier_apport
@@ -169,7 +171,6 @@ class Cce
                 c.prenom,
                 c.email,
                 c.num_tel,
-                cc.code_secret,
                 cc.solde_client,
                 cc.date_dernier_apport,
                 cc.montant_dernier_apport
@@ -371,6 +372,61 @@ class Cce
         }
 
         return $this->findOverviewById($idCarte);
+    }
+
+    public function verifyCodeSecret(int $idCarte, mixed $providedCodeSecret): ?bool
+    {
+        $candidate = $this->normalizeProvidedCodeSecret($providedCodeSecret);
+
+        $row = $this->db->query(
+            'SELECT code_secret
+             FROM `CarteCE`
+             WHERE id_carte_CE = :id
+             LIMIT 1',
+            ['id' => $idCarte]
+        )->fetch(PDO::FETCH_ASSOC);
+
+        if (!$row) {
+            return null;
+        }
+
+        $stored = trim((string) ($row['code_secret'] ?? ''));
+        if ($stored === '') {
+            return false;
+        }
+
+        if ($this->looksLikePasswordHash($stored)) {
+            $valid = password_verify($candidate, $stored);
+            if ($valid && password_needs_rehash($stored, PASSWORD_BCRYPT)) {
+                $this->db->execute(
+                    'UPDATE `CarteCE` SET code_secret = :hash WHERE id_carte_CE = :id',
+                    [
+                        'hash' => $this->hashCodeSecret($candidate),
+                        'id' => $idCarte,
+                    ]
+                );
+            }
+            return $valid;
+        }
+
+        // Compatibilité ascendante: migration silencieuse des anciens codes non hashés.
+        $legacyNormalized = ltrim($candidate, '0');
+        if ($legacyNormalized === '') {
+            $legacyNormalized = '0';
+        }
+        $validLegacy = hash_equals($stored, $candidate) || hash_equals($stored, $legacyNormalized);
+        if ($validLegacy) {
+            $this->db->execute(
+                'UPDATE `CarteCE` SET code_secret = :hash WHERE id_carte_CE = :id',
+                [
+                    'hash' => $this->hashCodeSecret($candidate),
+                    'id' => $idCarte,
+                ]
+            );
+            return true;
+        }
+
+        return false;
     }
 
     /**
@@ -644,76 +700,38 @@ class Cce
         return $cce;
     }
 
-    private function normalizeProvidedCodeSecret(mixed $value): int
+    private function normalizeProvidedCodeSecret(mixed $value): string
     {
-        $raw = trim((string) $value);
+        $raw = preg_replace('/\s+/', '', trim((string) $value));
         if ($raw === '') {
             throw new RuntimeException('Code secret requis');
         }
-        if (!preg_match('/^\d+$/', $raw)) {
-            throw new RuntimeException('Le code secret doit contenir uniquement des chiffres.');
+        if (!preg_match('/^\d{' . self::CODE_SECRET_LENGTH . '}$/', $raw)) {
+            throw new RuntimeException(
+                'Le code secret doit contenir exactement ' . self::CODE_SECRET_LENGTH . ' chiffres.'
+            );
         }
 
-        $normalized = ltrim($raw, '0');
-        if ($normalized === '') {
-            $normalized = '0';
-        }
-        if (strlen($normalized) > 10 || (strlen($normalized) === 10 && strcmp($normalized, '2147483647') > 0)) {
-            throw new RuntimeException('Le code secret est trop grand.');
-        }
-
-        return (int) $normalized;
+        return $raw;
     }
 
-    private function isWeakCodeSecret(string $pin): bool
+    private function generateDefaultCodeSecret(): string
     {
-        if (preg_match('/^(\d)\1{3}$/', $pin) === 1) {
-            return true;
-        }
-
-        $commonPins = ['1234', '4321', '1212', '1000', '2000', '2020'];
-        if (in_array($pin, $commonPins, true)) {
-            return true;
-        }
-
-        $inc = true;
-        $dec = true;
-        $digits = str_split($pin);
-        for ($i = 1; $i < count($digits); $i++) {
-            $prev = (int) $digits[$i - 1];
-            $cur = (int) $digits[$i];
-            if ($cur !== $prev + 1) {
-                $inc = false;
-            }
-            if ($cur !== $prev - 1) {
-                $dec = false;
-            }
-        }
-
-        return $inc || $dec;
+        return str_pad((string) random_int(0, (10 ** self::CODE_SECRET_LENGTH) - 1), self::CODE_SECRET_LENGTH, '0', STR_PAD_LEFT);
     }
 
-    private function isCodeSecretAlreadyUsed(int $code): bool
+    private function hashCodeSecret(string $codeSecret): string
     {
-        return (bool) $this->db->query(
-            'SELECT 1 FROM `CarteCE` WHERE code_secret = :code LIMIT 1',
-            ['code' => $code]
-        )->fetchColumn();
+        $hash = password_hash($codeSecret, PASSWORD_BCRYPT);
+        if (!is_string($hash) || $hash === '') {
+            throw new RuntimeException('Impossible de sécuriser le code CCE');
+        }
+        return $hash;
     }
 
-    private function generateUniqueCodeSecret(): int
+    private function looksLikePasswordHash(string $value): bool
     {
-        for ($attempt = 0; $attempt < 25; $attempt++) {
-            $code = random_int(1000, 9999);
-            if ($this->isWeakCodeSecret((string) $code)) {
-                continue;
-            }
-            if (!$this->isCodeSecretAlreadyUsed($code)) {
-                return $code;
-            }
-        }
-
-        throw new RuntimeException('Génération du code secret impossible');
+        return str_starts_with($value, '$2y$') || str_starts_with($value, '$2a$') || str_starts_with($value, '$2b$');
     }
 
     private function withTransactions(array $cce): array

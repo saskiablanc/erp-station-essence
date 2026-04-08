@@ -187,4 +187,32 @@ class CceController extends Controller
             'cce' => $cce,
         ]);
     }
+
+    public function verifyCode(string $id): void
+    {
+        $this->requireAuth();
+        $idCarte = (int) $id;
+        if ($idCarte <= 0) {
+            $this->jsonError('Identifiant CCE invalide', 400);
+        }
+
+        $body = $this->body();
+        $codeSecret = $body['code_secret'] ?? '';
+        $model = new Cce();
+
+        try {
+            $valid = $model->verifyCodeSecret($idCarte, $codeSecret);
+        } catch (\Throwable $e) {
+            $this->jsonError($e->getMessage(), 400);
+        }
+
+        if ($valid === null) {
+            $this->jsonError("CCE #{$idCarte} introuvable", 404);
+        }
+
+        $this->json([
+            'success' => true,
+            'valid' => (bool) $valid,
+        ]);
+    }
 }

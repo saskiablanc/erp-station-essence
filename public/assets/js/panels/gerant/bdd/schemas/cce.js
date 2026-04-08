@@ -76,7 +76,7 @@
       { f: "nom", label: "Nom", w: "100px" },
       { f: "prenom", label: "Prénom", w: "100px" },
       { f: "email", label: "Email", w: "" },
-      { f: "code_secret", label: "Code secret", w: "82px" },
+      { f: "code_secret", label: "Code secret", w: "100px" },
       { f: "solde_client", label: "Solde (€)", w: "80px", isPrice: true },
       { f: "date_dernier_apport", label: "Dernier apport", w: "106px" },
       {

@@ -254,6 +254,27 @@ const ReapproPanel = (() => {
     }
   }
 
+  async function showAutoReapproValidatedPopup(idReappro, updatesCount) {
+    const count = Number(updatesCount || 0);
+    await Swal.fire({
+      icon: "success",
+      title: "Réapprovisionnement validé",
+      html:
+        '<div style="text-align:left;font-size:13px;">' +
+        "<b>N° Ordre :</b> #" +
+        idReappro +
+        "<br>" +
+        "<b>Statut :</b> En cours<br>" +
+        "<b>Validation :</b> " +
+        (count > 0
+          ? "validé après modification (" + count + " ligne" + (count > 1 ? "s" : "") + " ajustée" + (count > 1 ? "s" : "") + ")"
+          : "validé sans modification") +
+        "</div>",
+      confirmButtonText: "Fermer",
+      allowOutsideClick: false,
+    });
+  }
+
   async function promptAutoReview(payload) {
     const detail = await loadAutoReapproDetail(payload);
     const idReappro = Number(detail?.id_reappro ?? 0);
@@ -311,6 +332,7 @@ const ReapproPanel = (() => {
           ? "Réappro auto #" + idReappro + " ajusté puis validé"
           : "Réappro auto #" + idReappro + " validé",
       );
+      await showAutoReapproValidatedPopup(idReappro, count);
       dispatchChanged({
         type: "auto-confirm",
         id_reappro: idReappro,

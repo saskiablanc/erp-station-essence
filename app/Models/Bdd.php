@@ -555,7 +555,11 @@ class Bdd
             ];
         }
         return ['cartes' => $this->fetch(
-            "SELECT cc.id_carte_CE,c.nom,c.prenom,c.email,cc.code_secret,
+            "SELECT cc.id_carte_CE,c.nom,c.prenom,c.email,
+                    CASE
+                      WHEN cc.code_secret IS NULL OR cc.code_secret = '' THEN ''
+                      ELSE '****'
+                    END AS code_secret,
                     cc.solde_client,cc.date_dernier_apport,cc.montant_dernier_apport
              FROM CarteCE cc JOIN Client c ON c.id_client=cc.id_client
              {$where}

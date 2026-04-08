@@ -582,6 +582,20 @@
           cancelButtonText: "Annuler le réappro",
         },
       },
+      "gerant-reappro-auto-validated": {
+        kind: "simple",
+        options: {
+          icon: "success",
+          title: "Réapprovisionnement validé",
+          html:
+            '<div style="text-align:left;font-size:13px;">' +
+            "<b>N° Ordre :</b> #42<br>" +
+            "<b>Statut :</b> En cours<br>" +
+            "<b>Validation :</b> validé après modification (1 ligne ajustée)</div>",
+          confirmButtonText: "Fermer",
+          allowOutsideClick: false,
+        },
+      },
       "gerant-reappro-auto-employe": {
         kind: "simple",
         options: {

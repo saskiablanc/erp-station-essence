@@ -146,6 +146,7 @@ $router->post('json/cce/bonus/{id}',           [new CceParamsController(), 'upda
 // Routes dynamiques en dernier
 $router->get( 'json/cce/{id}',                 [new CceController(), 'get']);
 $router->get( 'json/cce/{id}/transactions',    [new CceController(), 'transactions']);
+$router->post('json/cce/{id}/verify-code',     [new CceController(), 'verifyCode']);
 $router->post('json/cce/{id}/recharger',       [new CceController(), 'recharger']);
 $router->post('json/cce/{id}/debiter',         [new CceController(), 'debiter']);
 

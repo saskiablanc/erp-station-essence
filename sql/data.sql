@@ -193,14 +193,14 @@ ALTER TABLE `Client` AUTO_INCREMENT = 9;
 --  CARTE CE
 -- ============================================================
 INSERT INTO `CarteCE` (`id_carte_CE`, `id_client`, `code_secret`, `solde_client`, `date_dernier_apport`, `montant_dernier_apport`) VALUES
-(1, 1, 1234, 130.839, '2026-02-15', 100),
-(2, 2, 5678, 40.558, '2026-03-15', 200),
-(3, 3, 9012, 78.471, '2026-02-20', 100),
-(4, 4, 3456, 90.678, '2026-03-20', 100),
-(5, 5, 7890, 33.003, '2026-01-10', 50),
-(6, 6, 2345, 43.709, '2026-03-01', 100),
-(7, 7, 6789, 70.581, '2026-03-25', 50),
-(8, 8, 1357, 9.536, '2026-03-10', 100);
+(1, 1, '$2y$10$ez0AINQmt.X8tWRHv35zAu1whkKtDKxl83CwqTCM5KdSRsSH5lphO', 130.839, '2026-02-15', 100),
+(2, 2, '$2y$10$5ohAKZrw.TvwR3aPhC3EfuhgSsRngL/k6ZiDwlGDPefQRra2dGhqG', 40.558, '2026-03-15', 200),
+(3, 3, '$2y$10$a3P/UWlH6sfQkRwQB/9y0uXKZZLNX3kGKQJOeMJsdKDSDCv/qafpa', 78.471, '2026-02-20', 100),
+(4, 4, '$2y$10$ZIDzzVUtLow3Pw2RU5fxqeYr7FdT53UuCNLir.su2ttj9gXez1pEq', 90.678, '2026-03-20', 100),
+(5, 5, '$2y$10$avBSHqACFeBgKAP0b/Lvhef4z1xaABkwKkHG6S4QH9X.DXdS/rPBy', 33.003, '2026-01-10', 50),
+(6, 6, '$2y$10$6OohsmhwsNRlaqyzsgKJ/uCb.YERelLGQeQObIGjHUkwBTh59eCoS', 43.709, '2026-03-01', 100),
+(7, 7, '$2y$10$dAjfYxwKUAHOLs5b1tdK6usJV1Jg0O2tup01HCqdbxSvpQ89OC7HS', 70.581, '2026-03-25', 50),
+(8, 8, '$2y$10$U1ifWSNXeWOC/eM5B6bxi.5.uLIjNT00HIhuRZ1Qb0m0qHdQPSSPS', 9.536, '2026-03-10', 100);
 ALTER TABLE `CarteCE` AUTO_INCREMENT = 9;
 
 -- ============================================================
@@ -7452,14 +7452,14 @@ ALTER TABLE `Client` AUTO_INCREMENT = 16;
 --  CARTE CE
 -- ============================================================
 INSERT INTO `CarteCE` (`id_carte_CE`, `id_client`, `code_secret`, `solde_client`, `date_dernier_apport`, `montant_dernier_apport`) VALUES
-(1, 1, 1234, 130.000, '2026-02-15', 100),
-(2, 2, 5678, 80.000, '2026-03-15', 100),
-(3, 3, 9012, 50.000, '2026-03-20', 50),
-(11, 11, 2244, 45.000, '2021-12-03', 40),
-(12, 12, 2468, 95.000, '2022-10-14', 80),
-(13, 13, 9753, 62.000, '2023-06-20', 60),
-(14, 14, 8642, 135.000, '2024-09-11', 120),
-(15, 15, 5319, 70.000, '2025-04-29', 70);
+(1, 1, '$2y$10$ez0AINQmt.X8tWRHv35zAu1whkKtDKxl83CwqTCM5KdSRsSH5lphO', 130.000, '2026-02-15', 100),
+(2, 2, '$2y$10$5ohAKZrw.TvwR3aPhC3EfuhgSsRngL/k6ZiDwlGDPefQRra2dGhqG', 80.000, '2026-03-15', 100),
+(3, 3, '$2y$10$a3P/UWlH6sfQkRwQB/9y0uXKZZLNX3kGKQJOeMJsdKDSDCv/qafpa', 50.000, '2026-03-20', 50),
+(11, 11, '$2y$10$0Xe2KJG0RPSOMsjNS1177Oo1U.9T.pgHwsLpPHwQgcmDRtRHWGoge', 45.000, '2021-12-03', 40),
+(12, 12, '$2y$10$iQgqr4Y7Me3R9v8sjiNAHOuufIzRIzpoKZN2j5dcltzOw6Fk1ev.O', 95.000, '2022-10-14', 80),
+(13, 13, '$2y$10$/SYQgTo6MwUHj02nWqwnH.QEIzjHByfNPDMhIeDhRTA6MR7K9vQhG', 62.000, '2023-06-20', 60),
+(14, 14, '$2y$10$FUzD7H.EUTEEFjjP8i2LiuU9mI/vsjzLN2bQwDOKLNFCLGU/Fmftu', 135.000, '2024-09-11', 120),
+(15, 15, '$2y$10$0sIR3jxcXAzDLw11XQ/YvePAwxhXATkqlH15LZb.riksbAb1YU5ju', 70.000, '2025-04-29', 70);
 
 ALTER TABLE `CarteCE` AUTO_INCREMENT = 16;
 
@@ -7592,13 +7592,13 @@ INSERT INTO `Client` (`id_client`, `nom`, `prenom`, `email`, `num_tel`) VALUES
 ALTER TABLE `Client` AUTO_INCREMENT = 16;
 
 INSERT INTO `CarteCE` (`id_carte_CE`, `id_client`, `code_secret`, `solde_client`, `date_dernier_apport`, `montant_dernier_apport`) VALUES
-(4, 4, 3456, 95.000, '2025-09-17', 80),
-(5, 5, 4567, 160.000, '2025-11-08', 120),
-(6, 6, 6789, 72.000, '2025-12-02', 60),
-(7, 7, 1122, 210.000, '2025-10-28', 200),
-(8, 8, 3344, 44.000, '2025-07-14', 50),
-(9, 9, 5566, 118.000, '2025-08-25', 100),
-(10, 10, 7788, 88.000, '2025-06-19', 75);
+(4, 4, '$2y$10$ZIDzzVUtLow3Pw2RU5fxqeYr7FdT53UuCNLir.su2ttj9gXez1pEq', 95.000, '2025-09-17', 80),
+(5, 5, '$2y$10$ELl5K0U1SWsAsXJY5CEdKOIt1FViNmPDzdX0bylmZbNoWSS9KMzmu', 160.000, '2025-11-08', 120),
+(6, 6, '$2y$10$dAjfYxwKUAHOLs5b1tdK6usJV1Jg0O2tup01HCqdbxSvpQ89OC7HS', 72.000, '2025-12-02', 60),
+(7, 7, '$2y$10$N/fclww943A29doour/jmOLJNp.WMuGbg4BWI6kG0tSrIn/vKFmvO', 210.000, '2025-10-28', 200),
+(8, 8, '$2y$10$VbMYenEjdTgzdGDnZlMvbujKPAni0PyqlcHQHPA2Dv.CW4G63uuRK', 44.000, '2025-07-14', 50),
+(9, 9, '$2y$10$weJiB1IK2UEf3.TYfxEGx.3IORinPAe2oOsdZMdHHReXMhGAdczX2', 118.000, '2025-08-25', 100),
+(10, 10, '$2y$10$ZWE0E.F9f.TGwnCxRe6BH.FUPQJjuyCgG/NctMGAqs9fCsL8yg3wm', 88.000, '2025-06-19', 75);
 
 ALTER TABLE `CarteCE` AUTO_INCREMENT = 16;
 

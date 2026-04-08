@@ -1025,7 +1025,7 @@ var Sim = (function() {
     phase: 'entry',
     digits: '',
     firstCode: '',
-    expectedCode: '',
+    authChecking: false,
     attemptsLeft: 0,
     customerLabel: '',
     cardId: 0,
@@ -1128,6 +1128,7 @@ var Sim = (function() {
         { id: 'gerant-reappro-annuler', label: 'Annuler réappro', kind: 'confirm', opts: { title: 'Annuler le réapprovisionnement #42', text: 'Cette action est irréversible.' } },
         { id: 'gerant-reappro-ok', label: 'Commande envoyée', kind: 'simple', opts: { icon: 'success', title: 'Commande envoyée', text: 'Le réapprovisionnement manuel a été créé.' } },
         { id: 'gerant-reappro-auto-review', label: 'Réappro auto (review)', kind: 'confirm', opts: { title: 'Réappro auto #42', text: 'Le seuil d\'alerte a déclenché un réapprovisionnement automatique.' } },
+        { id: 'gerant-reappro-auto-validated', label: 'Réappro auto validé', kind: 'simple', opts: { icon: 'success', title: 'Réapprovisionnement validé', text: 'Le réapprovisionnement automatique #42 a bien été validé.' } },
         { id: 'gerant-reappro-auto-employe', label: 'Réappro auto (employé)', kind: 'simple', opts: { icon: 'warning', title: 'Seuil d’alerte atteint', text: 'Prévenez le gérant pour ajuster la commande.' } },
         { id: 'gerant-reappro-auto-fallback', label: 'Réappro auto (fallback)', kind: 'simple', opts: { icon: 'warning', title: 'Seuil d’alerte atteint', text: 'Le détail du réappro n’a pas pu être chargé.' } },
         { id: 'gerant-validation', label: 'Validation journée', kind: 'confirm', opts: { title: 'Confirmer la validation ?', text: 'Les tables du jour seront verrouillées.' } }
@@ -1202,8 +1203,8 @@ var Sim = (function() {
     var min = total > 0 ? Math.min.apply(null, soldes) : 0;
     var max = total > 0 ? Math.max.apply(null, soldes) : 0;
     var codeInfo = cceCodeSecretsReady
-      ? (', codes analyses: ' + cceCodeSecrets.size)
-      : ', analyse codes indisponible';
+      ? ', codes CCE sécurisés (hashés)'
+      : ', vérification des codes côté serveur';
 
     node.textContent =
       'Analyse CCE : ' + cces.length + ' cartes, solde moyen ' + avg.toFixed(2) + ' EUR'
@@ -1220,7 +1221,7 @@ var Sim = (function() {
     codeRequestState.phase = 'entry';
     codeRequestState.digits = '';
     codeRequestState.firstCode = '';
-    codeRequestState.expectedCode = '';
+    codeRequestState.authChecking = false;
     codeRequestState.attemptsLeft = 0;
     codeRequestState.customerLabel = '';
     codeRequestState.cardId = 0;
@@ -1241,7 +1242,9 @@ var Sim = (function() {
     if (requestId.style) requestId.style.display = 'none';
 
     if (codeRequestState.kind === 'auth') {
-      instruction.textContent = 'Entrez votre code CCE (4 chiffres) pour valider le paiement.';
+      instruction.textContent = codeRequestState.authChecking
+        ? 'Vérification du code CCE en cours...'
+        : 'Entrez votre code CCE (4 chiffres) pour valider le paiement.';
     } else if (codeRequestState.phase === 'confirm') {
       instruction.textContent = 'Ressaisissez le code (4 chiffres) pour ' + codeRequestState.customerLabel + '.';
     } else {
@@ -1357,7 +1360,7 @@ var Sim = (function() {
     codeRequestState.phase = 'entry';
     codeRequestState.digits = '';
     codeRequestState.firstCode = '';
-    codeRequestState.expectedCode = '';
+    codeRequestState.authChecking = false;
     codeRequestState.attemptsLeft = 0;
     codeRequestState.cardId = 0;
     codeRequestState.customerLabel = normalizeCodeCustomerLabel(payload && payload.customer);
@@ -1388,32 +1391,14 @@ var Sim = (function() {
       return;
     }
 
-    var normalizeExpectedCode = function(raw) {
-      var digits = String(raw == null ? '' : raw).replace(/\D+/g, '');
-      if (!digits) return '';
-      if (digits.length > CCE_CODE_MAX_LENGTH) return '';
-      return digits.padStart(CCE_CODE_MAX_LENGTH, '0');
-    };
-
     var openAuthPopup = function(carte) {
-      var expected = normalizeExpectedCode(carte && carte.code_secret);
-      if (!expected) {
-        cceChan.postMessage({
-          type: 'cce-auth-response',
-          request_id: requestId,
-          status: 'error',
-          message: 'Code CCE indisponible pour cette carte.'
-        });
-        return;
-      }
-
       codeRequestState.active = true;
       codeRequestState.kind = 'auth';
       codeRequestState.requestId = requestId;
       codeRequestState.phase = 'entry';
       codeRequestState.digits = '';
       codeRequestState.firstCode = '';
-      codeRequestState.expectedCode = expected;
+      codeRequestState.authChecking = false;
       codeRequestState.attemptsLeft = 3;
       codeRequestState.cardId = cardId;
       codeRequestState.customerLabel = normalizeCodeCustomerLabel({
@@ -1435,14 +1420,9 @@ var Sim = (function() {
       log('cce-log', 'info', 'Paiement CCE : saisie du code demandee pour la carte #' + cardId + '.');
     };
 
-    var localCard = cces.find(function(c) { return Number(c && c.id_carte_CE || 0) === cardId; });
-    if (localCard && normalizeExpectedCode(localCard.code_secret)) {
+    var localCard = cces.find(function(c) { return Number(c && c.id_carte_CE || 0) === cardId; }) || null;
+    if (localCard) {
       openAuthPopup(localCard);
-      return;
-    }
-
-    if (selectedCceCard && Number(selectedCceCard.id_carte_CE || 0) === cardId && normalizeExpectedCode(selectedCceCard.code_secret)) {
-      openAuthPopup(selectedCceCard);
       return;
     }
 
@@ -1537,11 +1517,31 @@ var Sim = (function() {
 
     var current = String(codeRequestState.digits);
     if (codeRequestState.kind === 'auth') {
-      var expected = String(codeRequestState.expectedCode || '');
-      if (current === expected) {
-        log('cce-log', 'ok', 'Paiement CCE : code valide pour la carte #' + codeRequestState.cardId + '.');
-        finishTerminalRequest('ok');
+      if (codeRequestState.authChecking) {
         return;
+      }
+
+      codeRequestState.authChecking = true;
+      codeRequestState.error = '';
+      renderCodePopupUI();
+
+      try {
+        var verifyPayload = await api('POST', '/json/cce/' + Number(codeRequestState.cardId || 0) + '/verify-code', {
+          code_secret: current
+        });
+        var valid = Boolean(verifyPayload && verifyPayload.valid);
+        if (valid) {
+          log('cce-log', 'ok', 'Paiement CCE : code valide pour la carte #' + codeRequestState.cardId + '.');
+          finishTerminalRequest('ok');
+          return;
+        }
+      } catch (error) {
+        var verifyMessage = error && error.message ? String(error.message) : 'Vérification du code CCE impossible.';
+        log('cce-log', 'err', verifyMessage);
+        finishTerminalRequest('error', { message: verifyMessage });
+        return;
+      } finally {
+        codeRequestState.authChecking = false;
       }
 
       codeRequestState.attemptsLeft = Math.max(0, Number(codeRequestState.attemptsLeft || 0) - 1);
@@ -1686,9 +1686,7 @@ var Sim = (function() {
       renderCCE();
       renderAutoPaymentButtons();
       renderCceAnalysis();
-      return refreshCceCodeSecrets().catch(function(error) {
-        log('cce-log', 'err', 'Analyse codes CCE impossible : ' + (error && error.message ? error.message : 'erreur inconnue'));
-      });
+      return Promise.resolve();
     }).catch(function(e) {
       cces = [];
       cceCodeSecrets = new Set();
