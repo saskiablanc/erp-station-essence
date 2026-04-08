@@ -272,7 +272,10 @@ const App = (() => {
       if (resizeTimer) clearTimeout(resizeTimer);
       resizeTimer = setTimeout(() => {
         const currentHand = State.get("hand");
-        if (!WM.hasSavedLayout(currentHand)) {
+        const isDragDrop = (WM.getLayoutMode?.() || "sandbox") === "dragdrop";
+        // En D&D, le viewport (F11, resize, etc.) doit toujours remailler les slots.
+        // En sandbox, on garde le comportement historique (ne pas écraser une dispo sauvegardée).
+        if (isDragDrop || !WM.hasSavedLayout(currentHand)) {
           WM.applyLayout(currentHand);
         }
       }, 120);

@@ -462,6 +462,61 @@ const WM = (() => {
     return "caisse_layout_" + getLayoutVersion() + "_" + flipHand(hand) + suffix;
   }
 
+  function remapSlotsToBounds(slots, targetBounds) {
+    const sourceBounds = getSlotsBounds(slots);
+    if (!sourceBounds || !targetBounds) return slots;
+
+    const sourceW = sourceBounds.right - sourceBounds.left;
+    const sourceH = sourceBounds.bottom - sourceBounds.top;
+    const targetW = targetBounds.right - targetBounds.left;
+    const targetH = targetBounds.bottom - targetBounds.top;
+
+    if (sourceW <= 0 || sourceH <= 0 || targetW <= 0 || targetH <= 0) {
+      return slots;
+    }
+
+    const epsilon = 0.5;
+    const alreadyAligned =
+      Math.abs(sourceBounds.left - targetBounds.left) < epsilon &&
+      Math.abs(sourceBounds.top - targetBounds.top) < epsilon &&
+      Math.abs(sourceBounds.right - targetBounds.right) < epsilon &&
+      Math.abs(sourceBounds.bottom - targetBounds.bottom) < epsilon;
+    if (alreadyAligned) return slots;
+
+    const remapped = {};
+    Object.keys(slots).forEach((slotId) => {
+      const slot = slots[slotId];
+      const relLeft = (slot.x - sourceBounds.left) / sourceW;
+      const relRight = (slot.x + slot.w - sourceBounds.left) / sourceW;
+      const relTop = (slot.y - sourceBounds.top) / sourceH;
+      const relBottom = (slot.y + slot.h - sourceBounds.top) / sourceH;
+
+      const left = targetBounds.left + relLeft * targetW;
+      const right = targetBounds.left + relRight * targetW;
+      const top = targetBounds.top + relTop * targetH;
+      const bottom = targetBounds.top + relBottom * targetH;
+
+      const w = Math.max(120, Math.round(right - left));
+      const h = Math.max(90, Math.round(bottom - top));
+      const x = Math.round(
+        Math.min(
+          Math.max(left, targetBounds.left),
+          Math.max(targetBounds.left, targetBounds.right - w),
+        ),
+      );
+      const y = Math.round(
+        Math.min(
+          Math.max(top, targetBounds.top),
+          Math.max(targetBounds.top, targetBounds.bottom - h),
+        ),
+      );
+
+      remapped[slotId] = { x, y, w, h };
+    });
+
+    return remapped;
+  }
+
   function getSlotTemplateForCurrentHand() {
     const hand = State.get("hand");
     const base = computeLayout(flipHand(hand)) || {};
@@ -479,7 +534,14 @@ const WM = (() => {
       };
     });
 
-    return slots;
+    // En D&D, les overrides sont persistés en absolu.
+    // On les reprojette sur les bornes du layout courant pour garder
+    // le même "dessin" relatif sans créer d'espace vide (ex: F11).
+    const hasOverrides = Object.keys(overrides || {}).length > 0;
+    if (!hasOverrides) return slots;
+
+    const baseBounds = getSlotsBounds(base);
+    return remapSlotsToBounds(slots, baseBounds);
   }
 
   function getWindowAbsoluteRect(el) {
