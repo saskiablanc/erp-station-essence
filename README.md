@@ -68,11 +68,17 @@ Requirements: PHP 8.1+ with PDO MySQL, and MySQL or MariaDB.
 2. Import the schema then the data:
 
    ```bash
-   mysql -u root -p < schema.sql
-   mysql -u root -p unica_station < data.sql
+   mysql -u root -p < sql/schema.sql
+   mysql -u root -p unica_station < sql/data.sql
    ```
 
-3. Create `config/database.php` (not versioned) with your local credentials, declaring the `courante` profile pointing to `unica_station`.
+3. Set up the database connection. Copy the template and fill in your local credentials:
+
+   ```bash
+   cp config/database.example.php config/database.php
+   ```
+
+   `config/database.php` is not versioned; the `courante` profile must point to `unica_station`.
 
 4. Prepare the storage folder:
 
@@ -92,14 +98,14 @@ php -S localhost:8000
 
 It also runs under Apache (XAMPP, MAMP, Laragon) with `public/` as the document root. The base URL depends on the setup: `http://localhost:8000` with the built-in server, or `http://localhost/erp-station-essence/public` under a default Apache install. From there the screens are `/connexion`, `/caisse`, `/gerant` and `/simulator`.
 
-Note: the real-time pump feed (`/events/pompes`) keeps a connection open. With the built-in server, which is single-threaded by default, this can stall other requests; run it with several workers (`PHP_CLI_SERVER_WORKERS=4 php -S localhost:8000`) or use Apache, which handles concurrent connections natively.
+Note: the real-time pump feed (`/events/pompes`) keeps a connection open. Depending on the server, a single-threaded setup may stall other requests while that connection is active; serving the app behind Apache, or running the built-in server with several workers, avoids this.
 
 ## Test accounts
 
-| Username   | Password   | Role    |
-| ---------- | ---------- | ------- |
-| `employe1` | `password` | Cashier |
-| `gerant1`  | `password` | Manager |
+| Username   | Password     | Role    |
+| ---------- | ------------ | ------- |
+| `employe1` | `employe123` | Cashier |
+| `gerant1`  | `gerant123`  | Manager |
 
 Passwords are bcrypt-hashed in the `Connexion` table.
 
@@ -163,11 +169,17 @@ Prérequis : PHP 8.1+ avec PDO MySQL, et MySQL ou MariaDB.
 2. Importer le schéma puis les données :
 
    ```bash
-   mysql -u root -p < schema.sql
-   mysql -u root -p unica_station < data.sql
+   mysql -u root -p < sql/schema.sql
+   mysql -u root -p unica_station < sql/data.sql
    ```
 
-3. Créer `config/database.php` (non versionné) avec les identifiants locaux, en déclarant le profil `courante` pointant sur `unica_station`.
+3. Configurer la connexion. Copier le modèle et renseigner les identifiants locaux :
+
+   ```bash
+   cp config/database.example.php config/database.php
+   ```
+
+   `config/database.php` n'est pas versionné ; le profil `courante` doit pointer sur `unica_station`.
 
 4. Préparer le dossier de stockage :
 
@@ -187,13 +199,13 @@ php -S localhost:8000
 
 Il fonctionne aussi sous Apache (XAMPP, MAMP, Laragon) avec `public/` comme racine. L'URL de base dépend de l'installation : `http://localhost:8000` avec le serveur intégré, ou `http://localhost/erp-station-essence/public` sous un Apache par défaut. Les écrans sont ensuite `/connexion`, `/caisse`, `/gerant` et `/simulator`.
 
-Note : le flux temps réel des pompes (`/events/pompes`) garde une connexion ouverte. Avec le serveur intégré, mono-thread par défaut, cela peut bloquer les autres requêtes ; le lancer avec plusieurs workers (`PHP_CLI_SERVER_WORKERS=4 php -S localhost:8000`) ou utiliser Apache, qui gère nativement les connexions concurrentes.
+Note : le flux temps réel des pompes (`/events/pompes`) garde une connexion ouverte. Selon le serveur, une configuration mono-thread peut bloquer les autres requêtes tant que cette connexion est active ; servir l'application derrière Apache, ou lancer le serveur intégré avec plusieurs workers, évite ce problème.
 
 ## Comptes de test
 
 | Identifiant | Mot de passe | Rôle    |
 | ----------- | ------------ | ------- |
-| `employe1`  | `password`   | Employé |
-| `gerant1`   | `password`   | Gérant  |
+| `employe1`  | `employe123` | Employé |
+| `gerant1`   | `gerant123`  | Gérant  |
 
 Les mots de passe sont hachés en bcrypt dans la table `Connexion`.
